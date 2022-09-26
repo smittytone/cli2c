@@ -1,0 +1,45 @@
+cmake_minimum_required(VERSION 3.20)
+
+# Set project data
+set(PROJECT_NAME "I2C Host Firmware")
+set(BUILD_NUMBER "1")
+
+# Set app name(s) and version(s)
+set(APP_1_NAME "firmware_qtpy_rp2040")
+set(APP_1_VERSION_NUMBER "0.1.0")
+set(APP_1_SRC_DIRECTORY "${CMAKE_SOURCE_DIR}/firmware/qtpy")
+
+set(APP_2_NAME "firmware_pico")
+set(APP_2_VERSION_NUMBER "0.1.0")
+set(APP_2_SRC_DIRECTORY "${CMAKE_SOURCE_DIR}/firmware/pico")
+
+# Move common source code to a separate directory
+set(COMMON_CODE_DIRECTORY "${CMAKE_SOURCE_DIR}/firmware/common")
+
+# Set app-side debugging "ON" or "OFF"
+set(DO_DEBUG "ON")
+
+# Set env variable 'PICO_SDK_PATH' to the local Pico SDK
+# Comment out the set() if you have a global copy of the
+# SDK set and $PICO_SDK_PATH defined in your $PATH
+# set(ENV{PICO_SDK_PATH} "${CMAKE_SOURCE_DIR}/pico-sdk")
+
+# Set flags and directory variables
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DTSDEBUG")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DTSDEBUG")
+
+# Include the Pico SDK
+include(pico_sdk_import.cmake)
+
+# Name the project
+project(${PROJECT_NAME}
+        LANGUAGES C CXX ASM
+        DESCRIPTION "RP2040-based I2C host"
+)
+
+# Initialise the Pico SDK
+pico_sdk_init()
+
+# Include the apps' source code
+add_subdirectory(${APP_1_SRC_DIRECTORY})
+add_subdirectory(${APP_2_SRC_DIRECTORY})
