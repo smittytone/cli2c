@@ -2,7 +2,7 @@
  *
  * I2C driver w. HT16K33
  * Version 1.0.0
- * Copyright © 2019, James Bowman
+ * Copyright © 2019, James Bowman; 2022, Tony Smith (@smittytone)
  * Licence: BSD 3-Clause
  *
  */
@@ -80,6 +80,7 @@ int         i2c_commands(I2CDriver *sd, int argc, char *argv[]);
 
 bool        i2c_start(I2CDriver *sd, uint8_t address, uint8_t op);
 bool        i2c_reset(I2CDriver *sd);
+void        i2c_test(I2CDriver *sd);
 static int  i2c_ack(I2CDriver *sd);
 
 static void send_command(I2CDriver *sd, char c);

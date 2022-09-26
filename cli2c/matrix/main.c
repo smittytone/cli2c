@@ -41,7 +41,12 @@ int main(int argc, char* argv[]) {
                     delta = 3;
                 }
                 
-                return matrix_commands(&i2c, argc - delta, argv + delta);
+                // Set up the display driver
+                HT16K33_init(&i2c, i2c_address, HT16K33_0_DEG);
+                
+                // Process the commands one by one
+                return matrix_commands(&i2c, argc, argv, delta);
+            }
         } else {
             print_error("Could not connect to device %s\n", argv[1]);
         }
@@ -51,7 +56,7 @@ int main(int argc, char* argv[]) {
 }
 
 
-int matrix_commands(int argc, char* argv[], int delta) {
+int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
     
     for (int i = delta ; i < argc ; ++i) {
         char* command = argv[i];
@@ -250,10 +255,7 @@ int matrix_commands(int argc, char* argv[], int delta) {
                     
                 case 'z':   // TEST
                 {
-                    charCommand(&i2c, 't');
-                    uint8_t tbuffer[6] = {0};
-                    readFromSerialPort(i2c.port, tbuffer, 5);
-                    fprintf(stdout, "*** %s\n", tbuffer);
+                    i2c_test(i2c);
                     break;
                 }
 

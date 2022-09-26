@@ -2,7 +2,7 @@
  *
  * I2C driver w. HT16K33
  * Version 1.0.0
- * Copyright © 2022, smittytone
+ * Copyright © 2022, Tony Smith (@smittytone)
  * Licence: MIT
  *
  */
@@ -38,10 +38,15 @@
 #define     HT16K33_CMD_DISPLAY_OFF         0x80
 #define     HT16K33_CMD_BRIGHTNESS          0xE0
 
+#define     HT16K33_0_DEG                   0
+#define     HT16K33_90_DEG                  1
+#define     HT16K33_180_DEG                 2
+#define     HT16K33_270_DEG                 3
 
 /*
  * PROTOTYPES
  */
+void        HT16K33_init(I2CDriver *sd, int address, uint8_t angle);
 void        HT16K33_power(bool is_on);
 void        HT16K33_set_angle(uint8_t angle);
 void        HT16K33_draw(void);
@@ -52,8 +57,9 @@ void        HT16K33_print(const char *text, uint32_t delay_ms);
 void        HT16K33_rotate(uint8_t angle);
 void        HT16K33_set_char(uint8_t ascii, bool is_centred);
 void        HT16K33_set_glyph(uint8_t* bytes);
-void        HT16K33_sleep_ms(int ms);
-void        HT16K33_write_cmd(uint8_t cmd);
+
+static void HT16K33_sleep_ms(int ms);
+static void HT16K33_write_cmd(uint8_t cmd);
 
 
 #endif  // _HT16K33_HEADER_

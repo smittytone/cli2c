@@ -117,8 +117,9 @@
 				5A559F6528E1E3BC00D51DF5 /* main.c */,
 				5A559F6628E1E3BC00D51DF5 /* Info.plist */,
 			);
-			path = matrix;
-			sourceTree = SOURCE_ROOT;
+			name = matrix;
+			path = cli2c/matrix;
+			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
 

@@ -29,3 +29,114 @@ The contents of this repo are:
 |___README.md
 |___LICENSE.md
 ```
+
+## cli2c
+
+`cli2c` is a command line driver for the USB-connected RP2040-based I2C host. The host must be pre-loaded with the firmware.
+
+It is a generic I2C driver with the following syntax:
+
+```
+cli2c {device_port} [command] ... [command]
+```
+
+* `device_port` is the USB-connected I2C host’s Unix device path, eg. `/dev/cu.modem-101010`.
+* [command] is an optional command block, comprising a single-character command and any required data.
+
+| Command | Arg. Count | Args | Description |
+| :-: | :-: | --- | --- |
+| `w` | 2 | `address` `data_bytes` | Write the supplied data to the I2C device at `address`. `data_bytes` are comma-separated 8-bit hex values |
+| `r` | 2 | `address` `count` | Read `count` bytes from the I2C device at `address` |
+| `p` | 0 | Stop communicating with the I2C device |
+| `d` | 0 | Display devices on the I2C bus |
+
+## matrix
+
+`cli2c` is a command line driver for the USB-connected RP2040-based I2C host. The host must be pre-loaded with the firmware.
+
+It is a specific driver for HT16K33-based 8x8 LED matrices. It embeds `cli2c` but exposes a different set of commands.
+
+You use the driver with this command-line call:
+
+```shell
+matrix {device} [I2C address] [commands]
+```
+
+Arguments in braces `{}` are required; those in square brackets `[]` are optional.
+
+`{device}` is the path to the I2C Mini’s device file, eg. `/dev/cu.usbserial-DO029IEZ`.
+
+`[I2C address]` is an optional I2C address. By default, the HT16K33 uses the address `0x70`, but this can be changed.
+
+`[commands]` are a sequence of command blocks as described below.
+
+### Commands
+
+These are the currently supported commands. Arguments in braces `{}` are required; those in square brackets `[]` are optional.
+
+| Command | Arguments | Description |
+| :-: | :-: | :-- |
+| `-a` | [`on`\|`off`] | Activate or deactivate the display. Once activated, the matrix will remain so for as long as it is powered. Pass `on` (or `1`) to activate, `off` (or `0`) to deactivate. Calling without an argument is a *de facto* activation |
+| `-b` | {0-15} | Set the brightness to a value between 0 (low but not off) and 15 (high) |
+| `-c` | {ascii_code} [`true`\|`false`] | Plot the specified character, by code, on the display. If the second argument is included and is `true` (or `1`), the character will be centred on the display |
+| `-g` | {hex_values} | Plot a user-generated glyph on the display. The glyph is supplied as eight comma-separated 8-bit hex values, eg. `0x3C,0x42,0xA9,0x85,0x85,0xA9,0x42,0x3C` |
+| `-p` | {x} {y} [1\|0] | Plot a point as the coordinates `{x,y}`. If the third argument is `1` (or missing), the pixel will be set; if it is `0`, the pixel will be cleared |
+| `-t` | {string} [delay] | Scroll the specified string. The second argument is an optional delay be between column shifts in milliseconds. Default: 250ms |
+
+Multiple commands can be issued by sequencing them at the command line. For example:
+
+```shell
+matrix /dev/cu.usbserial-DO029IEZ 0x71 -p 0 0 -p 1 1 -p 2 2 -p 3 3 -p 4 4 -p 5 5 -p 6 6 -p 7 7
+```
+
+You should note that the display buffer is not persisted across calls to `matrix`, so building up an image across calls will not work. The display is implicitly cleared with each new call.
+
+#### Examples
+
+**Draw a dot at 1,1**
+
+```
+matrix /dev/cu.usbserial-DO029IEZ -p 1 1
+```
+
+**Draw T, centred**
+
+```
+matrix /dev/cu.usbserial-DO029IEZ -c 123 true
+```
+
+**Draw a smiley**
+
+```
+matrix /dev/cu.usbserial-DO029IEZ -g 0x3C,0x42,0xA9,0x85,0x85,0xA9,0x42,0x3C
+```
+
+**Scroll “Hello, World!” across the display**
+
+```
+matrix /dev/cu.usbserial-DO029IEZ -t "Hello, World!    "
+```
+
+**Note** The four spaces (two matrix columns) ensure the text disappears of the screen at the end of the scroll.
+
+## Build the Drivers
+
+#### Xcode
+
+You can build the code from the accompanying Xcode project. However, I use the command line tool `xcodebuild`, called from the project directory, because this makes it easier to notarise and package the binary. For more details, please see my script [`packcli.zsh`](https://github.com/smittytone/scripts/blob/main/packcli.zsh).
+
+## Build the Firmware
+
+1. Navigate to the repo directory.
+1. Run `cmake -S . -B buildfirm`
+1. Run `cmake 0--build buildfirm`
+1. Copy `/buildfirm/firmware/qtpy/firmware_qtpy_rp2040.uf2` to a QTPy RP2040 in boot mode.
+1. Copy `/buildfirm/firmware/pico/firmware_pico_rp2040.uf2` to a Pico in boot mode.
+
+**Note** You only need perform step 4 or 5, of course, not both.
+
+## Licences and Copyright
+
+`cli2c` and `matrix` contain code portions © 2019, James Bowman. They are licensed under the terms of the BSD 3-Clause Licence.
+
+The RP2040 firmware is © 2022, Tony Smith (@smittytone). It is licensed under the terms of the MIT Licence.

@@ -2,7 +2,7 @@
  *
  * I2C driver w. HT16K33
  * Version 1.0.0
- * Copyright © 2019, James Bowman
+ * Copyright © 2019, James Bowman; 2022, Tony Smith (@smittytone)
  * Licence: BSD 3-Clause
  *
  */
@@ -19,7 +19,7 @@
  * @retval The OS file descriptor.
  */
 int openSerialPort(const char *device_file) {
-    struct termios Settings;
+    struct termios serial_ettings;
 
     int fd = open(device_file, O_RDWR | O_NOCTTY);
     if (fd == -1) {
@@ -27,18 +27,28 @@ int openSerialPort(const char *device_file) {
         return -1;
     }
 
-    tcgetattr(fd, &Settings);
-    cfmakeraw(&Settings);
-    Settings.c_cc[VMIN] = 1;
+    tcgetattr(fd, &serial_ettings);
+    cfmakeraw(&serial_ettings);
+    serial_ettings.c_cc[VMIN] = 1;
+    // serial_ettings.c_cc[VTIME] = 10;
     
-    if (tcsetattr(fd, TCSANOW, &Settings) != 0) {
+    if (tcsetattr(fd, TCSANOW, &serial_ettings) != 0) {
         print_error("Could not get settings from port");
+        return -1;
+    }
+    
+    // Prevent additional opens except by root-owned processes
+    if (ioctl(fd, TIOCEXCL) == -1) {
+        print_error("Could not set TIOCEXCL on %s", device_file);
         return -1;
     }
     
     // Set port speed
     speed_t speed = (speed_t)1000000;
-    ioctl(fd, IOSSIOSPEED, &speed);
+    if (ioctl(fd, IOSSIOSPEED, &speed) == -1) {
+        print_error("Could not set port speed to 1Mbps");
+        return -1;
+    }
 
     // Return the File Descriptor
     return fd;
@@ -315,6 +325,18 @@ void i2c_read(I2CDriver *sd, uint8_t bytes[], size_t num_bytes) {
         readFromSerialPort(sd->port, bytes + i, length);
         crc_update(sd, bytes + i, length);
     }
+}
+
+
+void i2c_test(I2CDriver *sd) {
+    bool success = false;
+    char msg[] = "Testing 1,2,3";
+    char in_buffer[20] = {0};
+    
+    writeToSerialPort(sd->port, (uint8_t*)msg, strlen(msg));
+    readFromSerialPort(sd->port, (uint8_t*)in_buffer, strlen(msg));
+    success = strncmp(msg, in_buffer, 13) == 0;
+    printf(success ? "I2C test success\n" : "I2C test failure\n");
 }
 
 

@@ -44,7 +44,7 @@
 /*
  * PROTOTYPES
  */
-int     matrix_commands(int argc, char* argv[], int delta);
+int     matrix_commands(I2CDriver* sd, int argc, char* argv[], int delta);
 void    show_help(void);
 void    print_error(char* format_string, ...);
 void    print_output(bool is_err, char* format_string, va_list args);

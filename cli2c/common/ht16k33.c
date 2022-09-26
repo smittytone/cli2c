@@ -2,16 +2,11 @@
  *
  * I2C driver w. HT16K33
  * Version 1.0.0
- * Copyright © 2022, smittytone
+ * Copyright © 2022, Tony Smith (@smittytone)
  * Licence: MIT
  *
  */
 #include "ht16k33.h"
-
-
-// Defined in `main.c`
-extern I2CDriver i2c;
-extern int i2c_address;
 
 
 // The Ascii character set
@@ -116,7 +111,26 @@ const char CHARSET[128][6] = {
 
 // Display buffer
 uint8_t display_buffer[8];
-uint8_t display_angle = 0;
+uint8_t display_angle = HT16K33_0_DEG;
+
+// The I2C bus
+I2CDriver* i2c;
+int i2c_address = HT16K33_I2C_ADDR;
+
+
+/**
+ * @brief Set up the data the driver needs.
+ *
+ * @param sd:      Pointer to the main I2C driver data structure.
+ * @param address: A non-standard HT16K33 address, or -1.
+ * @param angle    The mutiple of 90 degrees at which the matrix
+ *                 is oriented.
+ */
+void HT16K33_init(I2CDriver *sd, int address, uint8_t angle) {
+    if (address != -1) i2c_address = address;
+    HT16K33_set_angle(angle);
+    i2c = sd;
+}
 
 
 /**
@@ -139,7 +153,8 @@ void HT16K33_power(bool is_on) {
 /**
  * @brief Set the diplay's angle of rotation.
  *
- *  @param angle: The angle of rotation as an integer multiple of 90 degrees.
+ *  @param angle: The mutiple of 90 degrees at which the matrix
+ *                is oriented.
  */
 void HT16K33_set_angle(uint8_t angle) {
     if (angle != 0) {
@@ -193,9 +208,9 @@ void HT16K33_draw(void) {
     }
 
     // Display the buffer and flash the LED
-    i2c_start(&i2c, i2c_address, 0);
-    i2c_write(&i2c, tx_buffer, 17);
-    i2c_stop(&i2c);
+    i2c_start(i2c, i2c_address, 0);
+    i2c_write(i2c, tx_buffer, 17);
+    i2c_stop(i2c);
 }
 
 
@@ -330,7 +345,7 @@ void HT16K33_rotate(uint8_t angle) {
  *
  * @param ms: The sleep period.
  */
-void HT16K33_sleep_ms(int ms) {
+static void HT16K33_sleep_ms(int ms) {
     struct timespec ts;
     int res;
 
@@ -348,9 +363,9 @@ void HT16K33_sleep_ms(int ms) {
  *
  * @param cmd: The single-byte command.
  */
-void HT16K33_write_cmd(uint8_t cmd) {
+static void HT16K33_write_cmd(uint8_t cmd) {
     // NOTE Already connected at this stage
-    i2c_start(&i2c, i2c_address, 0);
-    i2c_write(&i2c, &cmd, 1);
-    i2c_stop(&i2c);
+    i2c_start(i2c, i2c_address, 0);
+    i2c_write(i2c, &cmd, 1);
+    i2c_stop(i2c);
 }
