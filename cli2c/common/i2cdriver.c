@@ -191,9 +191,8 @@ static int i2c_ack(I2CDriver *sd) {
  * @param sd: Pointer to an I2CDriver structure.
  */
 void i2c_getstatus(I2CDriver *sd)   {
+    
     uint8_t read_buffer[100];
-    uint8_t mode[80];
-
     send_command(sd, '?');
     size_t bytes_read = readFromSerialPort(sd->port, read_buffer, 80);
     read_buffer[bytes_read] = 0;
@@ -201,22 +200,25 @@ void i2c_getstatus(I2CDriver *sd)   {
 #ifdef VERBOSE
     printf("%d bytes were read: %.*s\n", bytes_read, bytes_read, read_buffer);
 #endif
-
-    sscanf((char*)read_buffer, "[%15s %8s %" SCNu64 " %f %f %f %c %d %d %d %d %x ]",
-        sd->model,
-        sd->serial,
-        &sd->uptime,
-        &sd->voltage_v,
-        &sd->current_ma,
-        &sd->temp_celsius,
-        mode,
-        &sd->sda,
-        &sd->scl,
-        &sd->speed,
-        &sd->pullups,
-        &sd->ccitt_crc
+    
+    uint8_t is_ready = 0;
+    uint8_t has_started = 0;
+    int frequency = 100;
+    int address = 0xFF;
+    char msg[32] = {0};
+    
+    sscanf((char*)read_buffer, "%c.%c.%i.%i.%s",
+        &is_ready,
+        &has_started,
+        &frequency,
+        &address,
+        msg
     );
-    sd->mode = mode[0];
+    
+    printf("Target I2C address: %02x\n", address);
+    printf("    I2C is enabled: %s\n", is_ready == 1 ? "true" : "false");
+    printf("     I2C is active: %s\n", has_started == 1 ? "true" : "false");
+    printf("     I2C frequency: %i\n", frequency);
 }
 
 
@@ -228,9 +230,51 @@ void i2c_getstatus(I2CDriver *sd)   {
 void i2c_scan(I2CDriver *sd) {
     
     uint8_t buffer[128] = {0};
+    uint8_t* buff_ptr = buffer;
+    
     send_command(sd, 'd');
     readFromSerialPort(sd->port, buffer, 127);
-    printf("%s\n", buffer);
+    
+    uint8_t devices[128] = {0};
+    uint8_t* dev_ptr = devices;
+    
+    while (*buff_ptr != '0') {
+        uint8_t value[4] = {0};
+        uint8_t* val_ptr = value;
+        
+        while(1) {
+            uint8_t token = *buff_ptr++;
+            
+            if (token == '.') {
+                break;
+            }
+            
+            *val_ptr++ = token;
+        }
+        
+        *dev_ptr++ = (uint8_t)strtol((char *)value, NULL, 0);
+    }
+    
+    
+    printf("\n");
+    for (int i = 0 ; i < 0x78; i++) {
+        if (i % 16 == 0) printf("\n%02x ", i);
+        if (i == 0) {
+            printf("X  ");
+        } else {
+            bool found = false;
+            for int j = 0 ; j < 128 ; ++j) {
+                if (devices[j] == i) {
+                    printf("@  ");
+                    found = true;
+                    break;
+                }
+                
+                if (!found) printf(".  ");
+            }
+    }
+        
+    printf("\n");
 }
 
 
@@ -368,14 +412,6 @@ int i2c_commands(I2CDriver *sd, int argc, char *argv[]) {
         switch (command[0]) {
             case 'i':   // PRINT STATUS INFO
                 i2c_getstatus(sd);
-                printf("uptime %" SCNu64"  %.3f V  %.0f mA  %.1f C SDA=%d SCL=%d speed=%d kHz\n",
-                    sd->uptime,
-                    sd->voltage_v,
-                    sd->current_ma,
-                    sd->temp_celsius,
-                    sd->sda,
-                    sd->scl,
-                    sd->speed);
                 break;
 
             case 'x':   // RESET BUS
