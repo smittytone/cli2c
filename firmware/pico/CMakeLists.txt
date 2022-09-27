@@ -4,6 +4,8 @@ cmake_minimum_required(VERSION 3.20)
 add_compile_definitions(APP_NAME="${APP_2_NAME}")
 add_compile_definitions(APP_VERSION="${APP_2_VERSION_NUMBER}")
 add_compile_definitions(BUILD_NUM=${BUILD_NUMBER})
+add_compile_definitions(PICO_BUILD=1)
+add_compile_definitions(HW_MODEL="PI-PICO")
 
 # Include app source code file(s)
 add_executable(${APP_2_NAME}

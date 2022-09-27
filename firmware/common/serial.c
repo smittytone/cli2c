@@ -155,12 +155,11 @@ void input_loop() {
             bytes_read = 0;
         }
 
-        led_set_state(state);
-
         flash_count++;
         if (flash_count > 50) {
             flash_count = 0;
             state = !state;
+            led_set_state(state);
         }
 
         // Pause? May not be necessary or might be bad
@@ -208,13 +207,13 @@ void read_i2c(uint8_t address, uint8_t* data, uint32_t count, bool do_stop) {
 void do_scan() {
     int ret;
     uint8_t rxdata;
-    char buffer[64] = {0};
+    char buffer[361] = {0};
     char* buffer_ptr = buffer;
 
-    for (uint32_t i = 0 ; i < 0x80 ; ++i) {
+    for (uint32_t i = 0 ; i < 0x78 ; ++i) {
         ret = i2c_read_blocking(I2C_PORT, i, &rxdata, 1, false);
         if (ret >= 0) {
-            sprintf(buffer_ptr, "%02X,", i);
+            sprintf(buffer_ptr, "%02X.", i);
             buffer_ptr += 2;
         }
     }
@@ -224,13 +223,14 @@ void do_scan() {
 
 
 void do_print_status(I2C_Trans* t) {
-    char status_buffer[32] = {0};
-    sprintf(status_buffer, "%s.%s.%i.%02X",
-            (t->is_inited ? "1" : "0"),
-            (t->is_started ? "1" : "0"),
-            t->frequency,
-            t->address);
-    printf("%s.I2C-Master on RP2040\r\n", status_buffer);
+    char status_buffer[64] = {0};
+    sprintf(status_buffer, "%s.%s.%i.%i",
+            (t->is_inited ? "1" : "0"),         // 2 chars
+            (t->is_started ? "1" : "0"),        // 2 chars
+            t->frequency,                       // 4 chars
+            t->address);                        // 2-4 chars
+                                                // 2-17 chars (HW_MODEL)
+    printf("%s.%s\r\n", status_buffer, HW_MODEL);
 }
 
 

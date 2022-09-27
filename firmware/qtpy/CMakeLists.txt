@@ -5,6 +5,7 @@ add_compile_definitions(APP_NAME="${APP_1_NAME}")
 add_compile_definitions(APP_VERSION="${APP_1_VERSION_NUMBER}")
 add_compile_definitions(BUILD_NUM=${BUILD_NUMBER})
 add_compile_definitions(QTPY_BUILD=1)
+add_compile_definitions(HW_MODEL="QTPY-RP2040")
 
 # Include app source code file(s)
 add_executable(${APP_1_NAME}
