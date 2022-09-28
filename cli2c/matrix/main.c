@@ -286,6 +286,10 @@ int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
  */
 void show_help() {
     fprintf(stdout, "matrix {device} [address] [commands]\n\n");
+    fprintf(stdout, "Usage:\n");
+    fprintf(stdout, "  {device} is a mandatory device path, eg. /dev/cu.usbmodem-010101.\n");
+    fprintf(stdout, "  [address] is an optional display I2C address. Default: 0x70.\n");
+    fprintf(stdout, "  [commands] are optional HT16K33 matrix commands, as shown below.\n\n");
     fprintf(stdout, "Commands:\n");
     fprintf(stdout, "  -a [on|off]             Activate/deactivate the display. Default: on.\n");
     fprintf(stdout, "  -b {0-15}               Set the display brightness from low (0) to high (15).\n");
