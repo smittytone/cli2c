@@ -32,7 +32,7 @@
 #include <IOKit/serial/ioss.h>
 // App includes
 #include "i2cdriver.h"
-#include "ht16k33.h"
+#include "ht16k33-matrix.h"
 
 
 /*

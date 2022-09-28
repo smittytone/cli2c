@@ -1,6 +1,6 @@
 /**
  *
- * I2C driver w. HT16K33
+ * HT16K33 matrix display driver
  * Version 1.0.0
  * Copyright © 2022, Tony Smith (@smittytone)
  * Licence: MIT
@@ -25,7 +25,7 @@
 #include <assert.h>
 #include <inttypes.h>
 // App includes
-#include "i2cdriver.h"
+// #include "../common/i2cdriver.h"
 
 
 /*

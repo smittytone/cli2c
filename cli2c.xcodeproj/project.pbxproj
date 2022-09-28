@@ -9,7 +9,7 @@
 /* Begin PBXBuildFile section */
 		5A559F5B28E1CACB00D51DF5 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 5A559F5928E1CACB00D51DF5 /* main.c */; };
 		5A559F6228E1CAEF00D51DF5 /* i2cdriver.c in Sources */ = {isa = PBXBuildFile; fileRef = 5A559F5F28E1CAEF00D51DF5 /* i2cdriver.c */; };
-		5A559F7228E1E3FD00D51DF5 /* ht16k33.c in Sources */ = {isa = PBXBuildFile; fileRef = 5A559F5E28E1CAEF00D51DF5 /* ht16k33.c */; };
+		5A559F7228E1E3FD00D51DF5 /* ht16k33-matrix.c in Sources */ = {isa = PBXBuildFile; fileRef = 5A559F5E28E1CAEF00D51DF5 /* ht16k33-matrix.c */; };
 		5A559F7328E1E40300D51DF5 /* i2cdriver.c in Sources */ = {isa = PBXBuildFile; fileRef = 5A559F5F28E1CAEF00D51DF5 /* i2cdriver.c */; };
 		5A559F7428E1E45800D51DF5 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 5A559F6528E1E3BC00D51DF5 /* main.c */; };
 /* End PBXBuildFile section */
@@ -41,9 +41,9 @@
 		5A559F5928E1CACB00D51DF5 /* main.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = main.c; path = cli2c/cli2c/main.c; sourceTree = SOURCE_ROOT; };
 		5A559F5A28E1CACB00D51DF5 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = cli2c/cli2c/Info.plist; sourceTree = SOURCE_ROOT; };
 		5A559F5D28E1CAEF00D51DF5 /* i2cdriver.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = i2cdriver.h; path = cli2c/common/i2cdriver.h; sourceTree = SOURCE_ROOT; };
-		5A559F5E28E1CAEF00D51DF5 /* ht16k33.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = ht16k33.c; path = cli2c/common/ht16k33.c; sourceTree = SOURCE_ROOT; };
+		5A559F5E28E1CAEF00D51DF5 /* ht16k33-matrix.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = "ht16k33-matrix.c"; path = "cli2c/matrix/ht16k33-matrix.c"; sourceTree = SOURCE_ROOT; };
 		5A559F5F28E1CAEF00D51DF5 /* i2cdriver.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = i2cdriver.c; path = cli2c/common/i2cdriver.c; sourceTree = SOURCE_ROOT; usesTabs = 0; };
-		5A559F6028E1CAEF00D51DF5 /* ht16k33.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ht16k33.h; path = cli2c/common/ht16k33.h; sourceTree = SOURCE_ROOT; };
+		5A559F6028E1CAEF00D51DF5 /* ht16k33-matrix.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "ht16k33-matrix.h"; path = "cli2c/matrix/ht16k33-matrix.h"; sourceTree = SOURCE_ROOT; };
 		5A559F6428E1E3BC00D51DF5 /* main.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = main.h; path = cli2c/matrix/main.h; sourceTree = SOURCE_ROOT; };
 		5A559F6528E1E3BC00D51DF5 /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = main.c; path = cli2c/matrix/main.c; sourceTree = SOURCE_ROOT; };
 		5A559F6628E1E3BC00D51DF5 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = cli2c/matrix/Info.plist; sourceTree = SOURCE_ROOT; };
@@ -101,8 +101,6 @@
 		5A559F5C28E1CAEF00D51DF5 /* common */ = {
 			isa = PBXGroup;
 			children = (
-				5A559F6028E1CAEF00D51DF5 /* ht16k33.h */,
-				5A559F5E28E1CAEF00D51DF5 /* ht16k33.c */,
 				5A559F5D28E1CAEF00D51DF5 /* i2cdriver.h */,
 				5A559F5F28E1CAEF00D51DF5 /* i2cdriver.c */,
 			);
@@ -115,6 +113,8 @@
 			children = (
 				5A559F6428E1E3BC00D51DF5 /* main.h */,
 				5A559F6528E1E3BC00D51DF5 /* main.c */,
+				5A559F6028E1CAEF00D51DF5 /* ht16k33-matrix.h */,
+				5A559F5E28E1CAEF00D51DF5 /* ht16k33-matrix.c */,
 				5A559F6628E1E3BC00D51DF5 /* Info.plist */,
 			);
 			name = matrix;
@@ -209,7 +209,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				5A559F7428E1E45800D51DF5 /* main.c in Sources */,
-				5A559F7228E1E3FD00D51DF5 /* ht16k33.c in Sources */,
+				5A559F7228E1E3FD00D51DF5 /* ht16k33-matrix.c in Sources */,
 				5A559F7328E1E40300D51DF5 /* i2cdriver.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

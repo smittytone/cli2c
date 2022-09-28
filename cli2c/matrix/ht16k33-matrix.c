@@ -1,12 +1,12 @@
 /**
  *
- * I2C driver w. HT16K33
+ * HT16K33 matrix display driver
  * Version 1.0.0
  * Copyright © 2022, Tony Smith (@smittytone)
  * Licence: MIT
  *
  */
-#include "ht16k33.h"
+#include "main.h"
 
 
 // The Ascii character set
