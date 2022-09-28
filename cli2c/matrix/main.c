@@ -16,11 +16,21 @@ int main(int argc, char* argv[]) {
         // Insufficient arguments -- issue usage info and bail
         printf("Usage: matrix {DEVICE_PATH} [I2C Address] [command] ... [command]\n");
     } else {
+        // Check for help request
+        for (int i = 0 ; i < argc ; ++i) {
+            if (strcmp(argv[i], "-h") == 0) {
+                show_help();
+                return 0;
+            }
+        }
+        
         // Instantiate an I2C data structure
         I2CDriver i2c;
         int i2c_address = HT16K33_I2C_ADDR;
         
-        // Connect... with the device patj
+        // Connect... with the device path
+        printf("Connecting to %s...\n", argv[1]);
+        
         i2c_connect(&i2c, argv[1]);
         if (i2c.connected) {
             // Connected -- process the remaining commands in sequence
@@ -253,13 +263,6 @@ int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                         return 1;
                     }
                     
-                case 'z':   // TEST
-                {
-                    i2c_test(i2c);
-                    break;
-                }
-
-
                 default:
                     // ERROR
                     print_error("Unknown command");
