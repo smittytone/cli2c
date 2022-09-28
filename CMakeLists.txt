@@ -5,13 +5,13 @@ set(PROJECT_NAME "I2C Host Firmware")
 set(BUILD_NUMBER "1")
 
 # Set app name(s) and version(s)
-set(APP_1_NAME "firmware_qtpy_rp2040")
-set(APP_1_VERSION_NUMBER "0.1.0")
-set(APP_1_SRC_DIRECTORY "${CMAKE_SOURCE_DIR}/firmware/qtpy")
+set(FW_1_NAME "firmware_qtpy_rp2040")
+set(FW_1_VERSION_NUMBER "0.1.0")
+set(FW_1_SRC_DIRECTORY "${CMAKE_SOURCE_DIR}/firmware/qtpy")
 
-set(APP_2_NAME "firmware_pico")
-set(APP_2_VERSION_NUMBER "0.1.0")
-set(APP_2_SRC_DIRECTORY "${CMAKE_SOURCE_DIR}/firmware/pico")
+set(FW_2_NAME "firmware_pico")
+set(FW_2_VERSION_NUMBER "0.1.0")
+set(FW_2_SRC_DIRECTORY "${CMAKE_SOURCE_DIR}/firmware/pico")
 
 # Move common source code to a separate directory
 set(COMMON_CODE_DIRECTORY "${CMAKE_SOURCE_DIR}/firmware/common")
@@ -43,5 +43,5 @@ project(${PROJECT_NAME}
 pico_sdk_init()
 
 # Include the apps' source code
-add_subdirectory(${APP_1_SRC_DIRECTORY})
-add_subdirectory(${APP_2_SRC_DIRECTORY})
+add_subdirectory(${FW_1_SRC_DIRECTORY})
+add_subdirectory(${FW_2_SRC_DIRECTORY})
