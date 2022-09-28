@@ -116,9 +116,9 @@ void i2c_connect(I2CDriver *sd, const char* portname) {
     
     // Basic comms check
     send_command(sd, 'z');
-    uint8_t rx[8] = {0};
-    size_t n = readFromSerialPort(sd->port, rx, 7);
-    if ((n != 7) || (rx[0] != 'S')) return;
+    uint8_t rx[4] = {0};
+    size_t n = readFromSerialPort(sd->port, rx, 4);
+    if ((n != 4) || ((rx[0] != 'O') && (rx[1] != 'K'))) return;
     
     // Got this far? We're good to go
     sd->connected = true;
@@ -137,9 +137,9 @@ void i2c_connect(I2CDriver *sd, const char* portname) {
  */
 static bool i2c_ack(I2CDriver *sd) {
     
-    uint8_t a[1];
-    if (readFromSerialPort(sd->port, a, 1) != 1) return 0;
-    return ((a[0] & 1) == 1);
+    uint8_t a;
+    if (readFromSerialPort(sd->port, &a, 1) != 1) return 0;
+    return ((a & 1) == 1);
 }
 
 
@@ -460,11 +460,16 @@ static void send_command(I2CDriver* sd, char c) {
  */
 static void print_bad_command_help(char* command) {
     fprintf(stderr, "[ERROR] Bad command: %s\n\n", command);
-    fprintf(stderr, "Commands:\n");
-    fprintf(stderr, "  i                 Display status information\n");
-    fprintf(stderr, "  x                 Reset I2C bus\n");
-    fprintf(stderr, "  d                 Scan bus for Devices\n");
-    fprintf(stderr, "  w address <bytes> Write bytes to I2C device at address\n");
-    fprintf(stderr, "  p                 Send a STOP\n");
-    fprintf(stderr, "  r address N       Read N bytes from I2C device at address, then STOP\n\n");
+    show_commands();
+}
+
+
+void show_commands() {
+    fprintf(stdout, "Commands:\n");
+    fprintf(stdout, "  w [address] [bytes] Write bytes out to I2C.\n");
+    fprintf(stdout, "  r [address] {count} Read count bytes in from I2C.\n");
+    fprintf(stdout, "  p                   Issue an I2C STOP.\n");
+    fprintf(stdout, "  x                   Reset the I2C bus.\n");
+    fprintf(stdout, "  d                   Scan for devices on the I2C bus.\n");
+    fprintf(stdout, "  i                   Get I2C bus host device information.\n\n");
 }

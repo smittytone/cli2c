@@ -1,6 +1,6 @@
 /**
  *
- * I2C driver w. HT16K33
+ * I2C driver for HT16K33
  * Version 1.0.0
  * Copyright © 2022, smittytone
  * Licence: MIT
@@ -29,8 +29,6 @@ int main(int argc, char* argv[]) {
         int i2c_address = HT16K33_I2C_ADDR;
         
         // Connect... with the device path
-        printf("Connecting to %s...\n", argv[1]);
-        
         i2c_connect(&i2c, argv[1]);
         if (i2c.connected) {
             // Connected -- process the remaining commands in sequence
@@ -66,6 +64,14 @@ int main(int argc, char* argv[]) {
 }
 
 
+/**
+ * @brief Parse and process commands for the HT16K33-based matrix.
+ *
+ * @param i2c:      An I2C driver data structure.
+ * @param argc:   The argument count.
+ * @param argv:   The arguments.
+ * @param delta: The argument list offset to locate HT16K33 commands from.
+ */
 int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
     
     for (int i = delta ; i < argc ; ++i) {
@@ -157,43 +163,39 @@ int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                         return 1;
                     }
 
-            case 'g':   // DISPLAY GLYPH
-                {
-                    // Get the required argument
-                    if (i < argc - 1) {
-                        command = argv[++i];
-                        if (command[0] != '-') {
-                            uint8_t bytes[8] = {0};
-                            char *endptr = command;
-                            size_t length = 0;
+                case 'g':   // DISPLAY GLYPH
+                    {
+                        // Get the required argument
+                        if (i < argc - 1) {
+                            command = argv[++i];
+                            if (command[0] != '-') {
+                                uint8_t bytes[8] = {0};
+                                char *endptr = command;
+                                size_t length = 0;
 
-                            while (length < sizeof(bytes)) {
-                                bytes[length++] = (uint8_t)strtol(endptr, &endptr, 0);
-                                if (*endptr == '\0') break;
-                                if (*endptr != ',') {
-                                    print_error("Invalid bytes");
-                                    return 1;
+                                while (length < sizeof(bytes)) {
+                                    bytes[length++] = (uint8_t)strtol(endptr, &endptr, 0);
+                                    if (*endptr == '\0') break;
+                                    if (*endptr != ',') {
+                                        print_error("Invalid bytes");
+                                        return 1;
+                                    }
+
+                                    endptr++;
                                 }
-
-                                endptr++;
+                                
+                                // Perform the action
+                                HT16K33_set_glyph(bytes);
+                                HT16K33_draw();
+                                break;
                             }
-                            
-                            // Perform the action
-                            HT16K33_set_glyph(bytes);
-                            HT16K33_draw();
-                            break;
                         }
-                    }
 
-                    print_error("No Ascii value supplied");
-                    return 1;
-                }
+                        print_error("No Ascii value supplied");
+                        return 1;
+                    }
             
-            case 'h':   // HELP
-                    show_help();
-                    return 0;
-            
-            case 'p':   // PLOT A POINT
+                case 'p':   // PLOT A POINT
                     {
                         // Get two required arguments
                         long x = -1, y = -1;
@@ -268,6 +270,10 @@ int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                     print_error("Unknown command");
                     return 1;
             }
+        } else {
+            // Bad command
+            print_error("Unknown command");
+            return 1;
         }
     }
     

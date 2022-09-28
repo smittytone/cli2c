@@ -30,34 +30,31 @@
  * GLOBALS
  */
 static uint32_t colour;
-static uint32_t led_count;
-static uint     pio_offset;
-static int      sm;
-PIO             pio;
 
 
 void ws2812_init(void) {
-    led_count = 0;
-    pio_offset = 0;
-    pio = pio1;
-    sm = PROBE_SM;
+    
+    // Set defaults
     colour = RGB_COLOUR;
 
     // Set PIO output to feed the WS2182 via pin QTPY_PIN_NEO_DATA
-    pio_offset = pio_add_program(pio, &ws2812_program);
-    ws2812_program_init(pio, sm, pio_offset, QTPY_PIN_NEO_DATA, 800000, true);
+    pio_offset = pio_add_program(pio1, &ws2812_program);
+    ws2812_program_init(pio1, PROBE_SM, 0, QTPY_PIN_NEO_DATA, 800000, true);
 
     // Power up the LED
     gpio_init(QTPY_PIN_NEO_PWR);
     gpio_set_dir(QTPY_PIN_NEO_PWR, GPIO_OUT);
     gpio_put(QTPY_PIN_NEO_PWR, true);
 
-    // Set the LED on
+    // Set the LED off
     ws2812_pixel(0x00);
 }
 
 
+
 void ws2812_pixel(uint32_t colour) {
+    
+    // Pi's code expects colours in GRB format;
     // GRB is irrational, so convert 'colour' from RGB
     uint32_t grb_colour = ((colour & 0xFF0000) >> 8) | ((colour & 0xFF00) << 8) | (colour & 0xFF);
     pio_sm_put_blocking(pio, sm, grb_colour << 8u);
@@ -65,6 +62,7 @@ void ws2812_pixel(uint32_t colour) {
 
 
 void ws2812_flash(int count) {
+    
     while (count > 0) {
         ws2812_pixel(colour);
         sleep_ms(250);
@@ -72,24 +70,12 @@ void ws2812_flash(int count) {
         sleep_ms(250);
         count--;
     }
-}
 
-
-void ws2812_task(void) {
-    if (led_count != 0) {
-        --led_count;
-        bool is_set = !((led_count >> LED_COUNT_SHIFT) & 1);
-        ws2812_pixel(is_set ? colour : 0x00);
-    }
-}
-
-
-void ws2812_signal_activity(uint total_bits) {
-    if (led_count == 0) ws2812_pixel(0x00);
-    if (led_count < LED_COUNT_MAX) led_count += total_bits;
+    sleep_ms(250);
 }
 
 
 void ws2812_set_colour(uint32_t new_colour) {
+    
     colour = new_colour;
 }

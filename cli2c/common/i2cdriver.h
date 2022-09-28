@@ -68,6 +68,7 @@ int         i2c_commands(I2CDriver *sd, int argc, char *argv[]);
 static bool i2c_ack(I2CDriver *sd);
 static void send_command(I2CDriver *sd, char c);
 static void print_bad_command_help(char* token);
+void        show_commands(void);
 
 
 #endif  // I2CDRIVER_H

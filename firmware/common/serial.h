@@ -49,7 +49,7 @@
  * STRUCTURES
  */
 typedef struct {
-    bool        is_inited;
+    bool        is_ready;
     bool        is_started;
     bool        is_read_op;
     uint8_t     address;
@@ -62,19 +62,19 @@ typedef struct {
 /*
  * PROTOTYPES
  */
-void        input_loop(void);
+void        rx_loop(void);
 
 void        init_i2c(int frequency_khz);
 void        write_i2c(uint8_t address, uint8_t* data, uint32_t count, bool do_stop);
 void        read_i2c(uint8_t address, uint8_t* data, uint32_t count, bool do_stop);
+void        reset_i2c(int frequency_khz);
 
-void        do_ack(void);
-void        do_err(void);
-void        do_scan(void);
-void        do_reset_i2c(int frequency_khz);
-void        do_print_status(I2C_Trans* t);
+void        send_ack(void);
+void        send_err(void);
+void        send_scan(void);
+void        send_status(I2C_Trans* t);
 
-uint32_t    get_block(uint8_t *buff);
+uint32_t    get_tx_block(uint8_t *buff);
 
 
 #endif  // _MONITOR_HEADER_

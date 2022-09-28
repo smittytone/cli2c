@@ -22,14 +22,15 @@ int main() {
         sleep_ms(2000);
 
         // Start the loop
-        input_loop();
+        // Function defined in `serial.c`
+        tx_loop();
 
         // End
         return 0;
     }
 
     // Could not initialize stdio over USB,
-    // so signal error and end
+    // so signal error (red) and end
     ws2812_set_colour(0xFF0000);
     ws2812_flash(10);
     ws2812_pixel(0xFF0000);
