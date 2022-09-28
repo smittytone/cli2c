@@ -23,7 +23,7 @@ int main() {
 
         // Start the loop
         // Function defined in `serial.c`
-        tx_loop();
+        rx_loop();
 
         // End
         return 0;

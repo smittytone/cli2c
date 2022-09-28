@@ -265,6 +265,10 @@ int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                         return 1;
                     }
                     
+                case '!':
+                    i2c_commands(i2c, argc - i, argv + i);
+                    break;
+                    
                 default:
                     // ERROR
                     print_error("Unknown command");

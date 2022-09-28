@@ -178,11 +178,11 @@ void rx_loop() {
 
 /**
  * @brief Initialise the host's I2C bus.
- * 
+ *
  * @param frequency_khz: The bus speed in kHz.
  */
 void init_i2c(int frequency_khz) {
-    
+
     // Intialise I2C via SDK
     i2c_init(I2C_PORT, frequency_khz * 1000);
 
@@ -205,39 +205,39 @@ void init_i2c(int frequency_khz) {
 
 /**
  * @brief Write data to the host's I2C bus.
- * 
+ *
  * @param address: The target I2C address.
  * @param data:    A pointer to the data.
  * @param count:   The number of bytes to send.
  * @param do_stop: Issue a STOP after sending.
  */
 void write_i2c(uint8_t address, uint8_t* data, uint32_t count, bool do_stop) {
-    
+
     i2c_write_blocking(I2C_PORT, address, data, count, do_stop);
 }
 
 
 /**
  * @brief Read data from the host's I2C bus.
- * 
+ *
  * @param address: The target I2C address.
  * @param data:    A pointer to the data store
  * @param count:   The number of bytes to receive.
  * @param do_stop: Issue a STOP after receiving.
  */
 void read_i2c(uint8_t address, uint8_t* data, uint32_t count, bool do_stop) {
-    
+
     int r = i2c_read_blocking(I2C_PORT, address, data, count, do_stop);
 }
 
 
 /**
  * @brief Reset the host's I2C bus.
- * 
+ *
  * @param frequency_khz: The bus speed in kHz.
  */
 void reset_i2c(int frequency_khz) {
-    
+
     i2c_deinit(I2C_PORT);
     sleep_ms(10);
     init_i2c(frequency_khz);
@@ -251,7 +251,7 @@ void send_scan() {
 
     uint8_t rxdata;
     int ret;
-    char scan_buffer[361] = {0};
+    char scan_buffer[363] = {0};
     char* buffer_ptr = scan_buffer;
 
     // Generate a list if devices by their addresses.
@@ -260,37 +260,39 @@ void send_scan() {
         ret = i2c_read_blocking(I2C_PORT, i, &rxdata, 1, false);
         if (ret >= 0) {
             sprintf(buffer_ptr, "%02X.", i);
-            buffer_ptr += 3;
+        } else {
+            sprintf(buffer_ptr, "00.", i);
         }
+
+        buffer_ptr += 3;
     }
 
     // Send the scan data back
-    printf("%s\r\n", buffer);
+    printf("%s\r\n", scan_buffer);
 }
 
 
 /**
  * @brief Scan the host's I2C bus for devices, and send the results.
- * 
+ *
  * @param t: A pointer to the current I2C transaction record.
  */
 void send_status(I2C_Trans* t) {
-    
+
     // Generate the status data string.
     // Data in the form: "1.1.100.110.QTPY-RP2040"
-    char status_buffer[64] = {0};
-    sprintf(status_buffer, "%s.%s.%i.%i",
+    printf("%s.%s.%i.%i.%s\r\n",
             (t->is_ready ? "1" : "0"),          // 2 chars
             (t->is_started ? "1" : "0"),        // 2 chars
             t->frequency,                       // 4 chars
-            t->address);                        // 2-4 chars
-                                                // 2-17 chars (HW_MODEL)
+            t->address,                         // 2-4 chars
+            HW_MODEL);                          // 2-17 chars
                                                 // == 10-27 chars
-    
+
     // Send the status data back
-    // NOTE `HW_MODEL` set by CMake according to the device 
+    // NOTE `HW_MODEL` set by CMake according to the device
     //      we're building for
-    printf("%s.%s\r\n", status_buffer, HW_MODEL);
+    //printf("%s.%s\r\n", status_buffer, HW_MODEL);
 }
 
 
@@ -301,7 +303,7 @@ void send_ack() {
 #ifdef BUILD_FOR_TERMINAL_TESTING
     printf("OK\r\n");
 #else
-    put(1);
+    putchar(0x01);
 #endif
 }
 
@@ -313,7 +315,7 @@ void send_err() {
 #ifdef BUILD_FOR_TERMINAL_TESTING
     printf("ERR\r\n");
 #else
-    put(0xFF);
+    putchar(0xFF);
 #endif
 }
 
@@ -326,11 +328,11 @@ void send_err() {
  * @retval The number of bytes to process.
  */
 uint32_t get_tx_block(uint8_t *buffer) {
-    
+
     uint32_t data_count = 0;
 
     while (data_count < 4096) {
-        int c = getchar_timeout_us(SERIAL_READ_TIMEOUT_US);
+        int c = getchar_timeout_us(0);
         if (c == PICO_ERROR_TIMEOUT || data_count > 4095) break;
         buffer[data_count++] = (c & 0xFF);
     }

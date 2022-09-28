@@ -9,7 +9,13 @@
 #include "main.h"
 
 
+I2CDriver* bus;
+
+
 int main(int argc, char *argv[]) {
+    
+    // Listen for SIGINT
+    signal(SIGINT, ctrl_c_handler);
     
     // Process arguments
     if (argc < 2) {
@@ -26,13 +32,17 @@ int main(int argc, char *argv[]) {
         
         // Instantiate an I2C data structure
         I2CDriver i2c;
+        bus = &i2c;
+        i2c.port = -1;
         
         // Connect... with the device path
         i2c_connect(&i2c, argv[1]);
         if (i2c.connected) {
             // Connected -- process the remaining commands in sequence
             int delta = 2;
-            return i2c_commands(&i2c, argc - delta, argv + delta);
+            int result = i2c_commands(&i2c, argc - delta, argv + delta);
+            clear_serial();
+            return result;
         } else {
             print_error("Could not connect to device %s\n", argv[1]);
         }
@@ -51,7 +61,7 @@ int main(int argc, char *argv[]) {
 void print_error(char* format_string, ...) {
     va_list args;
     va_start(args, format_string);
-    print_output(false, format_string, args);
+    print_output(true, format_string, args);
     va_end(args);
 }
 
@@ -72,11 +82,8 @@ void print_output(bool is_err, char* format_string, va_list args) {
     // Write the formatted text to the message
     vsnprintf(&buffer[8], sizeof(buffer) - 9, format_string, args);
     
-    // Add NEWLINE to the message and output to UART
-    sprintf(&buffer[strlen(buffer)], "\n");
-    
     // Print it all out
-    printf("%s", buffer);
+    printf("%s\n", buffer);
 }
 
 
@@ -86,4 +93,22 @@ void print_output(bool is_err, char* format_string, va_list args) {
 void show_help() {
     fprintf(stdout, "cli2c {device} [commands]\n\n");
     show_commands();
+}
+
+
+void ctrl_c_handler(int dummy) {
+    
+    clear_serial();
+    exit(0);
+}
+
+
+void clear_serial() {
+    
+    if (bus->port != -1) {
+        sleep(2);
+        tcflush(bus->port, TCIOFLUSH);
+        int result = close(bus->port);
+        if (result == 0) bus->port = -1;
+    }
 }
