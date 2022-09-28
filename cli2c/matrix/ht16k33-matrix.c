@@ -127,6 +127,7 @@ int i2c_address = HT16K33_I2C_ADDR;
  *                 is oriented.
  */
 void HT16K33_init(I2CDriver *sd, int address, uint8_t angle) {
+    
     if (address != -1) i2c_address = address;
     HT16K33_set_angle(angle);
     i2c = sd;
@@ -140,6 +141,7 @@ void HT16K33_init(I2CDriver *sd, int address, uint8_t angle) {
  *                shut it down (`false`).
  */
 void HT16K33_power(bool is_on) {
+    
     if (is_on) {
         HT16K33_write_cmd(HT16K33_CMD_POWER_ON);
         HT16K33_write_cmd(HT16K33_CMD_DISPLAY_ON);
@@ -157,10 +159,9 @@ void HT16K33_power(bool is_on) {
  *                is oriented.
  */
 void HT16K33_set_angle(uint8_t angle) {
-    if (angle != 0) {
-        if (angle > 0 && angle < 4) {
-            display_angle = angle;
-        }
+    
+    if (angle < 4) {
+        display_angle = angle;
     }
 }
 
@@ -171,6 +172,7 @@ void HT16K33_set_angle(uint8_t angle) {
  * @param brightness: The display brightness (1-15).
  */
 void HT16K33_set_brightness(uint8_t brightness) {
+    
     if (brightness > 15) brightness = 15;
     HT16K33_write_cmd(HT16K33_CMD_BRIGHTNESS | brightness);
 }
@@ -182,6 +184,7 @@ void HT16K33_set_brightness(uint8_t brightness) {
  * This does not clear the LED -- call `HT16K33_draw()`.
  */
 void HT16K33_clear_buffer(void) {
+    
     for (uint8_t i = 0 ; i < 8 ; ++i) {
         display_buffer[i] = 0;
     }
@@ -192,6 +195,7 @@ void HT16K33_clear_buffer(void) {
  * @brief Write the display buffer out to the LED.
  */
 void HT16K33_draw(void) {
+    
     // Set up the buffer holding the data to be
     // transmitted to the LED
     uint8_t tx_buffer[17] = { 0 };
@@ -222,6 +226,7 @@ void HT16K33_draw(void) {
  *  @param is_set: Whether to set the pixel (`true`) ior clear it.
  */
 void HT16K33_plot(uint8_t x, uint8_t y, bool is_set) {
+    
     // Set or unset the specified pixel
     if (is_set) {
         display_buffer[x] |= (1 << y);
@@ -232,6 +237,7 @@ void HT16K33_plot(uint8_t x, uint8_t y, bool is_set) {
 
 
 void HT16K33_set_char(uint8_t ascii, bool is_centred) {
+    
     uint8_t delta = 0;
     if (is_centred) {
         delta = (8 - strlen(CHARSET[ascii - 32])) >> 1;
@@ -245,6 +251,7 @@ void HT16K33_set_char(uint8_t ascii, bool is_centred) {
 
 
 void HT16K33_set_glyph(uint8_t* bytes) {
+    
     for (uint8_t i = 0 ; i < 8 ; ++i) {
         display_buffer[i] = bytes[i];
     }
@@ -258,6 +265,7 @@ void HT16K33_set_glyph(uint8_t* bytes) {
  * @param delay_ms: The scroll delay in ms.
  */
 void HT16K33_print(const char *text, uint32_t delay_ms) {
+    
     // Get the length of the text: the number of columns it encompasses
     uint64_t length = 0;
     for (size_t i = 0 ; i < strlen(text) ; ++i) {
@@ -315,6 +323,7 @@ void HT16K33_print(const char *text, uint32_t delay_ms) {
  *  @param angle: The angle of rotation as an integer multiple of 90 degrees.
  */
 void HT16K33_rotate(uint8_t angle) {
+    
     uint8_t temp[8] = { 0 };
     uint8_t a = 0;
     uint8_t line_value = 0;
@@ -346,6 +355,7 @@ void HT16K33_rotate(uint8_t angle) {
  * @param ms: The sleep period.
  */
 static void HT16K33_sleep_ms(int ms) {
+    
     struct timespec ts;
     int res;
 
@@ -364,6 +374,7 @@ static void HT16K33_sleep_ms(int ms) {
  * @param cmd: The single-byte command.
  */
 static void HT16K33_write_cmd(uint8_t cmd) {
+    
     // NOTE Already connected at this stage
     i2c_start(i2c, i2c_address, 0);
     i2c_write(i2c, &cmd, 1);
