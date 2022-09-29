@@ -30,9 +30,9 @@ int openSerialPort(const char *device_file) {
     tcgetattr(fd, &serial_settings);
     cfmakeraw(&serial_settings);
     serial_settings.c_cc[VMIN] = 1;
-    // serial_settings.c_cc[VTIME] = 10;
+    serial_settings.c_cc[VTIME] = 10;
 
-    if (tcsetattr(fd, TCSANOW, &serial_settings) != 0) {
+    if (tcsetattr(fd, TCSAFLUSH, &serial_settings) != 0) {
         print_error("Could not get settings from port");
         return -1;
     }
@@ -44,9 +44,9 @@ int openSerialPort(const char *device_file) {
     }
 
     // Set port speed
-    speed_t speed = (speed_t)1000000;
+    speed_t speed = (speed_t)115200;
     if (ioctl(fd, IOSSIOSPEED, &speed) == -1) {
-        print_error("Could not set port speed to 1Mbps");
+        print_error("Could not set port speed to 115200");
         return -1;
     }
 
@@ -56,38 +56,40 @@ int openSerialPort(const char *device_file) {
 
 
 size_t readFromSerialPort(int fd, uint8_t* buffer, size_t byte_count) {
-    size_t total_read = 0;
-    ssize_t number_read = -1;
 
+    size_t count = 0;
+    ssize_t number_read = -1;
+    
     if (byte_count == 0) {
         // Unknown number of bytes -- look for \r\n
-        printf("**** READING ****\n");
-        uint8_t* buff_ptr = buffer;
-        size_t count = 0;
         while(1) {
-            number_read = read(fd, buffer + total_read, 1);
+            number_read = read(fd, buffer + count, 1);
             if (number_read == -1) break;
-            buff_ptr += number_read;
             count += number_read;
-            printf("*** %li -> %02x %02x", number_read, *(buff_ptr - 1), *(buff_ptr - 2));
-            if (count > 2 && *(buff_ptr - 2) == 0x0D && *(buff_ptr - 1) == 0x0A) break;
+            if (count > 2 && buffer[count - 2] == 0x0D && buffer[count - 1] == 0x0A) {
+                buffer[count - 2] = 0;
+                buffer[count - 1] = 0;
+                count -= 2;
+                break;
+            }
         }
     } else {
-        while (total_read < byte_count) {
-            number_read = read(fd, buffer + total_read, byte_count);
-            if (number_read > 0) total_read += number_read;
+        // Read a fixed, expected number of bytes
+        while (count < byte_count) {
+            number_read = read(fd, buffer + count, byte_count);
+            if (number_read != -1) count += number_read;
         }
     }
 
 #ifdef VERBOSE
-    printf(" READ %d %d: ", (int)byte_count, (int)number_read);
-    for (int i = 0 ; i < byte_count ; ++i) {
+    printf(" READ %d of %d: ", (int)count, (int)byte_count);
+    for (int i = 0 ; i < count ; ++i) {
         printf("%02X ", 0xFF & buffer[i]);
     }
     printf("\n");
 #endif
 
-    return total_read;
+    return count;
 }
 
 
@@ -116,29 +118,17 @@ void i2c_connect(I2CDriver *sd, const char* portname) {
 
     /* Clear the FIFO?
     writeToSerialPort(sd->port, (uint8_t*)"@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@", 64);
-
-    // Test the port
-    const uint8_t tests[] = "A\r\n\0xff";
-    for (int i = 0 ; i < 4 ; ++i) {
-        uint8_t tx[2] = {'e', tests[i]};
-        writeToSerialPort(sd->port, tx, 2);
-
-        uint8_t rx[1];
-        size_t n = readFromSerialPort(sd->port, rx, 1);
-        if ((n != 1) || (rx[0] != tests[i])) return;
-    }
      */
 
     // Basic comms check
     send_command(sd, 'z');
     uint8_t rx[4] = {0};
     size_t n = readFromSerialPort(sd->port, rx, 4);
-    if ((n != 4) || ((rx[0] != 'O') && (rx[1] != 'K'))) return;
+    if ((rx[0] != 'O') && (rx[1] != 'K')) return;
 
     // Got this far? We're good to go
     sd->connected = true;
-    i2c_getstatus(sd, true);
-    send_command(sd, 'i');
+    i2c_get_info(sd, false);
 }
 
 
@@ -153,9 +143,9 @@ void i2c_connect(I2CDriver *sd, const char* portname) {
  */
 static bool i2c_ack(I2CDriver *sd) {
 
-    uint8_t a = 0;
-    if (readFromSerialPort(sd->port, &a, 1) != 1) return 0;
-    return ((a & 1) == 1);
+    uint8_t read_buffer[1] = {0};
+    if (readFromSerialPort(sd->port, read_buffer, 1) != 1) return false;
+    return ((read_buffer[0] & 0x01) == 0x01);
 }
 
 
@@ -165,11 +155,11 @@ static bool i2c_ack(I2CDriver *sd) {
  * @param sd:       Pointer to an I2CDriver structure.
  * @param do_print: Output the results.
  */
-void i2c_getstatus(I2CDriver *sd, bool do_print) {
+void i2c_get_info(I2CDriver *sd, bool do_print) {
 
-    uint8_t read_buffer[26] = {0};
+    uint8_t read_buffer[48] = {0};
     send_command(sd, '?');
-    size_t bytes_read = readFromSerialPort(sd->port, read_buffer, 25);
+    size_t bytes_read = readFromSerialPort(sd->port, read_buffer, 0);
 
 #ifdef VERBOSE
     printf("%li bytes were read: %s\n", bytes_read, read_buffer);
@@ -177,13 +167,13 @@ void i2c_getstatus(I2CDriver *sd, bool do_print) {
 
     // Data string is, for example,
     // "1.1.100.110.QTPY-RP2040"
-    uint8_t is_ready = 0;
-    uint8_t has_started = 0;
+    int is_ready = 0;
+    int has_started = 0;
     int frequency = 100;
     int address = 0xFF;
     char host_device[32] = {0};
 
-    sscanf((char*)read_buffer, "%c.%c.%i.%i.%s",
+    sscanf((char*)read_buffer, "%i.%i.%i.%i.%s",
         &is_ready,
         &has_started,
         &frequency,
@@ -197,10 +187,10 @@ void i2c_getstatus(I2CDriver *sd, bool do_print) {
 
     if (do_print) {
         printf("   I2C host device: %s\n",     host_device);
-        printf("Target I2C address: 0x%02X\n", address);
-        printf("    I2C is enabled: %s\n",     is_ready == 1 ? "true" : "false");
-        printf("     I2C is active: %s\n",     has_started == 1 ? "true" : "false");
-        printf("     I2C frequency: %i\n",     frequency);
+        printf("    I2C is enabled: %s\n",     is_ready == 1 ? "YES" : "NO");
+        printf("     I2C is active: %s\n",     has_started == 1 ? "YES" : "NO");
+        printf("     I2C frequency: %ikHz\n",  frequency);
+        printf("Target I2C address: 0x%02X\n", address >> 1);
     }
 }
 
@@ -212,54 +202,72 @@ void i2c_getstatus(I2CDriver *sd, bool do_print) {
  */
 void i2c_scan(I2CDriver *sd) {
 
-    uint8_t buffer[365] = {0};
-    uint8_t* buff_ptr = buffer;
-
+    char buffer[361] = {0};
     uint8_t devices[120] = {0};
-    uint8_t* dev_ptr = devices;
-
+    uint32_t device_count = 0;
+    
     send_command(sd, 'd');
-    readFromSerialPort(sd->port, buffer, 360);
-
-    // Extract device address hex strings and generate
-    // integer values. For example:
-    // source = "12.71.A0."
-    // dest   = [18, 113, 160]
-    while (*buff_ptr != 0) {
-        uint8_t value[2] = {0};
-        uint8_t* val_ptr = value;
-
-        while(1) {
-            uint8_t token = *buff_ptr++;
-            if (token == '.') break;
-            *val_ptr++ = token;
+    readFromSerialPort(sd->port, (uint8_t*)buffer, 0);
+    
+    if (buffer[0] != 'Z') {
+        // Extract device address hex strings and generate
+        // integer values. For example:
+        // source = "12.71.A0."
+        // dest   = [18, 113, 160]
+        for (uint32_t i = 0 ; i < strlen(buffer) ; i += 3) {
+            uint8_t value[2] = {0};
+            uint32_t count = 0;
+            
+            while(1) {
+                uint8_t token = buffer[i * 3 + count];
+                if (token == 0x2E) break;
+                value[count] = token;
+                count++;
+            }
+            
+            devices[device_count] = (uint8_t)strtol((char *)value, NULL, 0);
+            device_count++;
         }
-
-        *dev_ptr++ = (uint8_t)strtol((char *)value, NULL, 0);
     }
-
-    printf("   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F");
-    for (int i = 0 ; i < 0x78; i++) {
+    
+    // Output
+    printf("   0 1 2 3 4 5 6 7 8 9 A B C D E F");
+    for (int i = 0 ; i < 0x80; i++) {
         if (i % 16 == 0) printf("\n%02x ", i);
         if ((i & 0x78) == 0 || (i & 0x78) == 0x78) {
-            printf("X ");
+            printf("- ");
         } else {
             bool found = false;
-            for (int j = 0 ; j < 0x78 ; ++j) {
-                if (devices[j] == i) {
-                    printf("@ ");
-                    found = true;
-                    break;
+            if (device_count > 0) {
+                for (int j = 0 ; j < 0x78 ; ++j) {
+                    if (devices[j] == i) {
+                        printf("@ ");
+                        found = true;
+                        break;
+                    }
                 }
-
-                if (!found) printf(". ");
-                if (i % 16 == 15) printf("\n");
             }
+            
+            if (!found) printf(". ");
         }
     }
 
     printf("\n");
 }
+
+
+/**
+ * @brief Initialise the host's I2C bus.
+ *
+ * @param sd: Pointer to an I2CDriver structure.
+ *
+ * @retval Whether the command was ACK'd (`true`) or not (`false`).
+ */
+bool i2c_init(I2CDriver *sd) {
+    
+    send_command(sd, 'i');
+    return i2c_ack(sd);
+};
 
 
 /**
@@ -299,9 +307,10 @@ bool i2c_start(I2CDriver *sd, uint8_t address, uint8_t op) {
  *
  * @param sd: Pointer to an I2CDriver structure.
  */
-void i2c_stop(I2CDriver *sd) {
+bool i2c_stop(I2CDriver *sd) {
 
     send_command(sd, 'p');
+    return i2c_ack(sd);
 }
 
 
@@ -318,7 +327,8 @@ size_t i2c_write(I2CDriver *sd, const uint8_t bytes[], size_t num_bytes) {
 
     // Count the bytes sent
     int count = 0;
-
+    bool ack = false;
+    
     // Write the data out in blocks of 64 bytes
     for (size_t i = 0 ; i < num_bytes ; i += 64) {
         // Calculate data length for prefix byte
@@ -330,6 +340,7 @@ size_t i2c_write(I2CDriver *sd, const uint8_t bytes[], size_t num_bytes) {
 
         // Write out the block -- use ACK as byte count
         writeToSerialPort(sd->port, cmd, 1 + length);
+        ack = i2c_ack(sd);
         count += length;
     }
 
@@ -366,10 +377,10 @@ void i2c_read(I2CDriver *sd, uint8_t bytes[], size_t num_bytes) {
  *
  * @retval The driver exit code, 0 on success, 1 on failure.
  */
-int i2c_commands(I2CDriver *sd, int argc, char *argv[]) {
+int i2c_commands(I2CDriver *sd, int argc, char *argv[], uint32_t delta) {
 
     // Process args one by one
-    for (int i = 0 ; i < argc ; ++i) {
+    for (int i = delta ; i < argc ; i++) {
         char* command = argv[i];
 
 #ifdef VERBOSE
@@ -388,7 +399,7 @@ int i2c_commands(I2CDriver *sd, int argc, char *argv[]) {
                 break;
 
             case 'i':   // PRINT HOST STATUS INFO
-                i2c_getstatus(sd, true);
+                i2c_get_info(sd, true);
                 break;
 
             case 'p':   // STOP I2C TRANSACTION
@@ -397,11 +408,11 @@ int i2c_commands(I2CDriver *sd, int argc, char *argv[]) {
 
             case 'r':   // READ FROM BUS
                 {
-                    command = argv[++i];
-                    long address = strtol(command, NULL, 0);
+                    char* token = argv[++i];
+                    long address = strtol(token, NULL, 0);
 
-                    command = argv[++i];
-                    size_t num_bytes = strtol(command, NULL, 0);
+                    token = argv[++i];
+                    size_t num_bytes = strtol(token, NULL, 0);
                     uint8_t bytes[8192];
 
                     i2c_start(sd, address, 1);
@@ -436,7 +447,7 @@ int i2c_commands(I2CDriver *sd, int argc, char *argv[]) {
 
                         endptr++;
                     }
-
+                    
                     i2c_start(sd, (uint8_t)address, 0);
                     i2c_write(sd, bytes, num_bytes);
                 }

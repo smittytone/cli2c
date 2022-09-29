@@ -7,8 +7,8 @@
  * @licence     MIT
  *
  */
-#ifndef _MAIN_H_
-#define _MAIN_H_
+#ifndef _HEADER_PICO_LED_
+#define _HEADER_PICO_LED_
 
 
 /*
@@ -23,9 +23,22 @@
 #include "pico/stdlib.h"
 #include "pico/binary_info.h"
 #include "hardware/gpio.h"
-// App includes
-#include "pico_led.h"
-#include "../common/serial.h"
 
 
-#endif  // _MAIN_H_
+/*
+ * CONSTANTS
+ */
+#define     PIN_PICO_LED            25
+
+
+/*
+ * PROTOTYPES
+ */
+void    pico_led_init(void);
+void    pico_led_off(void);
+void    pico_led_on(void);
+void    pico_led_set_state(bool is_on);
+void    pico_led_flash(uint32_t count) ;
+
+
+#endif  // _HEADER_PICO_LED_

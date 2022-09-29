@@ -1,5 +1,5 @@
 /*
- * I2C Host
+ * I2C Host -- QTPy RP2040
  *
  * @version     0.1.0
  * @author      Tony Smith (@smittytone)
@@ -19,7 +19,8 @@ int main() {
 
     // Enable STDIO and allow 2s for the board to come up
     if (stdio_usb_init()) {
-        sleep_ms(2000);
+        stdio_set_translate_crlf(&stdio_usb, false);;
+        stdio_flush();
 
         // Start the loop
         // Function defined in `serial.c`

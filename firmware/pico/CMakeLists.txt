@@ -10,6 +10,9 @@ add_compile_definitions(HW_MODEL="PI-PICO")
 # Include app source code file(s)
 add_executable(${FW_2_NAME}
     ${FW_2_SRC_DIRECTORY}/main.c
+    ${FW_2_SRC_DIRECTORY}/pico_led.c
+    ${COMMON_CODE_DIRECTORY}/serial.c
+    ${COMMON_CODE_DIRECTORY}/led.c
 )
 
 # Link to built libraries

@@ -7,6 +7,8 @@ add_compile_definitions(BUILD_NUM=${BUILD_NUMBER})
 add_compile_definitions(QTPY_BUILD=1)
 add_compile_definitions(HW_MODEL="QTPY-RP2040")
 
+set(PICO_STDIO_USB_CONNECT_WAIT_TIMEOUT_MS=2000)
+
 # Include app source code file(s)
 add_executable(${FW_1_NAME}
     ${FW_1_SRC_DIRECTORY}/main.c
@@ -18,7 +20,8 @@ add_executable(${FW_1_NAME}
 target_link_libraries(${FW_1_NAME} LINK_PUBLIC
     pico_stdlib
     hardware_i2c
-    hardware_pio)
+    hardware_pio
+    hardware_timer)
 
 target_sources(${FW_1_NAME} PRIVATE ws2812.c)
 pico_generate_pio_header(${FW_1_NAME} ${FW_1_SRC_DIRECTORY}/ws2812.pio)

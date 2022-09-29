@@ -31,7 +31,10 @@ int main(int argc, char* argv[]) {
         // Connect... with the device path
         i2c_connect(&i2c, argv[1]);
         if (i2c.connected) {
-            // Connected -- process the remaining commands in sequence
+            // Initialize the I2C host's I2C bus
+            send_command(&i2c, 'i');
+            
+            // Process the remaining commands in sequence
             int delta = 2;
             if (argc > 2) {
                 char* token = argv[2];

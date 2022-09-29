@@ -1,5 +1,5 @@
 /*
- * I2C Host
+ * I2C Host -- QTPy RP2040
  *
  * @version     0.1.0
  * @author      Tony Smith (@smittytone)
@@ -12,7 +12,7 @@
 
 
 /*
- *      INCLUDES
+ * INCLUDES
  */
 #include <stdbool.h>
 #include <stdio.h>
@@ -26,22 +26,6 @@
 // App includes
 #include "../common/serial.h"
 #include "ws2812.h"
-
-
-/*
- *      CONSTANTS
- */
-
-
-/*
- *      PROTOTYPES
- */
-
-
-/*
- * GLOBALS
- */
-
 
 
 #endif  // _MAIN_HEADER_

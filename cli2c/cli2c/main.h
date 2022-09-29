@@ -48,7 +48,7 @@ void    print_error(char* format_string, ...);
 void    print_output(bool is_err, char* format_string, va_list args);
 void    show_help(void);
 void    ctrl_c_handler(int dummy);
-void    clear_serial(void);
+
 
 
 #endif      // _MAIN_H_

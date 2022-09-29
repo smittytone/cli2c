@@ -1,9 +1,8 @@
 /*
- * e6809 for Raspberry Pi Pico
- * Monitor code
+ * I2C Host
  *
- * @version     1.0.0
- * @author      smittytone
+ * @version     0.1.0
+ * @author      Tony Smith (@smittytone)
  * @copyright   2022
  * @licence     MIT
  *
@@ -36,6 +35,8 @@
 #define I2C_FREQUENCY                           400000
 #define ON                                      1
 #define OFF                                     0
+
+// NOTE Should be defined elsewhere
 #define SDA_PIN                                 26
 #define SCL_PIN                                 27
 #define SDA_STEMMA                              22
@@ -65,16 +66,17 @@ typedef struct {
 void        rx_loop(void);
 
 void        init_i2c(int frequency_khz);
-void        write_i2c(uint8_t address, uint8_t* data, uint32_t count, bool do_stop);
-void        read_i2c(uint8_t address, uint8_t* data, uint32_t count, bool do_stop);
+int         write_i2c(uint8_t address, uint8_t* data, uint32_t count, bool do_stop);
+int         read_i2c(uint8_t address, uint8_t* data, uint32_t count, bool do_stop);
 void        reset_i2c(int frequency_khz);
 
 void        send_ack(void);
 void        send_err(void);
 void        send_scan(void);
 void        send_status(I2C_Trans* t);
+void        send_commands(void);
 
-uint32_t    get_tx_block(uint8_t *buff);
-
+uint32_t    rx(uint8_t *buffer);
+void        tx(uint8_t* buffer, uint32_t byte_count);
 
 #endif  // _MONITOR_HEADER_
