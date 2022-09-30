@@ -1,8 +1,8 @@
-/**
+/*
+ * Generic macOS I2C driver
  *
- * I2C driver
- * Version 1.0.0
- * Copyright © 2022 Tony Smith (@smittytone)
+ * Version 0.1.1
+ * Copyright © 2022, Tony Smith (@smittytone)
  * Licence: MIT
  *
  */
@@ -30,7 +30,7 @@ int openSerialPort(const char *device_file) {
     tcgetattr(fd, &serial_settings);
     cfmakeraw(&serial_settings);
     serial_settings.c_cc[VMIN] = 1;
-    serial_settings.c_cc[VTIME] = 10;
+    //serial_settings.c_cc[VTIME] = 10;
 
     if (tcsetattr(fd, TCSAFLUSH, &serial_settings) != 0) {
         print_error("Could not get settings from port");
@@ -75,14 +75,28 @@ size_t readFromSerialPort(int fd, uint8_t* buffer, size_t byte_count) {
         }
     } else {
         // Read a fixed, expected number of bytes
+        /*
+        struct timespec now, then;
+        clock_gettime(CLOCK_MONOTONIC_RAW, &then);
+        printf("Then: %li\n", then.tv_sec);
+        */
+        
         while (count < byte_count) {
-            number_read = read(fd, buffer + count, byte_count);
+            number_read = read(fd, buffer + count, 1);
             if (number_read != -1) count += number_read;
+            
+            /*
+            clock_gettime(CLOCK_MONOTONIC_RAW, &now);
+            if (now.tv_sec - then.tv_sec > 10) {
+                print_error("Read timeout: %i bytes read of %i", count, byte_count);
+                break;
+            }
+            */
         }
     }
 
 #ifdef VERBOSE
-    printf(" READ %d of %d: ", (int)count, (int)byte_count);
+    printf("  READ %d of %d: ", (int)count, (int)byte_count);
     for (int i = 0 ; i < count ; ++i) {
         printf("%02X ", 0xFF & buffer[i]);
     }
@@ -162,7 +176,7 @@ void i2c_get_info(I2CDriver *sd, bool do_print) {
     size_t bytes_read = readFromSerialPort(sd->port, read_buffer, 0);
 
 #ifdef VERBOSE
-    printf("%li bytes were read: %s\n", bytes_read, read_buffer);
+    printf("Info string: %s\n", read_buffer);
 #endif
 
     // Data string is, for example,
@@ -202,7 +216,7 @@ void i2c_get_info(I2CDriver *sd, bool do_print) {
  */
 void i2c_scan(I2CDriver *sd) {
 
-    char buffer[361] = {0};
+    char buffer[1024] = {0};
     uint8_t devices[120] = {0};
     uint32_t device_count = 0;
     
@@ -214,32 +228,41 @@ void i2c_scan(I2CDriver *sd) {
         // integer values. For example:
         // source = "12.71.A0."
         // dest   = [18, 113, 160]
+        
+#ifdef VERBOSE
+        printf("Buffer: %lu bytes, %lu items\n", strlen(buffer), strlen(buffer) / 3);
+#endif
+        
         for (uint32_t i = 0 ; i < strlen(buffer) ; i += 3) {
+            
             uint8_t value[2] = {0};
             uint32_t count = 0;
             
             while(1) {
-                uint8_t token = buffer[i * 3 + count];
+                uint8_t token = buffer[i + count];
                 if (token == 0x2E) break;
                 value[count] = token;
                 count++;
             }
             
-            devices[device_count] = (uint8_t)strtol((char *)value, NULL, 0);
+            devices[device_count] = (uint8_t)strtol((char *)value, NULL, 16);
             device_count++;
         }
     }
     
-    // Output
+    // Output the device list as a table (even with no devices)
+    
     printf("   0 1 2 3 4 5 6 7 8 9 A B C D E F");
-    for (int i = 0 ; i < 0x80; i++) {
+    
+    for (int i = 0 ; i < 0x80 ; i++) {
         if (i % 16 == 0) printf("\n%02x ", i);
-        if ((i & 0x78) == 0 || (i & 0x78) == 0x78) {
-            printf("- ");
+        if (i < 8 || i > 0x77) {
+            printf("_ ");
         } else {
             bool found = false;
+
             if (device_count > 0) {
-                for (int j = 0 ; j < 0x78 ; ++j) {
+                for (int j = 0 ; j < 120 ; j++) {
                     if (devices[j] == i) {
                         printf("@ ");
                         found = true;
@@ -247,7 +270,7 @@ void i2c_scan(I2CDriver *sd) {
                     }
                 }
             }
-            
+
             if (!found) printf(". ");
         }
     }
@@ -378,7 +401,12 @@ void i2c_read(I2CDriver *sd, uint8_t bytes[], size_t num_bytes) {
  * @retval The driver exit code, 0 on success, 1 on failure.
  */
 int i2c_commands(I2CDriver *sd, int argc, char *argv[], uint32_t delta) {
-
+    
+    // Set a 10ms period for intra-command timing period
+    struct timespec pause;
+    pause.tv_sec = 0.010;
+    pause.tv_nsec = 0.010 * 1000000;
+    
     // Process args one by one
     for (int i = delta ; i < argc ; i++) {
         char* command = argv[i];
@@ -461,6 +489,9 @@ int i2c_commands(I2CDriver *sd, int argc, char *argv[], uint32_t delta) {
                 print_bad_command_help(command);
                 return 1;
         }
+        
+        // Pause for the UART's breath
+        nanosleep(&pause, &pause);
     }
 
     return 0;
@@ -492,11 +523,11 @@ static void print_bad_command_help(char* command) {
 
 
 void show_commands() {
-    fprintf(stdout, "Commands:\n");
-    fprintf(stdout, "  w [address] [bytes] Write bytes out to I2C.\n");
-    fprintf(stdout, "  r [address] {count} Read count bytes in from I2C.\n");
-    fprintf(stdout, "  p                   Issue an I2C STOP.\n");
-    fprintf(stdout, "  x                   Reset the I2C bus.\n");
-    fprintf(stdout, "  d                   Scan for devices on the I2C bus.\n");
-    fprintf(stdout, "  i                   Get I2C bus host device information.\n\n");
+    printf("Commands:\n");
+    printf("  w [address] [bytes] Write bytes out to I2C.\n");
+    printf("  r [address] {count} Read count bytes in from I2C.\n");
+    printf("  p                   Issue an I2C STOP.\n");
+    printf("  x                   Reset the I2C bus.\n");
+    printf("  d                   Scan for devices on the I2C bus.\n");
+    printf("  i                   Get I2C bus host device information.\n\n");
 }

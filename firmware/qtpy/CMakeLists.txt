@@ -7,6 +7,19 @@ add_compile_definitions(BUILD_NUM=${BUILD_NUMBER})
 add_compile_definitions(QTPY_BUILD=1)
 add_compile_definitions(HW_MODEL="QTPY-RP2040")
 
+# Set the device's I2C pins
+# These are for the board pins A2 (SCL) and A3 (SDA)
+# NOT SDA and SCL. This is to ensure comptatibility with
+# the STEMMA port -- both A2,A3,STEMMA all used i2c1.
+
+# Board pins A2 and A3
+add_compile_definitions(SDA_PIN=26)
+add_compile_definitions(SCL_PIN=27)
+
+# STEMMA port
+#add_compile_definitions(SDA_PIN=22)
+#add_compile_definitions(SCL_PIN=23)
+
 set(PICO_STDIO_USB_CONNECT_WAIT_TIMEOUT_MS=2000)
 
 # Include app source code file(s)
@@ -14,6 +27,7 @@ add_executable(${FW_1_NAME}
     ${FW_1_SRC_DIRECTORY}/main.c
     ${COMMON_CODE_DIRECTORY}/serial.c
     ${COMMON_CODE_DIRECTORY}/led.c
+    ${COMMON_CODE_DIRECTORY}/segment.c
 )
 
 # Link to built libraries

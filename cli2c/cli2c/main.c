@@ -1,7 +1,7 @@
-/**
+/*
+ * Generic macOS I2C driver
  *
- * I2C driver
- * Version 0.1.0
+ * Version 0.1.1
  * Copyright © 2022, Tony Smith (@smittytone)
  * Licence: MIT
  *
@@ -9,7 +9,8 @@
 #include "main.h"
 
 
-int effdee = -1;
+// Hold an I2C data structure
+I2CDriver i2c;
 
 
 int main(int argc, char *argv[]) {
@@ -30,15 +31,11 @@ int main(int argc, char *argv[]) {
             }
         }
         
-        // Instantiate an I2C data structure
-        I2CDriver i2c;
+        i2c.port = -1;
         
         // Connect... with the device path
         i2c_connect(&i2c, argv[1]);
         if (i2c.connected) {
-            // Store the port
-            effdee = i2c.port;
-            
             // Initialize the I2C host's I2C bus
             if (!(i2c_init(&i2c))) {
                 print_error("%s could not initialise I2C\n", argv[1]);
@@ -106,16 +103,20 @@ void print_output(bool is_err, char* format_string, va_list args) {
  * @brief Show help.
  */
 void show_help() {
-    fprintf(stdout, "cli2c {device} [commands]\n\n");
-    fprintf(stdout, "Usage:\n");
-    fprintf(stdout, "  {device} is a mandatory device path, eg. /dev/cu.usbmodem-010101.\n");
-    fprintf(stdout, "  [commands] are optional commands, as shown below.\n\n");
+    printf("cli2c {device} [commands]\n\n");
+    printf("Usage:\n");
+    printf("  {device} is a mandatory device path, eg. /dev/cu.usbmodem-010101.\n");
+    printf("  [commands] are optional commands, as shown below.\n\n");
     show_commands();
 }
 
 
+/**
+ * @brief Callback for Ctrl-C
+ */
 void ctrl_c_handler(int dummy) {
     
-    if (effdee != -1) close(effdee);
+    if (i2c.port != -1) close(i2c.port);
+    printf("\n");
     exit(0);
 }

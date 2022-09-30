@@ -1,22 +1,29 @@
-/**
- *
+/*
  * I2C driver for HT16K33
- * Version 1.0.0
- * Copyright © 2022, smittytone
+ *
+ * Version 0.1.1
+ * Copyright © 2022, Tony Smith (@smittytone)
  * Licence: MIT
  *
  */
 #include "main.h"
 
 
+// Hold an I2C data structure
+I2CDriver i2c;
+
+
 int main(int argc, char* argv[]) {
+    
+    // Listen for SIGINT
+    signal(SIGINT, ctrl_c_handler);
     
     // Process arguments
     if (argc < 2) {
         // Insufficient arguments -- issue usage info and bail
         printf("Usage: matrix {DEVICE_PATH} [I2C Address] [command] ... [command]\n");
     } else {
-        // Check for help request
+        // Check for a help request
         for (int i = 0 ; i < argc ; ++i) {
             if (strcmp(argv[i], "-h") == 0) {
                 show_help();
@@ -24,15 +31,14 @@ int main(int argc, char* argv[]) {
             }
         }
         
-        // Instantiate an I2C data structure
-        I2CDriver i2c;
+        i2c.port = -1;
         int i2c_address = HT16K33_I2C_ADDR;
         
         // Connect... with the device path
         i2c_connect(&i2c, argv[1]);
         if (i2c.connected) {
             // Initialize the I2C host's I2C bus
-            send_command(&i2c, 'i');
+            i2c_init(&i2c);
             
             // Process the remaining commands in sequence
             int delta = 2;
@@ -48,7 +54,7 @@ int main(int argc, char* argv[]) {
                     }
                     
                     // Note the non-standard I2C address
-                    fprintf(stdout, "I2C address: 0x%02X\n", i2c_address);
+                    printf("I2C address: 0x%02X\n", i2c_address);
                     delta = 3;
                 }
                 
@@ -267,9 +273,14 @@ int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                         print_error("No string supplied");
                         return 1;
                     }
-                    
+                
+                case 'w':
+                    HT16K33_clear_buffer();
+                    HT16K33_draw();
+                    break;
+                
                 case '!':
-                    i2c_commands(i2c, argc - i, argv + i);
+                    i2c_commands(i2c, argc, argv, i);
                     break;
                     
                 default:
@@ -292,23 +303,23 @@ int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
  * @brief Show help.
  */
 void show_help() {
-    fprintf(stdout, "matrix {device} [address] [commands]\n\n");
-    fprintf(stdout, "Usage:\n");
-    fprintf(stdout, "  {device} is a mandatory device path, eg. /dev/cu.usbmodem-010101.\n");
-    fprintf(stdout, "  [address] is an optional display I2C address. Default: 0x70.\n");
-    fprintf(stdout, "  [commands] are optional HT16K33 matrix commands, as shown below.\n\n");
-    fprintf(stdout, "Commands:\n");
-    fprintf(stdout, "  -a [on|off]             Activate/deactivate the display. Default: on.\n");
-    fprintf(stdout, "  -b {0-15}               Set the display brightness from low (0) to high (15).\n");
-    fprintf(stdout, "  -c {ascii} [true|false] Draw the Ascii character on the screen, and optionally\n");
-    fprintf(stdout, "                          set it to be centred (true).\n");
-    fprintf(stdout, "  -g {glyph}              Draw the user-defined character on the screen. The definition\n");
-    fprintf(stdout, "                          is a string of eight comma-separated 8-bit hex values, eg.\n");
-    fprintf(stdout, "                          '0x3C,0x42,0xA9,0x85,0x85,0xA9,0x42,0x3C'.\n");
-    fprintf(stdout, "  -p {x} {y} [1|0]        Set or clear the specified pixel. X and Y coordinates are in\n");
-    fprintf(stdout, "                          the range 0-7.\n");
-    fprintf(stdout, "  -t {string} [delay]     Scroll the specified string. The second argument is an optional\n");
-    fprintf(stdout, "                          delay be between column shifts in milliseconds. Default: 250ms.\n\n");
+    printf("matrix {device} [address] [commands]\n\n");
+    printf("Usage:\n");
+    printf("  {device} is a mandatory device path, eg. /dev/cu.usbmodem-010101.\n");
+    printf("  [address] is an optional display I2C address. Default: 0x70.\n");
+    printf("  [commands] are optional HT16K33 matrix commands, as shown below.\n\n");
+    printf("Commands:\n");
+    printf("  -a [on|off]             Activate/deactivate the display. Default: on.\n");
+    printf("  -b {0-15}               Set the display brightness from low (0) to high (15).\n");
+    printf("  -c {ascii} [true|false] Draw the Ascii character on the screen, and optionally\n");
+    printf("                          set it to be centred (true).\n");
+    printf("  -g {glyph}              Draw the user-defined character on the screen. The definition\n");
+    printf("                          is a string of eight comma-separated 8-bit hex values, eg.\n");
+    printf("                          '0x3C,0x42,0xA9,0x85,0x85,0xA9,0x42,0x3C'.\n");
+    printf("  -p {x} {y} [1|0]        Set or clear the specified pixel. X and Y coordinates are in\n");
+    printf("                          the range 0-7.\n");
+    printf("  -t {string} [delay]     Scroll the specified string. The second argument is an optional\n");
+    printf("                          delay be between column shifts in milliseconds. Default: 250ms.\n\n");
 }
 
 
@@ -347,4 +358,15 @@ void print_output(bool is_err, char* format_string, va_list args) {
     
     // Print it all out
     printf("%s", buffer);
+}
+
+
+/**
+ * @brief Callback for Ctrl-C
+ */
+void ctrl_c_handler(int dummy) {
+    
+    if (i2c.port != -1) close(i2c.port);
+    printf("\n");
+    exit(0);
 }

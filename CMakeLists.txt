@@ -17,9 +17,8 @@ set(FW_2_SRC_DIRECTORY "${CMAKE_SOURCE_DIR}/firmware/pico")
 set(COMMON_CODE_DIRECTORY "${CMAKE_SOURCE_DIR}/firmware/common")
 
 # Set app-side debugging
-add_compile_definitions(DEBUG=1)
+add_compile_definitions(DO_DEBUG=1)
 #add_compile_definitions(BUILD_FOR_TERMINAL_TESTING=1)
-add_compile_definitions(USE_I2C_PINS=1)
 
 # Set env variable 'PICO_SDK_PATH' to the local Pico SDK
 # Comment out the set() if you have a global copy of the
@@ -44,5 +43,5 @@ project(${PROJECT_NAME}
 pico_sdk_init()
 
 # Include the apps' source code
-add_subdirectory(${FW_1_SRC_DIRECTORY})
+#add_subdirectory(${FW_1_SRC_DIRECTORY})
 add_subdirectory(${FW_2_SRC_DIRECTORY})

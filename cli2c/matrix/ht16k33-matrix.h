@@ -1,7 +1,7 @@
-/**
+/*
+ * HT16K33 driver
  *
- * HT16K33 matrix display driver
- * Version 1.0.0
+ * Version 0.1.1
  * Copyright © 2022, Tony Smith (@smittytone)
  * Licence: MIT
  *
@@ -24,8 +24,6 @@
 #include <time.h>
 #include <assert.h>
 #include <inttypes.h>
-// App includes
-// #include "../common/i2cdriver.h"
 
 
 /*
@@ -42,6 +40,7 @@
 #define     HT16K33_90_DEG                  1
 #define     HT16K33_180_DEG                 2
 #define     HT16K33_270_DEG                 3
+
 
 /*
  * PROTOTYPES

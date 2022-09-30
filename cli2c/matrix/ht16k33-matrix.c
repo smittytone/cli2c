@@ -1,7 +1,7 @@
-/**
+/*
+ * HT16K33 driver
  *
- * HT16K33 matrix display driver
- * Version 1.0.0
+ * Version 0.1.1
  * Copyright © 2022, Tony Smith (@smittytone)
  * Licence: MIT
  *
@@ -114,7 +114,7 @@ uint8_t display_buffer[8];
 uint8_t display_angle = HT16K33_0_DEG;
 
 // The I2C bus
-I2CDriver* i2c;
+I2CDriver* host_i2c;
 int i2c_address = HT16K33_I2C_ADDR;
 
 
@@ -130,7 +130,7 @@ void HT16K33_init(I2CDriver *sd, int address, uint8_t angle) {
     
     if (address != -1) i2c_address = address;
     HT16K33_set_angle(angle);
-    i2c = sd;
+    host_i2c = sd;
 }
 
 
@@ -212,9 +212,9 @@ void HT16K33_draw(void) {
     }
 
     // Display the buffer and flash the LED
-    i2c_start(i2c, i2c_address, 0);
-    i2c_write(i2c, tx_buffer, 17);
-    i2c_stop(i2c);
+    i2c_start(host_i2c, i2c_address, 0);
+    i2c_write(host_i2c, tx_buffer, 17);
+    i2c_stop(host_i2c);
 }
 
 
@@ -376,7 +376,7 @@ static void HT16K33_sleep_ms(int ms) {
 static void HT16K33_write_cmd(uint8_t cmd) {
     
     // NOTE Already connected at this stage
-    i2c_start(i2c, i2c_address, 0);
-    i2c_write(i2c, &cmd, 1);
-    i2c_stop(i2c);
+    i2c_start(host_i2c, i2c_address, 0);
+    i2c_write(host_i2c, &cmd, 1);
+    i2c_stop(host_i2c);
 }

@@ -1,7 +1,7 @@
 /*
  * I2C Host
  *
- * @version     0.1.0
+ * @version     0.1.1
  * @author      Tony Smith (@smittytone)
  * @copyright   2022
  * @licence     MIT
@@ -23,14 +23,21 @@ void rx_loop() {
     I2C_Trans transaction;
     transaction.is_started = false;
     transaction.is_ready = false;
-    transaction.frequency = 100;
+    transaction.frequency = 400;
     transaction.address = 0xFF;
 
     // Loop-related variables
     bool state = false;
     int led_flash_count = 0;
 
-    led_off();
+#ifdef DO_DEBUG
+    // Set up a parallel segment display to assist
+    // with debugging
+    init_i2c(transaction.frequency);
+    HT16K33_init();
+    HT16K33_clear_buffer();
+    HT16K33_draw();
+#endif
 
     while(1) {
         // Clear buffer and listen for input
@@ -62,7 +69,6 @@ void rx_loop() {
 
                     // Return the read data
                     if (bytes_read != PICO_ERROR_GENERIC) {
-                        // printf("%s\r\n", buffer);
                         tx(i2x_rx_buffer, transaction.read_byte_count);
                     }
 
@@ -115,15 +121,6 @@ void rx_loop() {
                         break;
 
                     case 'i':   // INITIALISE I2C
-                        /*
-                        if (!transaction.is_ready) {
-                            init_i2c(transaction.frequency);
-                            transaction.is_ready = true;
-                            send_ack();
-                        } else {
-                            send_err();
-                        }
-                        */
                         init_i2c(transaction.frequency);
                         transaction.is_ready = true;
                         send_ack();
@@ -166,7 +163,10 @@ void rx_loop() {
                         break;
 
                     case 'z':   // CONNECTION TEST DATA
-                        printf("OK\r\n");
+                        {
+                            char tx_buffer[4] = "OK\r\n";
+                            tx(tx_buffer, sizeof(tx_buffer));
+                        }
                         break;
 
                     default:    // UNKNOWN COMMAND -- FAIL
@@ -175,13 +175,15 @@ void rx_loop() {
             }
         }
 
+#ifdef DO_DEBUG
+        // One-second heartbeat LED blink for debugging
         led_flash_count++;
         if (led_flash_count > 100) {
             led_flash_count = 0;
             state = !state;
             led_set_state(state);
         }
-
+#endif
         // Pause? May not be necessary or might be bad
         sleep_ms(10);
     }
@@ -204,18 +206,12 @@ void init_i2c(int frequency_khz) {
     i2c_init(I2C_PORT, frequency_khz * 1000);
 
     // Initialise pins
-
+    // The values of SDA_PIN and SCL_PIN are set
+    // in the board's individual CMakeLists.txt file.
     gpio_set_function(SDA_PIN, GPIO_FUNC_I2C);
     gpio_set_function(SCL_PIN, GPIO_FUNC_I2C);
     gpio_pull_up(SDA_PIN);
     gpio_pull_up(SCL_PIN);
-
-    //gpio_set_function(SDA_STEMMA, GPIO_FUNC_I2C);
-    //gpio_set_function(SCL_STEMMA, GPIO_FUNC_I2C);
-
-    //gpio_pull_up(SDA_STEMMA);
-    //gpio_pull_up(SCL_STEMMA);
-
 }
 
 
@@ -280,6 +276,8 @@ void send_scan() {
         }
     }
 
+    // Write 'Z' if there are no devices, 
+    // or send the device list string
     if (strlen(scan_buffer) == 0) {
         sprintf(scan_buffer, "Z\r\n");
     } else {
@@ -300,8 +298,8 @@ void send_status(I2C_Trans* t) {
 
     // Generate and return the status data string.
     // Data in the form: "1.1.100.110.QTPY-RP2040" or "1.1.100.110.PI-PICO"
-    char out_buffer[48] = {0};
-    sprintf(out_buffer, "%s.%s.%i.%i.%s\r\n",
+    char status_buffer[48] = {0};
+    sprintf(status_buffer, "%s.%s.%i.%i.%s\r\n",
             (t->is_ready   ? "1" : "0"),        // 2 chars
             (t->is_started ? "1" : "0"),        // 2 chars
             t->frequency,                       // 4 chars
@@ -310,14 +308,17 @@ void send_status(I2C_Trans* t) {
                                                 // == 10-27 chars
 
     // Send the data
-    tx(out_buffer, strlen(out_buffer));
+    tx(status_buffer, strlen(status_buffer));
 }
 
 
+/**
+ * @brief Send back a list of supported commands.
+ */
 void send_commands() {
 
-    char out_buffer[] = "Commands: ? ! d 1 4 i s p x\r\n";
-    tx(out_buffer, strlen(out_buffer));
+    char cmd_list_buffer[] = "?.!.d.1.4.i.s.p.x\r\n";
+    tx(cmd_list_buffer, strlen(cmd_list_buffer));
 }
 
 
@@ -358,31 +359,35 @@ uint32_t rx(uint8_t* buffer) {
     while (data_count < 128) {
         int c = getchar_timeout_us(0);
         if (c == PICO_ERROR_TIMEOUT || data_count > 127) break;
-        buffer[data_count++] = (uint8_t)(c & 0xFF);
+        buffer[data_count++] = (uint8_t)c;
+        
+#ifdef DO_DEBUG
+        // Write the received char on the segment's first two digits
+        HT16K33_set_number((uint8_t)((c & 0xF0) >> 4), 0, false);
+        HT16K33_set_number((uint8_t)(c & 0x0F), 1, false);
+        HT16K33_draw();
+#else
+        sleep_ms(10);
+#endif
     }
 
     return data_count;
-
-    /*
-    uint64_t now = time_us_64();
-    int c = -1;
-
-    while (time_us_64() - now > 200000 && data_count < 128) {   // 20ms, 500000us -- can be lower?
-        c = getchar_timeout_us(0);  
-        if (c != PICO_ERROR_TIMEOUT) {
-            buffer[data_count++] = (uint8_t)(c & 0xFF);
-        }
-    }
-
-    return data_count;
-    */
 }
 
 
 void tx(uint8_t* buffer, uint32_t byte_count) {
     
     for (uint32_t i = 0 ; i < byte_count ; ++i) {
-        putchar((buffer[i]));;
+        putchar((buffer[i]));
+
+#ifdef DO_DEBUG
+        // Write the sent char on the segment's second two digits
+        HT16K33_set_number(((buffer[i] & 0xF0) >> 4), 2, false);
+        HT16K33_set_number((buffer[i] & 0x0F), 3, false);
+        HT16K33_draw();
+#else
+        sleep_ms(10);
+#endif
     }
 
     stdio_flush();

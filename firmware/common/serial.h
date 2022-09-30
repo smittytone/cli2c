@@ -1,7 +1,7 @@
 /*
  * I2C Host
  *
- * @version     0.1.0
+ * @version     0.1.1
  * @author      Tony Smith (@smittytone)
  * @copyright   2022
  * @licence     MIT
@@ -24,23 +24,18 @@
 #include "hardware/i2c.h"
 // App Includes
 #include "led.h"
+#ifdef DEBUG
+#include "segment.h"
+#endif
 
 
 /*
  * CONSTANTS
  */
-#define SERIAL_READ_TIMEOUT_US      10          // 10us
+#define SERIAL_READ_TIMEOUT_US              10          // 10us
 
-#define I2C_PORT                                i2c1
+#define I2C_PORT                              i2c1
 #define I2C_FREQUENCY                           400000
-#define ON                                      1
-#define OFF                                     0
-
-// NOTE Should be defined elsewhere
-#define SDA_PIN                                 26
-#define SCL_PIN                                 27
-#define SDA_STEMMA                              22
-#define SCL_STEMMA                              23
 
 #define WRITE_LENGTH_BASE                       0xC0
 #define READ_LENGTH_BASE                        0x80

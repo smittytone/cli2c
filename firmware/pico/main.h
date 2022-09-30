@@ -1,7 +1,7 @@
 /*
- * I2C Host -- Pi Pico
+ * I2C Host Firmware -- Pi Pico
  *
- * @version     0.1.0
+ * @version     0.1.1
  * @author      Tony Smith (@smittytone)
  * @copyright   2022
  * @licence     MIT
