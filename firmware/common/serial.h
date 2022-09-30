@@ -24,7 +24,7 @@
 #include "hardware/i2c.h"
 // App Includes
 #include "led.h"
-#ifdef DEBUG
+#ifdef DO_DEBUG
 #include "segment.h"
 #endif
 
