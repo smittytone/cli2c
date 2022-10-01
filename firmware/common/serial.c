@@ -54,7 +54,7 @@ void rx_loop() {
                     // Write data received, so send it and ACK
                     transaction.write_byte_count = status_byte - WRITE_LENGTH_BASE;
                     int bytes_sent = write_i2c(transaction.address, &rx_buffer[1], transaction.write_byte_count, false);
-                    
+
                     // Send an ACK to say we wrote the data -- or an ERR if we didn't
                     if (bytes_sent != PICO_ERROR_GENERIC) {
                         send_ack();
@@ -72,7 +72,7 @@ void rx_loop() {
                         tx(i2x_rx_buffer, transaction.read_byte_count);
                     }
 
-                    // TODO --  report read error? 
+                    // TODO --  report read error?
                 }
             } else {
                 // Maybe we received a command
@@ -111,7 +111,7 @@ void rx_loop() {
                     case '!':   // GET COMMANDS
                         send_commands();
                         break;
-                    
+
                     case 'd':   //SCAN
                         if (transaction.is_ready) {
                             send_scan();
@@ -165,7 +165,7 @@ void rx_loop() {
                     case 'z':   // CONNECTION TEST DATA
                         {
                             char tx_buffer[4] = "OK\r\n";
-                            tx(tx_buffer, sizeof(tx_buffer));
+                            tx(tx_buffer, 4);
                         }
                         break;
 
@@ -276,7 +276,7 @@ void send_scan() {
         }
     }
 
-    // Write 'Z' if there are no devices, 
+    // Write 'Z' if there are no devices,
     // or send the device list string
     if (strlen(scan_buffer) == 0) {
         sprintf(scan_buffer, "Z\r\n");
@@ -296,16 +296,22 @@ void send_scan() {
  */
 void send_status(I2C_Trans* t) {
 
+    char pid[2 * PICO_UNIQUE_BOARD_ID_SIZE_BYTES + 1] = {0};
+    pico_get_unique_board_id_string(pid, 2 * PICO_UNIQUE_BOARD_ID_SIZE_BYTES + 1);
+    // eg. DF6050788B3E1A2E
+
     // Generate and return the status data string.
     // Data in the form: "1.1.100.110.QTPY-RP2040" or "1.1.100.110.PI-PICO"
     char status_buffer[48] = {0};
-    sprintf(status_buffer, "%s.%s.%i.%i.%s\r\n",
+
+    sprintf(status_buffer, "%s.%s.%i.%i.%s.%s\r\n",
             (t->is_ready   ? "1" : "0"),        // 2 chars
             (t->is_started ? "1" : "0"),        // 2 chars
             t->frequency,                       // 4 chars
             t->address,                         // 2-4 chars
+            pid,                                // 16 chars
             HW_MODEL);                          // 2-17 chars
-                                                // == 10-27 chars
+                                                // == 26-43 chars
 
     // Send the data
     tx(status_buffer, strlen(status_buffer));
@@ -355,12 +361,15 @@ void send_err() {
  */
 uint32_t rx(uint8_t* buffer) {
 
+    int c = getchar_timeout_us(0);
+    if (c == 0 || c == PICO_ERROR_TIMEOUT) return 0;
+
     uint32_t data_count = 0;
     while (data_count < 128) {
-        int c = getchar_timeout_us(0);
-        if (c == PICO_ERROR_TIMEOUT || data_count > 127) break;
         buffer[data_count++] = (uint8_t)c;
-        
+        c = getchar_timeout_us(0);
+        if (c == PICO_ERROR_TIMEOUT || data_count > 127) break;
+
 #ifdef DO_DEBUG
         // Write the received char on the segment's first two digits
         HT16K33_set_number((uint8_t)((c & 0xF0) >> 4), 0, false);
@@ -376,7 +385,7 @@ uint32_t rx(uint8_t* buffer) {
 
 
 void tx(uint8_t* buffer, uint32_t byte_count) {
-    
+
     for (uint32_t i = 0 ; i < byte_count ; ++i) {
         putchar((buffer[i]));
 

@@ -185,26 +185,35 @@ void i2c_get_info(I2CDriver *sd, bool do_print) {
     int has_started = 0;
     int frequency = 100;
     int address = 0xFF;
-    char host_device[32] = {0};
+    char strings[48] = {0};
+    //char host_device[33] = {0};
 
     sscanf((char*)read_buffer, "%i.%i.%i.%i.%s",
         &is_ready,
         &has_started,
         &frequency,
         &address,
-        host_device
+        strings
     );
 
     // Store in I2C data
-    strcpy(sd->model, host_device);
+    strncpy(sd->pid, strings, 16);
+    strcpy(sd->model, &strings[17]);
     sd->speed = frequency;
 
     if (do_print) {
-        printf("   I2C host device: %s\n",     host_device);
+        printf("   I2C host device: %s\n",     sd->model);
+        printf("       I2C host ID: %s\n",     sd->pid);
         printf("    I2C is enabled: %s\n",     is_ready == 1 ? "YES" : "NO");
         printf("     I2C is active: %s\n",     has_started == 1 ? "YES" : "NO");
         printf("     I2C frequency: %ikHz\n",  frequency);
-        printf("Target I2C address: 0x%02X\n", address >> 1);
+        
+        if (address == 0xFF) {
+            printf("Target I2C address: NONE\n");
+        } else {
+            printf("Target I2C address: 0x%02X\n", address > 1);
+        }
+        
     }
 }
 

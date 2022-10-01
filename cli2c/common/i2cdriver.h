@@ -46,7 +46,8 @@ typedef struct {
     bool            connected;          // Set to true when connected
     int             port;
     unsigned int    speed;              // I2C line speed (in kHz)
-    char            model[16];
+    char            model[17];
+    char            pid[17];
 } I2CDriver;
 
 

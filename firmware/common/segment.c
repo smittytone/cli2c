@@ -39,7 +39,7 @@ void HT16K33_init() {
  * @param cmd: The single-byte command.
  */
 void HT16K33_write_cmd(uint8_t cmd) {
-    i2c_write_blocking(i2c1, HT16K33_I2C_ADDR, &cmd, 1, false);
+    i2c_write_blocking(i2c1, DEBUG_SEG_ADDR, &cmd, 1, false);
 }
 
 
@@ -65,7 +65,7 @@ void HT16K33_draw() {
     memcpy(tx_buffer + 1, display_buffer, 16);
 
     // Display the buffer and flash the LED
-    i2c_write_blocking(i2c1, HT16K33_I2C_ADDR, tx_buffer, sizeof(tx_buffer), false);
+    i2c_write_blocking(i2c1, DEBUG_SEG_ADDR, tx_buffer, sizeof(tx_buffer), false);
 }
 
 

@@ -22,6 +22,7 @@
 #include "pico/stdlib.h"
 #include "pico/binary_info.h"
 #include "hardware/i2c.h"
+#include "pico/unique_id.h"
 // App Includes
 #include "led.h"
 #ifdef DO_DEBUG
