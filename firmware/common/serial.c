@@ -21,10 +21,10 @@ void rx_loop() {
 
     // Prepare a transaction record with default data
     I2C_Trans transaction;
-    transaction.is_started = false;
-    transaction.is_ready = false;
-    transaction.frequency = 400;
-    transaction.address = 0xFF;
+    transaction.is_started = false;     // No transaction taking place
+    transaction.is_ready = false;       // I2C bus not yet initialised
+    transaction.frequency = 400;        // The bud frequency in use
+    transaction.address = 0xFF;         // The target I2C address
 
     // Loop-related variables
     bool state = false;
@@ -222,6 +222,8 @@ void init_i2c(int frequency_khz) {
  * @param data:    A pointer to the data.
  * @param count:   The number of bytes to send.
  * @param do_stop: Issue a STOP after sending.
+ * 
+ * @retval The number of bytes written.
  */
 int write_i2c(uint8_t address, uint8_t* data, uint32_t count, bool do_stop) {
 
@@ -236,6 +238,8 @@ int write_i2c(uint8_t address, uint8_t* data, uint32_t count, bool do_stop) {
  * @param data:    A pointer to the data store
  * @param count:   The number of bytes to receive.
  * @param do_stop: Issue a STOP after receiving.
+ * 
+ * @retval The number of bytes read.
  */
 int read_i2c(uint8_t address, uint8_t* data, uint32_t count, bool do_stop) {
 
