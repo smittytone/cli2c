@@ -25,20 +25,24 @@ int main(int argc, char* argv[]) {
     } else {
         // Check for a help request
         for (int i = 0 ; i < argc ; ++i) {
-            if (strcmp(argv[i], "-h") == 0) {
+            if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
                 show_help();
                 return 0;
             }
         }
         
+        // Connect... with the device path
         i2c.port = -1;
         int i2c_address = HT16K33_I2C_ADDR;
-        
-        // Connect... with the device path
         i2c_connect(&i2c, argv[1]);
+        
         if (i2c.connected) {
             // Initialize the I2C host's I2C bus
-            i2c_init(&i2c);
+            if (!(i2c_init(&i2c))) {
+                print_error("%s could not initialise I2C\n", argv[1]);
+                flush_and_close_port();
+                return 1;
+            }
             
             // Process the remaining commands in sequence
             int delta = 2;
@@ -50,6 +54,7 @@ int main(int argc, char* argv[]) {
                     
                     if (i2c_address < 0 || i2c_address > 0x7F) {
                         print_error("I2C address out of range");
+                        flush_and_close_port();
                         return 1;
                     }
                     
@@ -62,7 +67,9 @@ int main(int argc, char* argv[]) {
                 HT16K33_init(&i2c, i2c_address, HT16K33_0_DEG);
                 
                 // Process the commands one by one
-                return matrix_commands(&i2c, argc, argv, delta);
+                int result =  matrix_commands(&i2c, argc, argv, delta);
+                flush_and_close_port();
+                return result;
             }
         } else {
             print_error("Could not connect to device %s\n", argv[1]);
@@ -76,9 +83,9 @@ int main(int argc, char* argv[]) {
 /**
  * @brief Parse and process commands for the HT16K33-based matrix.
  *
- * @param i2c:      An I2C driver data structure.
- * @param argc:   The argument count.
- * @param argv:   The arguments.
+ * @param i2c:   An I2C driver data structure.
+ * @param argc:  The argument count.
+ * @param argv:  The arguments.
  * @param delta: The argument list offset to locate HT16K33 commands from.
  */
 int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
@@ -326,8 +333,8 @@ void show_help() {
 /**
  * @brief Issue an error message.
  *
- * @param format_string Message string with optional formatting
- * @param ...           Optional injectable values
+ * @param format_string: Message string with optional formatting
+ * @param ...:           Optional injectable values
  */
 void print_error(char* format_string, ...) {
     va_list args;
@@ -340,9 +347,9 @@ void print_error(char* format_string, ...) {
 /**
  * @brief Issue any message.
  *
- * @param is_err        Is the message an error?
- * @param format_string Message string with optional formatting
- * @param args          va_list of args from previous call
+ * @param is_err:        Is the message an error?
+ * @param format_string: Message string with optional formatting
+ * @param args:          va_list of args from previous call
  */
 void print_output(bool is_err, char* format_string, va_list args) {
     
@@ -362,11 +369,21 @@ void print_output(bool is_err, char* format_string, va_list args) {
 
 
 /**
- * @brief Callback for Ctrl-C
+ * @brief Callback for Ctrl-C.
  */
 void ctrl_c_handler(int dummy) {
     
     if (i2c.port != -1) close(i2c.port);
     printf("\n");
     exit(0);
+}
+
+
+/**
+ * @brief Flush the port FIFOs and close the port.
+ */
+void flush_and_close_port() {
+    
+    tcflush(i2c.port, TCIOFLUSH);
+    close(i2c.port);
 }

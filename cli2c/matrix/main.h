@@ -38,18 +38,18 @@
 /*
  * CONSTANTS
  */
-#define VERBOSE 1
+#define DO_DEBUG 1
 
 
 /*
  * PROTOTYPES
  */
 int     matrix_commands(I2CDriver* sd, int argc, char* argv[], int delta);
-
 void    show_help(void);
 void    print_error(char* format_string, ...);
 void    print_output(bool is_err, char* format_string, va_list args);
 void    ctrl_c_handler(int dummy);
+void    flush_and_close_port(void);
 
 
 #endif      // _MAIN_H_

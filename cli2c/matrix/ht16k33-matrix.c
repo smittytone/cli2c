@@ -121,10 +121,10 @@ int i2c_address = HT16K33_I2C_ADDR;
 /**
  * @brief Set up the data the driver needs.
  *
- * @param sd:      Pointer to the main I2C driver data structure.
- * @param address: A non-standard HT16K33 address, or -1.
- * @param angle    The mutiple of 90 degrees at which the matrix
- *                 is oriented.
+ * @param sd:       Pointer to the main I2C driver data structure.
+ * @param address:  A non-standard HT16K33 address, or -1.
+ * @param angle:    The mutiple of 90 degrees at which the matrix
+ *                  is oriented.
  */
 void HT16K33_init(I2CDriver *sd, int address, uint8_t angle) {
     
@@ -137,8 +137,8 @@ void HT16K33_init(I2CDriver *sd, int address, uint8_t angle) {
 /**
  * @brief Power the display on or off
  *
- * @param is_on:    Whether to power up (`true`) the display or
- *                shut it down (`false`).
+ * @param is_on: Whether to power up (`true`) the display or
+ *               shut it down (`false`).
  */
 void HT16K33_power(bool is_on) {
     
