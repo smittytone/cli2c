@@ -255,7 +255,26 @@ int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                     }
                     break;
 
-                case 't':     // TEXT STRING
+                case 'r':       // ROTATE DISPLAY
+                    {
+                        if (i < argc - 1) {
+                            long angle = 0;
+                            command = argv[++i];
+                            
+                            if (command[0] != '-') {
+                                angle = strtol(command, NULL, 0);
+                            } else {
+                                i -= 1;
+                            }
+                            
+                            // Perform the action
+                            HT16K33_set_angle((uint8_t)angle);
+                            HT16K33_rotate((uint8_t)angle);
+                        }
+                    }
+                    break;
+                
+                case 't':     // SCROLL A TEXT STRING
                     {
                         // Get one required argument
                         if (i < argc - 1) {
@@ -318,6 +337,7 @@ void show_help() {
     printf("Commands:\n");
     printf("  -a [on|off]             Activate/deactivate the display. Default: on.\n");
     printf("  -b {0-15}               Set the display brightness from low (0) to high (15).\n");
+    printf("  -r {0-3}                Rotate the display. Angle supplied as a multiple of 90 degrees.\n");
     printf("  -c {ascii} [true|false] Draw the Ascii character on the screen, and optionally\n");
     printf("                          set it to be centred (true).\n");
     printf("  -g {glyph}              Draw the user-defined character on the screen. The definition\n");
@@ -326,7 +346,8 @@ void show_help() {
     printf("  -p {x} {y} [1|0]        Set or clear the specified pixel. X and Y coordinates are in\n");
     printf("                          the range 0-7.\n");
     printf("  -t {string} [delay]     Scroll the specified string. The second argument is an optional\n");
-    printf("                          delay be between column shifts in milliseconds. Default: 250ms.\n\n");
+    printf("                          delay be between column shifts in milliseconds. Default: 250ms.\n");
+    printf("  -w                      Scroll the specified string. The second argument is an optional\n\n");
 }
 
 
