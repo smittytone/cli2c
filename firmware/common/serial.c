@@ -181,7 +181,7 @@ void rx_loop(void) {
             memset(rx_buffer, 0, read_count);
         }
 
-#ifdef DO_DEBUG
+#ifdef SHOW_HEARTBEAT
         // One-second heartbeat LED blink for debugging
         led_flash_count++;
         if (led_flash_count > 500 / RX_LOOP_DELAY_MS) {
