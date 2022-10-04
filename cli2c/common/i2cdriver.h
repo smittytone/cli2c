@@ -58,6 +58,7 @@ typedef struct {
 int         openSerialPort(const char *portname);
 size_t      readFromSerialPort(int fd, uint8_t* b, size_t s);
 void        writeToSerialPort(int fd, const uint8_t* b, size_t s);
+void        flush_and_close_port(int fd);
 
 void        i2c_connect(I2CDriver *sd, const char* portname);
 bool        i2c_init(I2CDriver *sd);
@@ -74,6 +75,7 @@ static void send_command(I2CDriver *sd, char c);
 static void print_bad_command_help(char* token);
 
 void        show_commands(void);
+
 
 
 #endif  // I2CDRIVER_H

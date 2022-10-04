@@ -39,7 +39,7 @@ int main(int argc, char *argv[]) {
             // Initialize the I2C host's I2C bus
             if (!(i2c_init(&i2c))) {
                 print_error("%s could not initialise I2C\n", argv[1]);
-                flush_and_close_port();
+                flush_and_close_port(i2c.port);
                 return 1;
             }
             
@@ -47,13 +47,13 @@ int main(int argc, char *argv[]) {
             int delta = 2;
             if (delta >= argc) {
                 printf("No commands supplied... exiting\n");
-                flush_and_close_port();
+                flush_and_close_port(i2c.port);
                 return 0;
             }
             
             // Process the remaining commands in sequence
             int result = i2c_commands(&i2c, argc, argv, delta);
-            flush_and_close_port();
+            flush_and_close_port(i2c.port);
             return result;
         } else {
             print_error("Could not connect to device %s\n", argv[1]);
@@ -116,17 +116,9 @@ void show_help() {
  */
 void ctrl_c_handler(int dummy) {
     
-    if (i2c.port != -1) close(i2c.port);
+    if (i2c.port != -1) flush_and_close_port(i2c.port);
     printf("\n");
     exit(0);
 }
 
 
-/**
- * @brief Flush the port FIFOs and close the port.
- */
-void flush_and_close_port() {
-    
-    tcflush(i2c.port, TCIOFLUSH);
-    close(i2c.port);
-}

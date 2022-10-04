@@ -40,7 +40,7 @@ int main(int argc, char* argv[]) {
             // Initialize the I2C host's I2C bus
             if (!(i2c_init(&i2c))) {
                 print_error("%s could not initialise I2C\n", argv[1]);
-                flush_and_close_port();
+                flush_and_close_port(i2c.port);
                 return 1;
             }
             
@@ -54,7 +54,7 @@ int main(int argc, char* argv[]) {
                     
                     if (i2c_address < 0 || i2c_address > 0x7F) {
                         print_error("I2C address out of range");
-                        flush_and_close_port();
+                        flush_and_close_port(i2c.port);
                         return 1;
                     }
                     
@@ -68,7 +68,7 @@ int main(int argc, char* argv[]) {
                 
                 // Process the commands one by one
                 int result =  matrix_commands(&i2c, argc, argv, delta);
-                flush_and_close_port();
+                flush_and_close_port(i2c.port);
                 return result;
             }
         } else {
@@ -394,17 +394,7 @@ void print_output(bool is_err, char* format_string, va_list args) {
  */
 void ctrl_c_handler(int dummy) {
     
-    if (i2c.port != -1) close(i2c.port);
+    if (i2c.port != -1) flush_and_close_port(i2c.port);
     printf("\n");
     exit(0);
-}
-
-
-/**
- * @brief Flush the port FIFOs and close the port.
- */
-void flush_and_close_port() {
-    
-    tcflush(i2c.port, TCIOFLUSH);
-    close(i2c.port);
 }

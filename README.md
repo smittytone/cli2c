@@ -1,7 +1,14 @@
 # cli2c
 
-An experimental I2C driver for macOS. Requires a QTPy RP2040 as a hardware bridge.
+An experimental I2C driver for macOS used as the basis for an HT16K33-controlled LED matrix driver. It requires a Raspberry Pi Pico or QTPy RP2040 as a hardware bridge.
 
+## Acknowledgement
+
+This work was inspired by James Bowman’s ([@jamesbowman](https://github.com/jamesbowman)) [`i2ccl` tool](https://github.com/jamesbowman/i2cdriver), which was written as a macOS/Linux/Windows command line tool to connect to his I2CMini board.
+
+My own I2C driver code is based on James’ but with a number of (I think) improvements, the non-macOS code removed, some unneeded functionality (I2C capture, monitoring) I don’t need, and the target not an I2C board, but firmware I wrote from the ground up to run on an RP2040-based board.
+
+Why? Originally I was writing an HT16K33 driver based directly on James’ code, but I accidentally broke the pins off my I2CMini — only to find it is very hard to find new ones. So I adapted it for a Mac-RP2040 combo.
 
 ## What’s What
 
@@ -20,11 +27,16 @@ The contents of this repo are:
 |   |___/qtpy               // An Adafruit QTPy RP2040 version
 |   |___/common             // Code common to all versions
 |
+|___/examples               // Demo apps
+|   |___/cpu_chart.py       // CPU utilization display
+|
 |___CMakeLists.txt          // Top-level firmware project CMake config file
 |___pico_sdk_import.cmake   // Raspberry Pi Pico SDK CMake import script
 |
 |___firmware.code-workspace // Visual Studio Code workspace for firmware
 |___cli2c.xcodeproj         // Xcode workspace for cli2c
+|
+|___deploy.sh               // A .uf2 deployment script that saves pressing RESET/BOOTSEL buttons.
 |
 |___README.md
 |___LICENSE.md
@@ -40,21 +52,21 @@ It is a generic I2C driver with the following syntax:
 cli2c {device_port} [command] ... [command]
 ```
 
+Arguments in braces `{}` are required; those in square brackets `[]` are optional.
+
 * `device_port` is the USB-connected I2C host’s Unix device path, eg. `/dev/cu.modem-101010`.
 * [command] is an optional command block, comprising a single-character command and any required data.
 
 | Command | Arg. Count | Args | Description |
 | :-: | :-: | --- | --- |
 | `w` | 2 | `address` `data_bytes` | Write the supplied data to the I2C device at `address`. `data_bytes` are comma-separated 8-bit hex values |
-| `r` | 2 | `address` `count` | Read `count` bytes from the I2C device at `address` |
-| `p` | 0 | Stop communicating with the I2C device |
+| `r` | 2 | `address` `count` | Read `count` bytes from the I2C device at `address` and issue an I2C STOP |
+| `p` | 0 | Issue an I2C STOP |
 | `d` | 0 | Display devices on the I2C bus |
 
 ## matrix
 
-`cli2c` is a command line driver for the USB-connected RP2040-based I2C host. The host must be pre-loaded with the firmware.
-
-It is a specific driver for HT16K33-based 8x8 LED matrices. It embeds `cli2c` but exposes a different set of commands.
+`matrix` is a specific driver for HT16K33-based 8x8 LED matrices. It embeds `cli2c` but exposes a different set of commands.
 
 You use the driver with this command-line call:
 
@@ -64,11 +76,9 @@ matrix {device} [I2C address] [commands]
 
 Arguments in braces `{}` are required; those in square brackets `[]` are optional.
 
-`{device}` is the path to the I2C Mini’s device file, eg. `/dev/cu.usbserial-DO029IEZ`.
-
-`[I2C address]` is an optional I2C address. By default, the HT16K33 uses the address `0x70`, but this can be changed.
-
-`[commands]` are a sequence of command blocks as described below.
+* `{device}` is the path to the I2C Mini’s device file, eg. `/dev/cu.usbserial-DO029IEZ`.
+* `[I2C address]` is an optional I2C address. By default, the HT16K33 uses the address `0x70`, but this can be changed.
+* `[commands]` are a sequence of command blocks as described below.
 
 ### Commands
 
@@ -83,11 +93,12 @@ These are the currently supported commands. Arguments in braces `{}` are require
 | `-p` | {x} {y} [1\|0] | Plot a point as the coordinates `{x,y}`. If the third argument is `1` (or missing), the pixel will be set; if it is `0`, the pixel will be cleared |
 | `-t` | {string} [delay] | Scroll the specified string. The second argument is an optional delay be between column shifts in milliseconds. Default: 250ms |
 | `-w` | None | Clear the screen |
+| `-r` | {angle} | Rotate the display by the specified multiple of 90 degrees |
 
 Multiple commands can be issued by sequencing them at the command line. For example:
 
 ```shell
-matrix /dev/cu.usbserial-DO029IEZ 0x71 -w -p 0 0 -p 1 1 -p 2 2 -p 3 3 -p 4 4 -p 5 5 -p 6 6 -p 7 7
+matrix /dev/cu.usbserial-DO029IEZ 0x71 -w -r 3 -p 0 0 -p 1 1 -p 2 2 -p 3 3 -p 4 4 -p 5 5 -p 6 6 -p 7 7
 ```
 
 You should note that the display buffer is not persisted across calls to `matrix`, so building up an image across calls will not work. The display is implicitly cleared with each new call.
@@ -129,12 +140,22 @@ You can build the code from the accompanying Xcode project. However, I use the c
 ## Build the Firmware
 
 1. Navigate to the repo directory.
-1. Run `cmake -S . -B buildfirm`
-1. Run `cmake 0--build buildfirm`
+1. Run `cmake -S . -B firmwarebuild`
+1. Run `cmake --build firmwarebuild`
 1. Copy `/buildfirm/firmware/qtpy/firmware_qtpy_rp2040.uf2` to a QTPy RP2040 in boot mode.
 1. Copy `/buildfirm/firmware/pico/firmware_pico_rp2040.uf2` to a Pico in boot mode.
 
 **Note** You only need perform step 4 or 5, of course, not both.
+
+To copy the file(s), run:
+
+```
+./deploy.sh /device/file /path/to/uf2
+```
+
+This will trick the RP2040-based board into booting into disk mode, then copy over the newly build firmware. When the copy completes, the RP2040 automatically reboots.
+
+Thanks to Hermann Stamm-Wilbrandt ([@Hermann-SW](https://github.com/Hermann-SW)) for the inspiration.
 
 ## Licences and Copyright
 

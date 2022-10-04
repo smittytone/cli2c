@@ -576,7 +576,7 @@ static void print_bad_command_help(char* command) {
 /**
  * @brief Output help info.
  */
-void show_commands() {
+void show_commands(void) {
     printf("Commands:\n");
     printf("  w {address} {bytes} Write bytes out to I2C.\n");
     printf("  r {address} {count} Read count bytes in from I2C.\n");
@@ -585,4 +585,14 @@ void show_commands() {
     printf("  x                   Reset the I2C bus.\n");
     printf("  d                   Scan for devices on the I2C bus.\n");
     printf("  i                   Get I2C bus host device information.\n\n");
+}
+
+
+/**
+ * @brief Flush the port FIFOs and close the port.
+ */
+void flush_and_close_port(int fd) {
+    
+    tcflush(fd, TCIOFLUSH);
+    close(fd);
 }
