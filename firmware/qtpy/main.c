@@ -13,7 +13,7 @@
 /*
  * ENTRY POINT
  */
-int main() {
+int main(void) {
     // Initalise the LED
     ws2812_init();
 

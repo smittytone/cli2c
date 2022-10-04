@@ -16,7 +16,7 @@
 int main() {
     // Initalise the LED
     pico_led_init();
-    pico_led_on();
+    pico_led_off();
     
     // Enable STDIO and allow 2s for the board to come up
     if (stdio_usb_init()) {

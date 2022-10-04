@@ -34,8 +34,7 @@ add_executable(${FW_1_NAME}
 target_link_libraries(${FW_1_NAME} LINK_PUBLIC
     pico_stdlib
     hardware_i2c
-    hardware_pio
-    hardware_timer)
+    hardware_pio)
 
 target_sources(${FW_1_NAME} PRIVATE ws2812.c)
 pico_generate_pio_header(${FW_1_NAME} ${FW_1_SRC_DIRECTORY}/ws2812.pio)

@@ -23,7 +23,7 @@
 /**
  * @brief Turn the LED on.
  */
-void led_on() {
+void led_on(void) {
 #ifdef QTPY_BUILD
     ws2812_pixel(RGB_COLOUR);
 #elif defined PICO_BUILD
@@ -35,7 +35,7 @@ void led_on() {
 /**
  * @brief Turn the LED off.
  */
-void led_off() {
+void led_off(void) {
 #ifdef QTPY_BUILD
     ws2812_pixel(0x00);
 #elif defined PICO_BUILD

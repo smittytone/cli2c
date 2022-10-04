@@ -23,12 +23,13 @@ add_executable(${FW_2_NAME}
     ${COMMON_CODE_DIRECTORY}/segment.c
 )
 
+# Set the stack size
+target_compile_definitions(${FW_2_NAME} PRIVATE PICO_STACK_SIZE=4096)
+
 # Link to built libraries
 target_link_libraries(${FW_2_NAME} LINK_PUBLIC
     pico_stdlib
-    hardware_i2c
-    hardware_pio
-    hardware_timer)
+    hardware_i2c)
 
 # Enable/disable STDIO via USB and UART
 pico_enable_stdio_usb(${FW_2_NAME} 1)

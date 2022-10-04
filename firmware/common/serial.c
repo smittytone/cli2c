@@ -13,7 +13,7 @@
 /**
  * @brief Listen on the USB-fed stdin for signals from the driver.
  */
-void rx_loop() {
+void rx_loop(void) {
 
     // Prepare a UART RX buffer
     uint8_t rx_buffer[128] = {0};
@@ -40,8 +40,7 @@ void rx_loop() {
 #endif
 
     while(1) {
-        // Clear buffer and listen for input
-        memset(rx_buffer, 0, sizeof(rx_buffer));
+        // Scan for input
         read_count = rx(rx_buffer);
 
         // Did we receive anything?
@@ -173,6 +172,9 @@ void rx_loop() {
                         send_err();
                 }
             }
+
+            // Clear buffer and listen for input
+            memset(rx_buffer, 0, read_count);
         }
 
 #ifdef DO_DEBUG
@@ -184,6 +186,7 @@ void rx_loop() {
             led_set_state(state);
         }
 #endif
+        
         // Pause? May not be necessary or might be bad
         sleep_ms(10);
     }
@@ -263,7 +266,7 @@ void reset_i2c(int frequency_khz) {
 /**
  * @brief Scan the host's I2C bus for devices, and send the results.
  */
-void send_scan() {
+void send_scan(void) {
 
     uint8_t rx_data;
     int reading;
@@ -325,7 +328,7 @@ void send_status(I2C_Trans* t) {
 /**
  * @brief Send back a list of supported commands.
  */
-void send_commands() {
+void send_commands(void) {
 
     char cmd_list_buffer[] = "?.!.d.1.4.i.s.p.x\r\n";
     tx(cmd_list_buffer, strlen(cmd_list_buffer));
@@ -335,11 +338,19 @@ void send_commands() {
 /**
  * @brief Send a single-byte ACK.
  */
-void send_ack() {
+void send_ack(void) {
 #ifdef BUILD_FOR_TERMINAL_TESTING
     printf("OK\r\n");
 #else
     putchar(0x01);
+    stdio_flush();
+#endif
+
+#ifdef DO_DEBUG
+    // Write the sent char on the segment's second two digits
+    HT16K33_set_number(0x00, 2, false);
+    HT16K33_set_number(0x01, 3, false);
+    HT16K33_draw();
 #endif
 }
 
@@ -347,11 +358,19 @@ void send_ack() {
 /**
  * @brief Send a single-byte ERR.
  */
-void send_err() {
+void send_err(void) {
 #ifdef BUILD_FOR_TERMINAL_TESTING
     printf("ERR\r\n");
 #else
     putchar(0xFF);
+    stdio_flush();
+#endif
+
+#ifdef DO_DEBUG
+    // Write the sent char on the segment's second two digits
+    HT16K33_set_number(0x0F, 2, false);
+    HT16K33_set_number(0x0F, 3, false);
+    HT16K33_draw();
 #endif
 }
 
@@ -365,14 +384,12 @@ void send_err() {
  */
 uint32_t rx(uint8_t* buffer) {
 
-    int c = getchar_timeout_us(0);
-    if (c == 0 || c == PICO_ERROR_TIMEOUT) return 0;
-
     uint32_t data_count = 0;
+    int c = PICO_ERROR_TIMEOUT;
     while (data_count < 128) {
+        c = getchar_timeout_us(1);
+        if (c == PICO_ERROR_TIMEOUT) break;
         buffer[data_count++] = (uint8_t)c;
-        c = getchar_timeout_us(0);
-        if (c == PICO_ERROR_TIMEOUT || data_count > 127) break;
 
 #ifdef DO_DEBUG
         // Write the received char on the segment's first two digits
@@ -384,6 +401,7 @@ uint32_t rx(uint8_t* buffer) {
 #endif
     }
 
+    stdio_flush();
     return data_count;
 }
 
