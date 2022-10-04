@@ -25,7 +25,7 @@ uint8_t     display_buffer[17];
 /**
  * @brief Power on the LEDs and set the brightness.
  */
-void HT16K33_init() {
+void HT16K33_init(void) {
     
     HT16K33_write_cmd(0x21);     // System on
     HT16K33_write_cmd(0x81);     // Display on
@@ -50,7 +50,7 @@ void HT16K33_write_cmd(uint8_t cmd) {
  *
  *  This does not clear the LED -- call `HT16K33_draw()`.
  */
-void HT16K33_clear_buffer() {
+void HT16K33_clear_buffer(void) {
     
     for (uint8_t i = 0 ; i < 17 ; ++i) {
         display_buffer[i] = 0;
@@ -61,7 +61,7 @@ void HT16K33_clear_buffer() {
 /**
  * @brief Write the display buffer out to the LED.
  */
-void HT16K33_draw() {
+void HT16K33_draw(void) {
     
     // Set up the buffer holding the data to be
     // transmitted to the LED

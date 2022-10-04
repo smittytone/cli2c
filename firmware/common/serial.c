@@ -46,13 +46,17 @@ void rx_loop(void) {
         // Did we receive anything?
         if (read_count > 0) {
             // Are we expecting write data or a read op next?
+            // NOTE The first byte will always be:
+            //      32-127  (ascii char as a command), 
+            //      128-191 (read 1-64 bytes), or 
+            //      192-255 (write 1-64 bytes)
             uint8_t status_byte = rx_buffer[0];
             if (transaction.is_started && status_byte >= READ_LENGTH_BASE) {
                 // We have data or a read op
-                if (status_byte > WRITE_LENGTH_BASE) {
+                if (status_byte >= WRITE_LENGTH_BASE) {
                     // Write data received, so send it and ACK
-                    transaction.write_byte_count = status_byte - WRITE_LENGTH_BASE;
-                    int bytes_sent = write_i2c(transaction.address, &rx_buffer[1], transaction.write_byte_count, false);
+                    transaction.write_byte_count = status_byte - WRITE_LENGTH_BASE + 1;
+                    int bytes_sent = i2c_write_blocking(I2C_PORT, transaction.address, &rx_buffer[1], transaction.write_byte_count, false);
 
                     // Send an ACK to say we wrote the data -- or an ERR if we didn't
                     if (bytes_sent != PICO_ERROR_GENERIC) {
@@ -62,9 +66,9 @@ void rx_loop(void) {
                     }
                 } else {
                     // Read length received only
-                    transaction.read_byte_count = status_byte - READ_LENGTH_BASE;
+                    transaction.read_byte_count = status_byte - READ_LENGTH_BASE + 1;
                     uint8_t i2x_rx_buffer[65] = {0};
-                    int bytes_read = read_i2c(transaction.address, i2x_rx_buffer, transaction.read_byte_count, false);
+                    int bytes_read = i2c_read_blocking(I2C_PORT, transaction.address, i2x_rx_buffer, transaction.read_byte_count, false);
 
                     // Return the read data
                     if (bytes_read != PICO_ERROR_GENERIC) {
@@ -128,7 +132,7 @@ void rx_loop(void) {
                     case 'p':   // I2C STOP
                         if (transaction.is_ready && transaction.is_started) {
                             // Send no bytes and STOP
-                            write_i2c(transaction.address, rx_buffer, 0, true);
+                            i2c_write_blocking(I2C_PORT, transaction.address, rx_buffer, 0, true);
 
                             // Reset state
                             transaction.is_started = false;
@@ -143,7 +147,7 @@ void rx_loop(void) {
                     case 's':   // START I2C TRANSACTION
                         if (transaction.is_ready) {
                             // Received data is in the form ['s', (address << 1) | op];
-                            transaction.address = rx_buffer[1] & 0xFE;
+                            transaction.address = (rx_buffer[1] & 0xFE) >> 1;
                             transaction.is_read_op = ((rx_buffer[1] & 0x01) == 1);
                             transaction.is_started = true;
 
@@ -180,7 +184,7 @@ void rx_loop(void) {
 #ifdef DO_DEBUG
         // One-second heartbeat LED blink for debugging
         led_flash_count++;
-        if (led_flash_count > 100) {
+        if (led_flash_count > 500 / RX_LOOP_DELAY_MS) {
             led_flash_count = 0;
             state = !state;
             led_set_state(state);
@@ -188,7 +192,7 @@ void rx_loop(void) {
 #endif
         
         // Pause? May not be necessary or might be bad
-        sleep_ms(10);
+        sleep_ms(RX_LOOP_DELAY_MS);
     }
 
     // Should not get here, but just in case...
@@ -219,38 +223,6 @@ void init_i2c(int frequency_khz) {
 
 
 /**
- * @brief Write data to the host's I2C bus.
- *
- * @param address: The target I2C address.
- * @param data:    A pointer to the data.
- * @param count:   The number of bytes to send.
- * @param do_stop: Issue a STOP after sending.
- * 
- * @retval The number of bytes written.
- */
-int write_i2c(uint8_t address, uint8_t* data, uint32_t count, bool do_stop) {
-
-    return i2c_write_blocking(I2C_PORT, address >> 1, data, count, do_stop);
-}
-
-
-/**
- * @brief Read data from the host's I2C bus.
- *
- * @param address: The target I2C address.
- * @param data:    A pointer to the data store
- * @param count:   The number of bytes to receive.
- * @param do_stop: Issue a STOP after receiving.
- * 
- * @retval The number of bytes read.
- */
-int read_i2c(uint8_t address, uint8_t* data, uint32_t count, bool do_stop) {
-
-    return i2c_read_blocking(I2C_PORT, address >> 1, data, count, do_stop);
-}
-
-
-/**
  * @brief Reset the host's I2C bus.
  *
  * @param frequency_khz: The bus speed in kHz.
@@ -259,7 +231,7 @@ void reset_i2c(int frequency_khz) {
 
     i2c_deinit(I2C_PORT);
     sleep_ms(10);
-    init_i2c(frequency_khz);
+    i2c_init(I2C_PORT, frequency_khz * 1000);
 }
 
 
@@ -343,7 +315,6 @@ void send_ack(void) {
     printf("OK\r\n");
 #else
     putchar(0x01);
-    stdio_flush();
 #endif
 
 #ifdef DO_DEBUG
@@ -363,7 +334,6 @@ void send_err(void) {
     printf("ERR\r\n");
 #else
     putchar(0xFF);
-    stdio_flush();
 #endif
 
 #ifdef DO_DEBUG
@@ -401,7 +371,6 @@ uint32_t rx(uint8_t* buffer) {
 #endif
     }
 
-    stdio_flush();
     return data_count;
 }
 

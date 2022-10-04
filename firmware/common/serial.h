@@ -33,9 +33,10 @@
 /*
  * CONSTANTS
  */
-#define SERIAL_READ_TIMEOUT_US              10          // 10us
+#define SERIAL_READ_TIMEOUT_US                  10
+#define RX_LOOP_DELAY_MS                        100    
 
-#define I2C_PORT                              i2c1
+#define I2C_PORT                                i2c1
 #define I2C_FREQUENCY                           400000
 
 #define WRITE_LENGTH_BASE                       0xC0
@@ -62,8 +63,6 @@ typedef struct {
 void        rx_loop(void);
 
 void        init_i2c(int frequency_khz);
-int         write_i2c(uint8_t address, uint8_t* data, uint32_t count, bool do_stop);
-int         read_i2c(uint8_t address, uint8_t* data, uint32_t count, bool do_stop);
 void        reset_i2c(int frequency_khz);
 
 void        send_ack(void);
