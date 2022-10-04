@@ -19,27 +19,35 @@
  * @retval The OS file descriptor, or -1 on error.
  */
 int openSerialPort(const char *device_file) {
+    
     struct termios serial_settings;
-
+    
+    // Open the device
     int fd = open(device_file, O_RDWR | O_NOCTTY);
     if (fd == -1) {
         print_error("Could not open the device at %s", device_file);
         return -1;
     }
-
+    
+    // Get the port settings
     tcgetattr(fd, &serial_settings);
     cfmakeraw(&serial_settings);
-    serial_settings.c_cc[VMIN] = 1;
-    //serial_settings.c_cc[VTIME] = 10;
+    
+    // Calls to read() will return as soon as there is
+    // at least one byte available or after 100ms.
+    serial_settings.c_cc[VMIN] = 0;
+    serial_settings.c_cc[VTIME] = 1;
 
     if (tcsetattr(fd, TCSAFLUSH, &serial_settings) != 0) {
         print_error("Could not apply the port settings");
+        close(fd);
         return -1;
     }
 
     // Prevent additional opens except by root-owned processes
     if (ioctl(fd, TIOCEXCL) == -1) {
         print_error("Could not set TIOCEXCL on %s", device_file);
+        close(fd);
         return -1;
     }
 
@@ -47,6 +55,7 @@ int openSerialPort(const char *device_file) {
     speed_t speed = (speed_t)115200;
     if (ioctl(fd, IOSSIOSPEED, &speed) == -1) {
         print_error("Could not set port speed to 115200bps");
+        close(fd);
         return -1;
     }
 
