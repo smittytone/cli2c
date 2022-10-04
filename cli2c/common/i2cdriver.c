@@ -97,19 +97,22 @@ size_t readFromSerialPort(int fd, uint8_t* buffer, size_t byte_count) {
         /*
         struct timespec now, then;
         clock_gettime(CLOCK_MONOTONIC_RAW, &then);
-        printf("Then: %li\n", then.tv_sec);
         */
         
         while (count < byte_count) {
             // Read in the data a byte at a time
             number_read = read(fd, buffer + count, 1);
-            if (number_read != -1) count += number_read;
+            if (number_read != -1) {
+                count += number_read;
+            }
             
             /*
-            clock_gettime(CLOCK_MONOTONIC_RAW, &now);
-            if (now.tv_sec - then.tv_sec > 10) {
-                print_error("Read timeout: %i bytes read of %i", count, byte_count);
-                break;
+            else {
+                clock_gettime(CLOCK_MONOTONIC_RAW, &now);
+                if (now.tv_sec - then.tv_sec > 10) {
+                    print_error("Read timeout: %i bytes read of %i", count, byte_count);
+                    break;
+                }
             }
             */
         }
@@ -407,7 +410,7 @@ size_t i2c_write(I2CDriver *sd, const uint8_t bytes[], size_t byte_count) {
     for (size_t i = 0 ; i < byte_count ; i += 64) {
         // Calculate the data length for the prefix byte
         size_t length = ((byte_count - i) < 64) ? (byte_count - i) : 64;
-        uint8_t write_cmd[65] = {(uint8_t)(PREFIX_BYTE_WRITE + length)};
+        uint8_t write_cmd[65] = {(uint8_t)(PREFIX_BYTE_WRITE + length - 1)};
 
         // Write a block of bytes to the send buffer
         memcpy(write_cmd + 1, bytes + i, length);
@@ -434,7 +437,7 @@ void i2c_read(I2CDriver *sd, uint8_t bytes[], size_t byte_count) {
     for (size_t i = 0 ; i < byte_count ; i += 64) {
         // Calculate data length for prefix byte
         size_t length = ((byte_count - i) < 64) ? (byte_count - i) : 64;
-        uint8_t read_cmd[1] = {(uint8_t)(PREFIX_BYTE_READ + length)};
+        uint8_t read_cmd[1] = {(uint8_t)(PREFIX_BYTE_READ + length - 1)};
 
         writeToSerialPort(sd->port, read_cmd, 1);
         readFromSerialPort(sd->port, bytes + i, length);

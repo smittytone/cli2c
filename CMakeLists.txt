@@ -17,7 +17,7 @@ set(FW_2_SRC_DIRECTORY "${CMAKE_SOURCE_DIR}/firmware/pico")
 set(COMMON_CODE_DIRECTORY "${CMAKE_SOURCE_DIR}/firmware/common")
 
 # Set app-side debugging
-#add_compile_definitions(DO_DEBUG=1)
+add_compile_definitions(DO_DEBUG=1)
 #add_compile_definitions(BUILD_FOR_TERMINAL_TESTING=1)
 add_compile_definitions(DEBUG_SEG_ADDR=0x70)
 
