@@ -1,14 +1,16 @@
 # cli2c
 
-An experimental I2C driver for macOS used as the basis for an HT16K33-controlled LED matrix driver. It requires a Raspberry Pi Pico or QTPy RP2040 as a hardware bridge.
+An I2C driver for macOS used as the basis for an HT16K33-controlled LED matrix driver. It requires a Raspberry Pi Pico or QTPy RP2040 as a hardware bridge.
 
-## Acknowledgement
+## Acknowledgements
 
 This work was inspired by James Bowman’s ([@jamesbowman](https://github.com/jamesbowman)) [`i2ccl` tool](https://github.com/jamesbowman/i2cdriver), which was written as a macOS/Linux/Windows command line tool to connect to his I2CMini board.
 
 My own I2C driver code is based on James’ but with a number of (I think) improvements, the non-macOS code removed, some unneeded functionality (I2C capture, monitoring) I don’t need, and the target not an I2C board, but firmware I wrote from the ground up to run on an RP2040-based board.
 
 Why? Originally I was writing an HT16K33 driver based directly on James’ code, but I accidentally broke the pins off my I2CMini — only to find it is very hard to find new ones. So I adapted it for a Mac-RP2040 combo.
+
+And thanks are due to Hermann Stamm-Wilbrandt ([@Hermann-SW](https://github.com/Hermann-SW)) for the basis for the [deploy script](#deploy-the-firmware).
 
 ## What’s What
 
@@ -36,7 +38,8 @@ The contents of this repo are:
 |___firmware.code-workspace // Visual Studio Code workspace for firmware
 |___cli2c.xcodeproj         // Xcode workspace for cli2c
 |
-|___deploy.sh               // A .uf2 deployment script that saves pressing RESET/BOOTSEL buttons.
+|___deploy.sh               // A .uf2 deployment script that saves pressing 
+|                              RESET/BOOTSEL buttons.
 |
 |___README.md
 |___LICENSE.md
@@ -142,10 +145,13 @@ You can build the code from the accompanying Xcode project. However, I use the c
 1. Navigate to the repo directory.
 1. Run `cmake -S . -B firmwarebuild`
 1. Run `cmake --build firmwarebuild`
+
+## Deploy the Firmware
+
 1. Copy `/buildfirm/firmware/qtpy/firmware_qtpy_rp2040.uf2` to a QTPy RP2040 in boot mode.
 1. Copy `/buildfirm/firmware/pico/firmware_pico_rp2040.uf2` to a Pico in boot mode.
 
-**Note** You only need perform step 4 or 5, of course, not both.
+**Note** You only need perform step 1 or 2, of course, not both.
 
 To copy the file(s), run:
 
@@ -154,8 +160,6 @@ To copy the file(s), run:
 ```
 
 This will trick the RP2040-based board into booting into disk mode, then copy over the newly build firmware. When the copy completes, the RP2040 automatically reboots.
-
-Thanks to Hermann Stamm-Wilbrandt ([@Hermann-SW](https://github.com/Hermann-SW)) for the inspiration.
 
 ## Licences and Copyright
 
