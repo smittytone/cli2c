@@ -38,6 +38,11 @@
 #define PREFIX_BYTE_READ                0x80
 #define PREFIX_BYTE_WRITE               0xC0
 
+#define EXIT_OK                         0
+#define EXIT_ERR                        1
+
+#define HOST_INFO_BUFFER_MAX            65
+
 
 /*
  * STRUCTURES
@@ -46,8 +51,6 @@ typedef struct {
     bool            connected;          // Set to true when connected
     int             port;
     unsigned int    speed;              // I2C line speed (in kHz)
-    char            model[17];
-    char            pid[17];
 } I2CDriver;
 
 

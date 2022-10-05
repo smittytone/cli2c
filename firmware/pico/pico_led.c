@@ -59,9 +59,9 @@ void pico_led_flash(uint32_t count) {
 
      while (count > 0) {
         gpio_put(PIN_PICO_LED, true);
-        sleep_ms(250);
+        sleep_ms(200);
         gpio_put(PIN_PICO_LED, false);
-        sleep_ms(250);
+        sleep_ms(200);
         count--;
     }
 }

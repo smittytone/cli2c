@@ -5,6 +5,7 @@ add_compile_definitions(FW_NAME="${FW_2_NAME}")
 add_compile_definitions(FW_VERSION="${FW_2_VERSION_NUMBER}")
 add_compile_definitions(BUILD_NUM=${BUILD_NUMBER})
 add_compile_definitions(PICO_BUILD=1)
+# IMPORTANT `HW_MODEL` must be no more than 16 characters
 add_compile_definitions(HW_MODEL="PI-PICO")
 
 # Set the device's I2C pins

@@ -30,7 +30,7 @@ int openSerialPort(const char *device_file) {
     int fd = open(device_file, O_RDWR | O_NOCTTY);
     if (fd == -1) {
         print_error("Could not open the device at %s - %s (%d)", device_file, strerror(errno), errno);
-        return -1;
+        return fd;
     }
     
     // Prevent additional opens except by root-owned processes
@@ -219,7 +219,7 @@ static bool i2c_ack(I2CDriver *sd) {
  */
 void i2c_get_info(I2CDriver *sd, bool do_print) {
 
-    uint8_t read_buffer[64] = {0};
+    uint8_t read_buffer[HOST_INFO_BUFFER_MAX] = {0};
     send_command(sd, '?');
     readFromSerialPort(sd->port, read_buffer, 0);
 
@@ -228,7 +228,7 @@ void i2c_get_info(I2CDriver *sd, bool do_print) {
 #endif
 
     // Data string is, for example,
-    // "1.1.100.110.A1B23C4D5E6F0A1B.QTPY-RP2040"
+    // "1.1.100.110.1.1.0.200.A1B23C4D5E6F0A1B.QTPY-RP2040"
     int is_ready = 0;
     int has_started = 0;
     int frequency = 100;
@@ -237,7 +237,9 @@ void i2c_get_info(I2CDriver *sd, bool do_print) {
     int minor = 0;
     int patch = 0;
     int build = 0;
-    char string_data[48] = {0};
+    char string_data[34] = {0};
+    char model[17] = {0};
+    char pid[17] = {0};
     
     // Extract the data
     sscanf((char*)read_buffer, "%i.%i.%i.%i.%i.%i.%i.%i.%s",
@@ -256,14 +258,14 @@ void i2c_get_info(I2CDriver *sd, bool do_print) {
     // NOTE This involves seaprately extracting the substrings
     //      from the read `string_data` as sscanf() doesn't
     //      separate them properly
-    strncpy(sd->pid, string_data, 16);
-    strcpy(sd->model, &string_data[17]);
+    strncpy(pid, string_data, 16);
+    strcpy(model, &string_data[17]);
     sd->speed = frequency;
 
     if (do_print) {
-        printf(" I2C host device: %s\n", sd->model);
+        printf(" I2C host device: %s\n", model);
         printf("I2C host version: %i.%i.%i (%i)\n", major, minor, patch, build);
-        printf("     I2C host ID: %s\n", sd->pid);
+        printf("     I2C host ID: %s\n", pid);
         printf("  I2C is enabled: %s\n", is_ready == 1 ? "YES" : "NO");
         printf("   I2C is active: %s\n", has_started == 1 ? "YES" : "NO");
         printf("   I2C frequency: %ikHz\n", frequency);
@@ -489,7 +491,7 @@ int i2c_commands(I2CDriver *sd, int argc, char *argv[], uint32_t delta) {
         if (strlen(command) != 1) {
             // TODO Check for a flag mark, `-`
             print_bad_command_help(command);
-            return 1;
+            return EXIT_ERR;
         }
 
         switch (command[0]) {
@@ -535,7 +537,7 @@ int i2c_commands(I2CDriver *sd, int argc, char *argv[], uint32_t delta) {
                         if (*endptr == '\0') break;
                         if (*endptr != ',') {
                             print_error("Invalid bytes: %s\n", token);
-                            return 1;
+                            return EXIT_ERR;
                         }
 
                         endptr++;
@@ -552,7 +554,7 @@ int i2c_commands(I2CDriver *sd, int argc, char *argv[], uint32_t delta) {
 
             default:    // NO COMMAND/UNKNOWN COMMAND
                 print_bad_command_help(command);
-                return 1;
+                return EXIT_ERR;
         }
         
         // Pause for the UART's breath
@@ -609,7 +611,7 @@ void show_commands(void) {
  */
 void flush_and_close_port(int fd) {
     
-    // Drain the FIFOs
+    // Drain the FIFOs -- alterntive to `tcflush(fd, TCIOFLUSH)`;
     if (tcdrain(fd) == -1) {
         print_error("Could not flush the port. %s (%d).\n", strerror(errno), errno);
     }
@@ -619,6 +621,6 @@ void flush_and_close_port(int fd) {
         print_error("Coould not reset port - %s (%d)", strerror(errno), errno);
     }
 
-    //tcflush(fd, TCIOFLUSH);
+    // Close the port
     close(fd);
 }

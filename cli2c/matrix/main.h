@@ -13,24 +13,6 @@
 /*
  * INCLUDES
  */
-#define __STDC_FORMAT_MACROS
-#include <stdio.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <stdint.h>
-#include <string.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <errno.h>
-#include <inttypes.h>
-#include <time.h>
-#include <assert.h>
-#include <memory.h>
-#include <termios.h>
-#include <sys/ioctl.h>
-#include <IOKit/serial/ioss.h>
-// App includes
 #include "i2cdriver.h"
 #include "ht16k33-matrix.h"
 

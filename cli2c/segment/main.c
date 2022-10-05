@@ -27,7 +27,7 @@ int main(int argc, char* argv[]) {
         for (int i = 0 ; i < argc ; ++i) {
             if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
                 show_help();
-                return 0;
+                return EXIT_OK;
             }
         }
         
@@ -41,7 +41,7 @@ int main(int argc, char* argv[]) {
             if (!(i2c_init(&i2c))) {
                 print_error("%s could not initialise I2C\n", argv[1]);
                 flush_and_close_port(i2c.port);
-                return 1;
+                return EXIT_ERR;
             }
             
             // Process the remaining commands in sequence
@@ -55,7 +55,7 @@ int main(int argc, char* argv[]) {
                     if (i2c_address < 0 || i2c_address > 0x7F) {
                         print_error("I2C address out of range");
                         flush_and_close_port(i2c.port);
-                        return 1;
+                        return EXIT_ERR;
                     }
                     
                     // Note the non-standard I2C address
@@ -76,7 +76,7 @@ int main(int argc, char* argv[]) {
         }
     }
     
-    return 1;
+    return EXIT_ERR;
 }
 
 
@@ -127,7 +127,7 @@ int segment_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
 
                                 if (brightness < 0 || brightness > 15) {
                                     print_error("Brightness value out of range (0-15)");
-                                    return 1;
+                                    return EXIT_ERR;
                                 }
 
                                 // Apply the command
@@ -137,7 +137,7 @@ int segment_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                         }
                         
                         print_error("No brightness value supplied");
-                        return 1;
+                        return EXIT_ERR;
                     }
                 
                 case 'd':   // SET DECIMAL
@@ -150,7 +150,7 @@ int segment_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
 
                                 if (digit > 3) {
                                     print_error("Digit value out of range (0-3)");
-                                    return 1;
+                                    return EXIT_ERR;
                                 }
 
                                 // Apply the command
@@ -160,7 +160,7 @@ int segment_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                         }
                         
                         print_error("No brightness value supplied");
-                        return 1;
+                        return EXIT_ERR;
                     }
             
                 case 'f':   // FLIP DISPLAY
@@ -177,7 +177,7 @@ int segment_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
 
                                 if (glyph > 0xFF) {
                                     print_error("Glyph value out of range (0-255)");
-                                    return 1;
+                                    return EXIT_ERR;
                                 }
                                 
                                 // Get a required argument
@@ -188,7 +188,7 @@ int segment_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
 
                                         if (digit > 3) {
                                             print_error("Digit value out of range (0-3)");
-                                            return 1;
+                                            return EXIT_ERR;
                                         }
                                         
                                         // Get an optional argument
@@ -213,12 +213,12 @@ int segment_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                                 }
                                 
                                 print_error("No digit value supplied");
-                                return 1;
+                                return EXIT_ERR;
                             }
                         }
 
                         print_error("No glyph value supplied");
-                        return 1;
+                        return EXIT_ERR;
                     }
                 
                 case 'n':   // DISPLAY A NUMBER ACROSS THE DISPLAY
@@ -231,7 +231,7 @@ int segment_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
 
                                 if (number < -999 || number > 9999) {
                                     print_error("Decimal value out of range (-999 to 9999)");
-                                    return 1;
+                                    return EXIT_ERR;
                                 }
 
                                 // Perform the action
@@ -240,8 +240,8 @@ int segment_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                             }
                         }
 
-                        print_error("No numbersupplied");
-                        return 1;
+                        print_error("No number supplied");
+                        return EXIT_ERR;
                     }
 
                 case 'v':   // DISPLAY A VALUE ON A DIGIT
@@ -254,7 +254,7 @@ int segment_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                                 
                                 if (number > 0x0F) {
                                     print_error("Value out of range (00-0F)");
-                                    return 1;
+                                    return EXIT_ERR;
                                 }
                                 
                                 // Get a required argument
@@ -265,7 +265,7 @@ int segment_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                                         
                                         if (digit > 3) {
                                             print_error("Digit value out of range (0-3)");
-                                            return 1;
+                                            return EXIT_ERR;
                                         }
                                         
                                         // Get an optional argument
@@ -290,12 +290,12 @@ int segment_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                                 }
                                 
                                 print_error("No digit value supplied");
-                                return 1;
+                                return EXIT_ERR;
                             }
                         }
                         
                         print_error("No glyph value supplied");
-                        return 1;
+                        return EXIT_ERR;
                     }
             
                 case 'w':
@@ -314,16 +314,16 @@ int segment_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                 default:
                     // ERROR
                     print_error("Unknown command");
-                    return 1;
+                    return EXIT_ERR;
             }
         } else {
             // Bad command
             print_error("Unknown command");
-            return 1;
+            return EXIT_ERR;
         }
     }
     
-    return 0;
+    return EXIT_OK;
 }
 
 
@@ -396,5 +396,5 @@ void ctrl_c_handler(int dummy) {
     
     if (i2c.port != -1) flush_and_close_port(i2c.port);
     printf("\n");
-    exit(0);
+    exit(EXIT_OK);
 }

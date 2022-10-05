@@ -5,6 +5,7 @@ add_compile_definitions(FW_NAME="${FW_1_NAME}")
 add_compile_definitions(FW_VERSION="${FW_1_VERSION_NUMBER}")
 add_compile_definitions(BUILD_NUM=${BUILD_NUMBER})
 add_compile_definitions(QTPY_BUILD=1)
+# IMPORTANT `HW_MODEL` must be no more than 16 characters
 add_compile_definitions(HW_MODEL="QTPY-RP2040")
 
 # Set the device's I2C pins

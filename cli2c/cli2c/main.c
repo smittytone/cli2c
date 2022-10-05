@@ -27,7 +27,7 @@ int main(int argc, char *argv[]) {
         for (int i = 0 ; i < argc ; ++i) {
             if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
                 show_help();
-                return 0;
+                return EXIT_OK;
             }
         }
         
@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
             if (!(i2c_init(&i2c))) {
                 print_error("%s could not initialise I2C\n", argv[1]);
                 flush_and_close_port(i2c.port);
-                return 1;
+                return EXIT_ERR;
             }
             
             // Check we have commands to process
@@ -48,7 +48,7 @@ int main(int argc, char *argv[]) {
             if (delta >= argc) {
                 printf("No commands supplied... exiting\n");
                 flush_and_close_port(i2c.port);
-                return 0;
+                return EXIT_OK;
             }
             
             // Process the remaining commands in sequence
@@ -60,7 +60,7 @@ int main(int argc, char *argv[]) {
         }
     }
     
-    return 1;
+    return EXIT_ERR;
 }
 
 
@@ -118,7 +118,7 @@ void ctrl_c_handler(int dummy) {
     
     if (i2c.port != -1) flush_and_close_port(i2c.port);
     printf("\n");
-    exit(0);
+    exit(EXIT_OK);
 }
 
 

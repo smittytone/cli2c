@@ -42,6 +42,8 @@
 #define WRITE_LENGTH_BASE                       0xC0
 #define READ_LENGTH_BASE                        0x80
 
+#define HW_MODEL_NAME_SIZE_MAX                  16
+
 
 /*
  * STRUCTURES

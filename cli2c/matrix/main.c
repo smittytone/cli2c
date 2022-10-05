@@ -27,7 +27,7 @@ int main(int argc, char* argv[]) {
         for (int i = 0 ; i < argc ; ++i) {
             if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
                 show_help();
-                return 0;
+                return EXIT_OK;
             }
         }
         
@@ -41,7 +41,7 @@ int main(int argc, char* argv[]) {
             if (!(i2c_init(&i2c))) {
                 print_error("%s could not initialise I2C\n", argv[1]);
                 flush_and_close_port(i2c.port);
-                return 1;
+                return EXIT_ERR;
             }
             
             // Process the remaining commands in sequence
@@ -55,7 +55,7 @@ int main(int argc, char* argv[]) {
                     if (i2c_address < 0 || i2c_address > 0x7F) {
                         print_error("I2C address out of range");
                         flush_and_close_port(i2c.port);
-                        return 1;
+                        return EXIT_ERR;
                     }
                     
                     // Note the non-standard I2C address
@@ -76,7 +76,7 @@ int main(int argc, char* argv[]) {
         }
     }
     
-    return 1;
+    return EXIT_ERR;
 }
 
 
@@ -127,7 +127,7 @@ int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
 
                                 if (brightness < 0 || brightness > 15) {
                                     print_error("Brightness value out of range (0-15)");
-                                    return 1;
+                                    return EXIT_ERR;
                                 }
 
                                 // Apply the command
@@ -137,7 +137,7 @@ int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                         }
                         
                         print_error("No brightness value supplied");
-                        return 1;
+                        return EXIT_ERR;
                     }
                 
                 case 'c':   // DISPLAY CHARACTER
@@ -150,7 +150,7 @@ int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
 
                                 if (ascii < 32 || ascii > 127) {
                                     print_error("Ascii value out of range (32-127)");
-                                    return 1;
+                                    return EXIT_ERR;
                                 }
 
                                 // Get an optional argument
@@ -176,7 +176,7 @@ int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                         }
 
                         print_error("No Ascii value supplied");
-                        return 1;
+                        return EXIT_ERR;
                     }
 
                 case 'g':   // DISPLAY GLYPH
@@ -194,7 +194,7 @@ int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                                     if (*endptr == '\0') break;
                                     if (*endptr != ',') {
                                         print_error("Invalid bytes");
-                                        return 1;
+                                        return EXIT_ERR;
                                     }
 
                                     endptr++;
@@ -207,8 +207,8 @@ int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                             }
                         }
 
-                        print_error("No Ascii value supplied");
-                        return 1;
+                        print_error("No glyph value supplied");
+                        return EXIT_ERR;
                     }
             
                 case 'p':   // PLOT A POINT
@@ -226,7 +226,7 @@ int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
 
                                         if (x < 0 || x > 7 || y < 0 || y > 7) {
                                             print_error("Co-ordinate out of range (0-7)");
-                                            return 1;
+                                            return EXIT_ERR;
                                         }
 
                                         // Get an optional argument
@@ -251,7 +251,7 @@ int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                         }
 
                         print_error("No co-ordinate value(s) supplied");
-                        return 1;
+                        return EXIT_ERR;
                     }
                     break;
 
@@ -297,7 +297,7 @@ int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                         }
 
                         print_error("No string supplied");
-                        return 1;
+                        return EXIT_ERR;
                     }
                 
                 case 'w':
@@ -312,16 +312,16 @@ int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                 default:
                     // ERROR
                     print_error("Unknown command");
-                    return 1;
+                    return EXIT_ERR;
             }
         } else {
             // Bad command
             print_error("Unknown command");
-            return 1;
+            return EXIT_ERR;
         }
     }
     
-    return 0;
+    return EXIT_OK;
 }
 
 

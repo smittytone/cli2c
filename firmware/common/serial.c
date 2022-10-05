@@ -111,11 +111,11 @@ void rx_loop(void) {
                         send_status(&transaction);
                         break;
 
-                    case '!':   // GET COMMANDS
+                    case '!':   // GET COMMANDS LIST
                         send_commands();
                         break;
 
-                    case 'd':   //SCAN
+                    case 'd':   // SCAN THE I2C BUS FOR DEVICES
                         if (transaction.is_ready) {
                             send_scan();
                         } else {
@@ -123,13 +123,13 @@ void rx_loop(void) {
                         }
                         break;
 
-                    case 'i':   // INITIALISE I2C
+                    case 'i':   // INITIALISE THE I2C BUS
                         init_i2c(transaction.frequency);
                         transaction.is_ready = true;
                         send_ack();
                         break;
 
-                    case 'p':   // I2C STOP
+                    case 'p':   // SEND AN I2C STOP
                         if (transaction.is_ready && transaction.is_started) {
                             // Send no bytes and STOP
                             i2c_write_blocking(I2C_PORT, transaction.address, rx_buffer, 0, true);
@@ -137,7 +137,6 @@ void rx_loop(void) {
                             // Reset state
                             transaction.is_started = false;
                             transaction.is_read_op = false;
-                            transaction.address = 0xFF;
                             send_ack();
                         } else {
                             send_err();
@@ -275,16 +274,21 @@ void send_scan(void) {
  */
 void send_status(I2C_Trans* t) {
 
+    // Get the RP2040 unique ID
     char pid[2 * PICO_UNIQUE_BOARD_ID_SIZE_BYTES + 1] = {0};
     pico_get_unique_board_id_string(pid, 2 * PICO_UNIQUE_BOARD_ID_SIZE_BYTES + 1);
     // eg. DF6050788B3E1A2E
 
+    // Get the firmware version as integers
     int major, minor, patch;
     sscanf(FW_VERSION, "%i.%i.%i",
         &major,
         &minor,
         &patch
     );
+
+    char model[HW_MODEL_NAME_SIZE_MAX + 1] = {0};
+    strncpy(model, HW_MODEL, HW_MODEL_NAME_SIZE_MAX);
 
     // Generate and return the status data string.
     // Data in the form: "1.1.100.110.QTPY-RP2040" or "1.1.100.110.PI-PICO"
@@ -300,7 +304,7 @@ void send_status(I2C_Trans* t) {
             patch,                              // 2-x chars
             BUILD_NUM,                          // 2-x chars
             pid,                                // 17 chars
-            HW_MODEL);                          // 2-17 chars
+            model);                             // 2-17 chars
                                                 // == 26-43 chars
 
     // Send the data
