@@ -11,6 +11,11 @@ if [[ -z ${2} || ${2##*.} != "uf2" ]]; then
     exit 1
 fi
 
+if [[ ! -f ${2} ]]; then
+    echo "[ERROR] ${2} cannot be found"
+    exit 1
+fi
+
 if [ -z ${1} ]; then
     echo "[ERROR] No device specified"
     exit 1
