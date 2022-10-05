@@ -1,13 +1,13 @@
 /*
- * HT16K33 driver
+ * HT16K33 8x8 matrix driver
  *
- * Version 0.1.1
+ * Version 0.1.2
  * Copyright © 2022, Tony Smith (@smittytone)
  * Licence: MIT
  *
  */
-#ifndef _HT16K33_HEADER_
-#define _HT16K33_HEADER_
+#ifndef _HT16K33_MATRIX_HEADER_
+#define _HT16K33_MATRIX_HEADER_
 
 
 /*
@@ -61,4 +61,4 @@ static void HT16K33_sleep_ms(int ms);
 static void HT16K33_write_cmd(uint8_t cmd);
 
 
-#endif  // _HT16K33_HEADER_
+#endif  // _HT16K33_MATRIX_HEADER_

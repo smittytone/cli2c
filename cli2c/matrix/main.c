@@ -1,7 +1,7 @@
 /*
- * I2C driver for HT16K33
+ * I2C driver for an HT16K33 8x8 Matrix Display
  *
- * Version 0.1.1
+ * Version 0.1.2
  * Copyright © 2022, Tony Smith (@smittytone)
  * Licence: MIT
  *
@@ -333,7 +333,7 @@ void show_help() {
     printf("Usage:\n");
     printf("  {device} is a mandatory device path, eg. /dev/cu.usbmodem-010101.\n");
     printf("  [address] is an optional display I2C address. Default: 0x70.\n");
-    printf("  [commands] are optional HT16K33 matrix commands, as shown below.\n\n");
+    printf("  [commands] are optional HT16K33 matrix commands:\n\n");
     printf("Commands:\n");
     printf("  -a [on|off]             Activate/deactivate the display. Default: on.\n");
     printf("  -b {0-15}               Set the display brightness from low (0) to high (15).\n");
@@ -347,7 +347,7 @@ void show_help() {
     printf("                          the range 0-7.\n");
     printf("  -t {string} [delay]     Scroll the specified string. The second argument is an optional\n");
     printf("                          delay be between column shifts in milliseconds. Default: 250ms.\n");
-    printf("  -w                      Scroll the specified string. The second argument is an optional\n\n");
+    printf("  -w                      Wipe (clear) the display.\n\n");
 }
 
 
