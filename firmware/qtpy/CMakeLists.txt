@@ -21,6 +21,7 @@ add_compile_definitions(SCL_PIN=27)
 #add_compile_definitions(SDA_PIN=22)
 #add_compile_definitions(SCL_PIN=23)
 
+set(PICO_BOARD=adafruit_qtpy_rp2040)
 set(PICO_STDIO_USB_CONNECT_WAIT_TIMEOUT_MS=2000)
 
 # Include app source code file(s)

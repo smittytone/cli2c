@@ -3,7 +3,7 @@
 import signal
 from subprocess import run
 from psutil import cpu_percent
-from sys import exit
+from sys import exit, argv
 from time import sleep
 
 i2cdevice = None
@@ -18,7 +18,7 @@ def handler(signum, frame):
 signal.signal(signal.SIGINT, handler)
 
 if len(argv) > 1:
-    i2cdevice = argv[1]+
+    i2cdevice = argv[1]
 
 if i2cdevice:
     run(["matrix", i2cdevice, "-w", "-a", "on", "-b", "4"])
@@ -56,7 +56,7 @@ if i2cdevice:
             data_string += "0x{:02x},".format(b)
         data_string = data_string[:-1]
         
-        run(["matrix", i2cdevice, "0x72", "-g", data_string])
+        run(["matrix", i2cdevice, "-g", data_string])
         sleep(0.5)
 else:
     print("[ERROR] No device specified")
