@@ -52,9 +52,7 @@ void HT16K33_write_cmd(uint8_t cmd) {
  */
 void HT16K33_clear_buffer(void) {
     
-    for (uint8_t i = 0 ; i < 17 ; ++i) {
-        display_buffer[i] = 0;
-    }
+    memset(display_buffer, 0x00, 8);
 }
 
 
@@ -74,7 +72,7 @@ void HT16K33_draw(void) {
 
 
 /**
- *  @brief Write a single-digit decimal number to the display buffer at the specified digit.
+ *  @brief Write a single-digit hex number to the display buffer at the specified digit.
  *
  *  @param  number:  The value to write.
  *  @param  digit:   The digit that will show the number.
@@ -118,7 +116,7 @@ void HT16K33_set_glyph(uint8_t glyph, uint8_t digit, bool has_dot) {
 
 
 /**
- * @brief Write a decimal value to the display buffer.
+ * @brief Write a positive decimal value to the entire 4-digit display buffer.
  *
  *  @param value:   The value to write.
  *  @param decimal: `true` if digit 1's decimal point should be lit,

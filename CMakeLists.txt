@@ -2,15 +2,15 @@ cmake_minimum_required(VERSION 3.20)
 
 # Set project data
 set(PROJECT_NAME "I2C Host Firmware")
-set(BUILD_NUMBER "7")
+set(BUILD_NUMBER "8")
 
 # Set app name(s) and version(s)
 set(FW_1_NAME "firmware_qtpy_rp2040")
-set(FW_1_VERSION_NUMBER "0.1.1")
+set(FW_1_VERSION_NUMBER "0.1.2")
 set(FW_1_SRC_DIRECTORY "${CMAKE_SOURCE_DIR}/firmware/qtpy")
 
 set(FW_2_NAME "firmware_pico")
-set(FW_2_VERSION_NUMBER "0.1.1")
+set(FW_2_VERSION_NUMBER "0.1.2")
 set(FW_2_SRC_DIRECTORY "${CMAKE_SOURCE_DIR}/firmware/pico")
 
 # Move common source code to a separate directory
@@ -24,9 +24,10 @@ set(COMMON_CODE_DIRECTORY "${CMAKE_SOURCE_DIR}/firmware/common")
 #   DEBUG_SEG_ADDR             -- The 7-bit I2C address of an LED segment
 #                                 display used for debugging firmware
 #                                 reads and writes.
+#                                 IGNORED if DO_DEBUG is not defined.
 #   SHOW_HEARTBEAT             -- Display a heartbeat on the board LED/NeoPixel.
 #add_compile_definitions(BUILD_FOR_TERMINAL_TESTING=1)
-add_compile_definitions(DO_DEBUG=1)
+#add_compile_definitions(DO_DEBUG=1)
 add_compile_definitions(DEBUG_SEG_ADDR=0x70)
 add_compile_definitions(SHOW_HEARTBEAT=1)
 

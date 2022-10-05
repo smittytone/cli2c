@@ -279,16 +279,27 @@ void send_status(I2C_Trans* t) {
     pico_get_unique_board_id_string(pid, 2 * PICO_UNIQUE_BOARD_ID_SIZE_BYTES + 1);
     // eg. DF6050788B3E1A2E
 
+    int major, minor, patch;
+    sscanf(FW_VERSION, "%i.%i.%i",
+        &major,
+        &minor,
+        &patch
+    );
+
     // Generate and return the status data string.
     // Data in the form: "1.1.100.110.QTPY-RP2040" or "1.1.100.110.PI-PICO"
-    char status_buffer[48] = {0};
+    char status_buffer[64] = {0};
 
-    sprintf(status_buffer, "%s.%s.%i.%i.%s.%s\r\n",
+    sprintf(status_buffer, "%s.%s.%i.%i.%i.%i.%i.%i.%s.%s\r\n",
             (t->is_ready   ? "1" : "0"),        // 2 chars
             (t->is_started ? "1" : "0"),        // 2 chars
             t->frequency,                       // 4 chars
             t->address,                         // 2-4 chars
-            pid,                                // 16 chars
+            major,                              // 2-x chars
+            minor,                              // 2-x chars
+            patch,                              // 2-x chars
+            BUILD_NUM,                          // 2-x chars
+            pid,                                // 17 chars
             HW_MODEL);                          // 2-17 chars
                                                 // == 26-43 chars
 
