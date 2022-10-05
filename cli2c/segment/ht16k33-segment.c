@@ -92,6 +92,7 @@ void HT16K33_draw(void) {
     
     // Check for an overturned LED
     if (is_flipped) {
+        printf("FLIPPED\n");
         // Swap digits 0,3 and 1,2
         uint8_t a = display_buffer[POS[0]];
         display_buffer[POS[0]] = display_buffer[POS[3]];
@@ -169,12 +170,24 @@ void HT16K33_set_glyph(uint8_t glyph, uint8_t digit, bool has_dot) {
  *  @param decimal: `true` if digit 1's decimal point should be lit,
  *                  `false` otherwise.
  */
-void HT16K33_show_value(int16_t value, bool decimal) {
+void HT16K33_show_value(int value, bool decimal) {
+    
+    bool is_neg = false;
+    if (value < 0) {
+        is_neg = true;
+        value *= -1;
+    }
     
     // Convert the value to BCD...
     uint16_t bcd_val = bcd(value);
     HT16K33_clear_buffer();
-    HT16K33_set_number((bcd_val >> 12) & 0x0F, 0, false);
+    
+    if (is_neg) {
+        HT16K33_set_glyph(0x40, 0, false);
+    } else {
+        HT16K33_set_number((bcd_val >> 12) & 0x0F, 0, false);
+    }
+    
     HT16K33_set_number((bcd_val >> 8)  & 0x0F, 1, decimal);
     HT16K33_set_number((bcd_val >> 4)  & 0x0F, 2, false);
     HT16K33_set_number(bcd_val & 0x0F,         3, false);

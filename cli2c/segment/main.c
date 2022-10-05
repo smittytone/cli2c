@@ -1,5 +1,5 @@
 /*
- * I2C driver for HT16K33
+ * I2C driver for an HT16K33 4-digit, 7-segment display
  *
  * Version 0.1.2
  * Copyright © 2022, Tony Smith (@smittytone)
@@ -97,7 +97,7 @@ int segment_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
             switch (command[1]) {
                 case 'a':   // ACTIVATE (DEFAULT) OR DEACTIVATE DISPLAY
                     {
-                        // Check for and get the required argument
+                        // Check for and get the optional argument
                         bool is_on = true;
                         if (i < argc - 1) {
                             command = argv[++i];
@@ -107,31 +107,13 @@ int segment_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                                 } else {
                                     is_on = (strcmp(command, "off") != 0);
                                 }
-                                
-                                // Get an optional argument
-                                bool do_flip = false;
-                                if (i < argc - 1) {
-                                    command = argv[++i];
-                                    if (command[0] != '-') {
-                                        if (strlen(command) == 1) {
-                                            do_flip = (strcmp(command, "1") == 0);
-                                        } else {
-                                            do_flip = (strcmp(command, "true") == 0);
-                                        }
-                                    } else {
-                                        i -= 1;
-                                    }
-                                }
-                                
-                                // Apply the command
-                                HT16K33_power(is_on);
-                                if (do_flip) HT16K33_flip();
-                                break;
+                            } else {
+                                i -= 1;
                             }
                         }
-                        
-                        print_error("No power state value supplied (on/off)");
-                        return 1;
+
+                        // Apply the command
+                        HT16K33_power(is_on);
                     }
                     break;
 
@@ -158,7 +140,12 @@ int segment_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                         return 1;
                     }
                 
-                case 'g':   // DISPLAY GLYPH
+                case 'f':   // FLIP DISPLAY
+                    HT16K33_flip();
+                    HT16K33_draw();
+                    break;
+                
+                case 'g':   // DISPLAY A GLYPH ON A DIGIT
                     {
                         // Get the required argument
                         if (i < argc - 1) {
@@ -213,13 +200,13 @@ int segment_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                         return 1;
                     }
                 
-                case 'n':   // DISPLAY NUMBER
+                case 'n':   // DISPLAY A NUMBER ACROSS THE DISPLAY
                     {
                         // Get the required argument
                         if (i < argc - 1) {
                             command = argv[++i];
-                            if (command[0] != '-') {
-                                long number = strtol(command, NULL, 0);
+                            if (command[0] != '-' || (command[0] == '-' && command[1] >= '0' && command[1] <= '9')) {
+                                int number = (int)strtol(command, NULL, 0);
 
                                 if (number < -999 || number > 9999) {
                                     print_error("Decimal value out of range (-999 to 9999)");
@@ -237,6 +224,61 @@ int segment_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                         return 1;
                     }
 
+                case 'v':   // DISPLAY A VALUE ON A DIGIT
+                    {
+                        // Get the required argument
+                        if (i < argc - 1) {
+                            command = argv[++i];
+                            if (command[0] != '-') {
+                                uint8_t number = (uint8_t)strtol(command, NULL, 0);
+                                
+                                if (number > 0x0F) {
+                                    print_error("Value out of range (00-0F)");
+                                    return 1;
+                                }
+                                
+                                // Get a required argument
+                                if (i < argc - 1) {
+                                    command = argv[++i];
+                                    if (command[0] != '-') {
+                                        uint8_t  digit =  (uint8_t)strtol(command, NULL, 0);
+                                        
+                                        if (digit > 3) {
+                                            print_error("Digit value out of range (0-3)");
+                                            return 1;
+                                        }
+                                        
+                                        // Get an optional argument
+                                        bool show_point = false;
+                                        if (i < argc - 1) {
+                                            command = argv[++i];
+                                            if (command[0] != '-') {
+                                                if (strlen(command) == 1) {
+                                                    show_point = (strcmp(command, "1") == 0);
+                                                } else {
+                                                    show_point = (strcmp(command, "true") == 0);
+                                                }
+                                            } else {
+                                                i -= 1;
+                                            }
+                                        }
+                                        
+                                        // Perform the action
+                                        HT16K33_set_number(number, digit, false);
+                                        HT16K33_draw();
+                                        break;
+                                    }
+                                }
+                                
+                                print_error("No digit value supplied");
+                                return 1;
+                            }
+                        }
+                        
+                        print_error("No glyph value supplied");
+                        return 1;
+                    }
+            
                 case 'w':
                     HT16K33_clear_buffer();
                     HT16K33_draw();
@@ -270,14 +312,19 @@ void show_help() {
     printf("Usage:\n");
     printf("  {device} is a mandatory device path, eg. /dev/cu.usbmodem-010101.\n");
     printf("  [address] is an optional display I2C address. Default: 0x70.\n");
-    printf("  [commands] are optional HT16K33 matrix commands, as shown below.\n\n");
+    printf("  [commands] are optional HT16K33 segment commands.\n\n");
     printf("Commands:\n");
-    printf("  -a [on|off]  Activate/deactivate the display. Default: on.\n");
-    printf("  -b {0-15}    Set the display brightness from low (0) to high (15).\n");
-    printf("  -n {number}  Draw the decimal number on the screen. Range -999 to 9999.\n");
-    printf("  -g {glyph}   Draw the user-defined character on the screen. The definition\n");
-    printf("               is a byte with bits set for each of the digit’s segments.\n");
-    printf("  -w           Wipe (clear) the display.\n\n");
+    printf("  -a [on|off]                      Activate/deactivate the display. Default: on.\n");
+    printf("  -b {0-15}                        Set the display brightness from low (0) to high (15).\n");
+    printf("  -f                               Flip the display vertically.\n");
+    printf("  -n {number}                      Draw the decimal number on the screen.\n");
+    printf("                                   Range -999 to 9999.\n");
+    printf("  -v {value} {digit} [true|false]  Draw the value on the screen at the specified digit\n");
+    printf("                                   (0-15/0x00-0x0F) and optionally set its decimal point.\n");
+    printf("  -g {glyph} {digit} [true|false]  Draw the user-defined character on the screen at the\n");
+    printf("                                   specified digit. The glyph definition is a byte with bits\n");
+    printf("                                   set for each of the digit’s segments.\n");
+    printf("  -w                               Wipe (clear) the display.\n\n");
 }
 
 
