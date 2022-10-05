@@ -6,6 +6,11 @@
 
 pico_path=/Volumes/RPI-RP2
 
+if [[ -z ${1} ]]; then
+    echo "Usage: deploy.sh {path/to/device} {path/to/uf2}"
+    exit 0
+fi
+
 if [[ -z ${2} || ${2##*.} != "uf2" ]]; then
     echo "[ERROR] No .uf2 file specified"
     exit 1
@@ -16,13 +21,8 @@ if [[ ! -f ${2} ]]; then
     exit 1
 fi
 
-if [ -z ${1} ]; then
-    echo "[ERROR] No device specified"
-    exit 1
-fi
-
 # Put the Pico onto BOOTSEL mode
-stty -f ${1} 1200
+stty -f ${1} 1200 || echo "[ERROR] Could not connect to device ${1}" ; exit 1
 echo "Waiting for Pico to mount..."
 while [ ! -d ${pico_path} ]; do
     sleep 0.1
