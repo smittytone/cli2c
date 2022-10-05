@@ -21,7 +21,8 @@ The contents of this repo are:
 |
 |___/cli2c                  // The macOS driver and related code
 |   |___/cli2c              // The basic CLI driver
-|   |___/matrix             // An HT16K33-oriented version
+|   |___/matrix             // An HT16K33 8x8 matrix-oriented version of the driver
+|   |___/segment            // An HT16K33 4-digit, 7-segment-oriented version of the driver
 |   |___/common             // Code common to all versions
 |
 |___/firmware               // The RP2040 host firmware, written in C
@@ -30,7 +31,7 @@ The contents of this repo are:
 |   |___/common             // Code common to all versions
 |
 |___/examples               // Demo apps
-|   |___/cpu_chart.py       // CPU utilization display
+|   |___/cpu_chart.py       // CPU utilization display for matrices
 |
 |___CMakeLists.txt          // Top-level firmware project CMake config file
 |___pico_sdk_import.cmake   // Raspberry Pi Pico SDK CMake import script
@@ -39,7 +40,7 @@ The contents of this repo are:
 |___cli2c.xcodeproj         // Xcode workspace for cli2c
 |
 |___deploy.sh               // A .uf2 deployment script that saves pressing 
-|                              RESET/BOOTSEL buttons.
+|                           // RESET/BOOTSEL buttons.
 |
 |___README.md
 |___LICENSE.md
@@ -134,6 +135,43 @@ matrix /dev/cu.usbserial-DO029IEZ -t "Hello, World!    "
 
 **Note** The four spaces (two matrix columns) ensure the text disappears of the screen at the end of the scroll.
 
+## segment
+
+`segment` is a specific driver for HT16K33-based 4-digit, 7-segment LEDs. It embeds `cli2c` but exposes a different set of commands.
+
+You use the driver with this command-line call:
+
+```shell
+segment {device} [I2C address] [commands]
+```
+
+Arguments in braces `{}` are required; those in square brackets `[]` are optional.
+
+* `{device}` is the path to the I2C Mini’s device file, eg. `/dev/cu.usbserial-DO029IEZ`.
+* `[I2C address]` is an optional I2C address. By default, the HT16K33 uses the address `0x70`, but this can be changed.
+* `[commands]` are a sequence of command blocks as described below.
+
+### Commands
+
+These are the currently supported commands. Arguments in braces `{}` are required; those in square brackets `[]` are optional.
+
+| Command | Arguments | Description |
+| :-: | :-: | :-- |
+| `-a` | [`on`\|`off`] | Activate or deactivate the display. Once activated, the matrix will remain so for as long as it is powered. Pass `on` (or `1`) to activate, `off` (or `0`) to deactivate. Calling without an argument is a *de facto* activation |
+| `-b` | {0-15} | Set the brightness to a value between 0 (low but not off) and 15 (high) |
+| `-f` | None | Flip the display vertically. Handy if your LED is mounted upside down |
+| `-g` | {definition} {digit} [true\|false] | Write a user-generated glyph on the display at the specified digit. The glyph is supplied as an 8-bit value comprising bits set for the segments to be lit. Optionally specify if its decimal point should be lit |
+| `-v` | {value} {digit} [true\|false] | Write a single-digit number (0-9, 0x0-0xF) on the display at the specified digit. Optionally specify if its decimal point should be lit |
+| `-n` | {number} | Write a number between -999 and 9999 across the display |
+| `-t` | {string} [delay] | Scroll the specified string. The second argument is an optional delay be between column shifts in milliseconds. Default: 250ms |
+| `-w` | None | Clear the screen |
+
+Multiple commands can be issued by sequencing them at the command line. For example:
+
+```shell
+segment /dev/cu.usbserial-DO029IEZ 0x71 -w -f -n 7777
+```
+
 ## Build the Drivers
 
 #### Xcode
@@ -148,21 +186,27 @@ You can build the code from the accompanying Xcode project. However, I use the c
 
 ## Deploy the Firmware
 
-1. Copy `/buildfirm/firmware/qtpy/firmware_qtpy_rp2040.uf2` to a QTPy RP2040 in boot mode.
-1. Copy `/buildfirm/firmware/pico/firmware_pico_rp2040.uf2` to a Pico in boot mode.
+1. Copy `firmwarebuild/firmware/qtpy/firmware_qtpy_rp2040.uf2` to a QTPy RP2040 in boot mode.
+1. Copy `firmwarebuild/firmware/pico/firmware_pico_rp2040.uf2` to a Pico in boot mode.
 
 **Note** You only need perform step 1 or 2, of course, not both.
 
 To copy the file(s), run:
 
-```
+```shell
 ./deploy.sh /device/file /path/to/uf2
 ```
 
 This will trick the RP2040-based board into booting into disk mode, then copy over the newly build firmware. When the copy completes, the RP2040 automatically reboots.
 
+#### Example
+
+```shell
+./deploy.sh /dev/cu.usbserial-DO029IEZ firmwarebuild/firmware/pico/firmware_pico.uf2
+```
+
 ## Licences and Copyright
 
-`cli2c` and `matrix` contain code portions © 2019, James Bowman. They are licensed under the terms of the BSD 3-Clause Licence.
+`cli2c`, `matrix` and `segment` contain code portions © 2019, James Bowman. They are licensed under the terms of the BSD 3-Clause Licence.
 
 The RP2040 firmware is © 2022, Tony Smith (@smittytone). It is licensed under the terms of the MIT Licence.
