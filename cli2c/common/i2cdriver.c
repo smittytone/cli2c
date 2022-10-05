@@ -1,7 +1,7 @@
 /*
  * Generic macOS I2C driver
  *
- * Version 0.1.1
+ * Version 0.1.2
  * Copyright © 2022, Tony Smith (@smittytone)
  * Licence: MIT
  *
@@ -118,7 +118,7 @@ size_t readFromSerialPort(int fd, uint8_t* buffer, size_t byte_count) {
         }
     }
 
-#ifdef DO_DEBUG
+#ifdef DEBUG
     // Output the read data for debugging
     printf("  READ %d of %d: ", (int)count, (int)byte_count);
     for (int i = 0 ; i < count ; ++i) {
@@ -145,7 +145,7 @@ void writeToSerialPort(int fd, const uint8_t* buffer, size_t byte_count) {
     // Write the bytes
     write(fd, buffer, byte_count);
 
-#ifdef DO_DEBUG
+#ifdef DEBUG
     // Output the read data for debugging
     printf("WRITE %u: ", (int)byte_count);
     for (int i = 0 ; i < byte_count ; ++i) {
@@ -183,7 +183,7 @@ void i2c_connect(I2CDriver *sd, const char* portname) {
 
     // Got this far? We're good to go
     sd->connected = true;
-    i2c_get_info(sd, false);
+    //i2c_get_info(sd, false);
 }
 
 
@@ -212,11 +212,11 @@ static bool i2c_ack(I2CDriver *sd) {
  */
 void i2c_get_info(I2CDriver *sd, bool do_print) {
 
-    uint8_t read_buffer[48] = {0};
+    uint8_t read_buffer[64] = {0};
     send_command(sd, '?');
     readFromSerialPort(sd->port, read_buffer, 0);
 
-#ifdef DO_DEBUG
+#ifdef DEBUG
     printf("Received raw info string: %s\n", read_buffer);
 #endif
 
@@ -226,15 +226,23 @@ void i2c_get_info(I2CDriver *sd, bool do_print) {
     int has_started = 0;
     int frequency = 100;
     int address = 0xFF;
+    int major = 0;
+    int minor = 0;
+    int patch = 0;
+    int build = 0;
     char string_data[48] = {0};
     
     // Extract the data
-    sscanf((char*)read_buffer, "%i.%i.%i.%i.%s",
+    sscanf((char*)read_buffer, "%i.%i.%i.%i.%i.%i.%i.%i.%s",
         &is_ready,
         &has_started,
         &frequency,
         &address,
-           string_data
+        &major,
+        &minor,
+        &patch,
+        &build,
+        string_data
     );
 
     // Store certain values in the I2C driver record
@@ -246,11 +254,12 @@ void i2c_get_info(I2CDriver *sd, bool do_print) {
     sd->speed = frequency;
 
     if (do_print) {
-        printf("   I2C host device: %s\n",     sd->model);
-        printf("       I2C host ID: %s\n",     sd->pid);
-        printf("    I2C is enabled: %s\n",     is_ready == 1 ? "YES" : "NO");
-        printf("     I2C is active: %s\n",     has_started == 1 ? "YES" : "NO");
-        printf("     I2C frequency: %ikHz\n",  frequency);
+        printf(" I2C host device: %s\n", sd->model);
+        printf("I2C host version: %i.%i.%i (%i)\n", major, minor, patch, build);
+        printf("     I2C host ID: %s\n", sd->pid);
+        printf("  I2C is enabled: %s\n", is_ready == 1 ? "YES" : "NO");
+        printf("   I2C is active: %s\n", has_started == 1 ? "YES" : "NO");
+        printf("   I2C frequency: %ikHz\n", frequency);
         
         // Check for a 'no device' I2C address
         if (address == 0xFF) {
@@ -283,7 +292,7 @@ void i2c_scan(I2CDriver *sd) {
         // source = "12.71.A0."
         // dest   = [18, 113, 160]
         
-#ifdef DO_DEBUG
+#ifdef DEBUG
         printf("Buffer: %lu bytes, %lu items\n", strlen(scan_buffer), strlen(scan_buffer) / 3);
 #endif
         
@@ -465,7 +474,7 @@ int i2c_commands(I2CDriver *sd, int argc, char *argv[], uint32_t delta) {
     for (int i = delta ; i < argc ; i++) {
         char* command = argv[i];
 
-#ifdef DO_DEBUG
+#ifdef DEBUG
         printf("Command: %s\n", command);
 #endif
 
