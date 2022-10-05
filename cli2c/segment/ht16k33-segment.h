@@ -49,6 +49,7 @@ void            HT16K33_set_brightness(uint8_t brightness);
 void            HT16K33_set_number(uint8_t number, uint8_t digit, bool has_dot);
 void            HT16K33_set_glyph(uint8_t glyph, uint8_t digit, bool has_dot);
 void            HT16K33_show_value(int value, bool decimal);
+void            HT16K33_set_point(uint8_t digit);
 
 static uint32_t bcd(uint32_t base);
 static void     HT16K33_sleep_ms(int ms);

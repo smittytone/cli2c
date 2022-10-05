@@ -140,9 +140,31 @@ int segment_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                         return 1;
                     }
                 
+                case 'd':   // SET DECIMAL
+                    {
+                        // Get the required argument
+                        if (i < argc - 1) {
+                            command = argv[++i];
+                            if (command[0] != '-') {
+                                uint8_t digit = (uint8_t)strtol(command, NULL, 0);
+
+                                if (digit > 3) {
+                                    print_error("Digit value out of range (0-3)");
+                                    return 1;
+                                }
+
+                                // Apply the command
+                                HT16K33_set_point(digit);
+                                break;
+                            }
+                        }
+                        
+                        print_error("No brightness value supplied");
+                        return 1;
+                    }
+            
                 case 'f':   // FLIP DISPLAY
                     HT16K33_flip();
-                    HT16K33_draw();
                     break;
                 
                 case 'g':   // DISPLAY A GLYPH ON A DIGIT
@@ -186,7 +208,6 @@ int segment_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
 
                                         // Perform the action
                                         HT16K33_set_glyph(glyph, digit, false);
-                                        HT16K33_draw();
                                         break;
                                     }
                                 }
@@ -215,7 +236,6 @@ int segment_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
 
                                 // Perform the action
                                 HT16K33_show_value(number, false);
-                                HT16K33_draw();
                                 break;
                             }
                         }
@@ -265,7 +285,6 @@ int segment_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                                         
                                         // Perform the action
                                         HT16K33_set_number(number, digit, false);
-                                        HT16K33_draw();
                                         break;
                                     }
                                 }
@@ -284,6 +303,10 @@ int segment_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                     HT16K33_draw();
                     break;
                 
+                case 'z':
+                    HT16K33_draw();
+                    break;
+            
                 case '!':
                     i2c_commands(i2c, argc, argv, i);
                     break;
@@ -337,7 +360,7 @@ void show_help() {
 void print_error(char* format_string, ...) {
     va_list args;
     va_start(args, format_string);
-    print_output(false, format_string, args);
+    print_output(true, format_string, args);
     va_end(args);
 }
 

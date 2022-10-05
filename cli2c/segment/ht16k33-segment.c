@@ -194,6 +194,20 @@ void HT16K33_show_value(int value, bool decimal) {
 }
 
 
+void HT16K33_set_point(uint8_t digit) {
+    
+    uint8_t a = display_buffer[POS[digit]];
+    
+    if ((a & 0x80) > 0) {
+        a &= 0x7F;
+    } else {
+        a |= 0x80;
+    }
+    
+    display_buffer[POS[digit]] = a;
+}
+
+
 /**
  * @brief Convert a 16-bit value (0-9999) to BCD notation.
  *
