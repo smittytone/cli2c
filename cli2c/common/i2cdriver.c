@@ -9,6 +9,10 @@
 #include "main.h"
 
 
+// Retain the original port settings
+static struct termios original_settings;
+
+
 #pragma mark - Serial Port Functions
 
 /**
@@ -25,42 +29,51 @@ int openSerialPort(const char *device_file) {
     // Open the device
     int fd = open(device_file, O_RDWR | O_NOCTTY);
     if (fd == -1) {
-        print_error("Could not open the device at %s", device_file);
+        print_error("Could not open the device at %s - %s (%d)", device_file, strerror(errno), errno);
         return -1;
     }
     
+    // Prevent additional opens except by root-owned processes
+    if (ioctl(fd, TIOCEXCL) == -1) {
+        print_error("Could not set TIOCEXCL on %s - %s (%d)", device_file, strerror(errno), errno);
+        goto error;;
+    }
+
     // Get the port settings
-    tcgetattr(fd, &serial_settings);
-    cfmakeraw(&serial_settings);
+    tcgetattr(fd, &original_settings);
+    serial_settings = original_settings;
     
     // Calls to read() will return as soon as there is
     // at least one byte available or after 100ms.
+    cfmakeraw(&serial_settings);
     serial_settings.c_cc[VMIN] = 0;
     serial_settings.c_cc[VTIME] = 1;
 
-    if (tcsetattr(fd, TCSAFLUSH, &serial_settings) != 0) {
-        print_error("Could not apply the port settings");
-        close(fd);
-        return -1;
-    }
-
-    // Prevent additional opens except by root-owned processes
-    if (ioctl(fd, TIOCEXCL) == -1) {
-        print_error("Could not set TIOCEXCL on %s", device_file);
-        close(fd);
-        return -1;
+    if (tcsetattr(fd, TCSANOW, &serial_settings) != 0) {
+        print_error("Could not apply the port settings - %s (%d)", strerror(errno), errno);
+        goto error;
     }
 
     // Set the port speed
     speed_t speed = (speed_t)115200;
     if (ioctl(fd, IOSSIOSPEED, &speed) == -1) {
-        print_error("Could not set port speed to 115200bps");
-        close(fd);
-        return -1;
+        print_error("Could not set port speed to 115200bps - %s (%d)", strerror(errno), errno);
+        goto error;
     }
-
+    
+    // Set the latency -- MAY REMOVE IF NOT NEEDED
+    unsigned long lat_us = 1UL;
+    if (ioctl(fd, IOSSDATALAT, &lat_us) == -1) {
+        print_error("Could not set port latency - %s (%d)", strerror(errno), errno);
+        goto error;
+    }
+    
     // Return the File Descriptor
     return fd;
+
+error:
+    close(fd);
+    return -1;
 }
 
 
@@ -94,10 +107,8 @@ size_t readFromSerialPort(int fd, uint8_t* buffer, size_t byte_count) {
         }
     } else {
         // Read a fixed, expected number of bytes
-        /*
         struct timespec now, then;
         clock_gettime(CLOCK_MONOTONIC_RAW, &then);
-        */
         
         while (count < byte_count) {
             // Read in the data a byte at a time
@@ -106,15 +117,11 @@ size_t readFromSerialPort(int fd, uint8_t* buffer, size_t byte_count) {
                 count += number_read;
             }
             
-            /*
-            else {
-                clock_gettime(CLOCK_MONOTONIC_RAW, &now);
-                if (now.tv_sec - then.tv_sec > 10) {
-                    print_error("Read timeout: %i bytes read of %i", count, byte_count);
-                    break;
-                }
+            clock_gettime(CLOCK_MONOTONIC_RAW, &now);
+            if (now.tv_sec - then.tv_sec > 15) {
+                print_error("Read timeout: %i bytes read of %i", count, byte_count);
+                break;
             }
-            */
         }
     }
 
@@ -602,6 +609,16 @@ void show_commands(void) {
  */
 void flush_and_close_port(int fd) {
     
-    tcflush(fd, TCIOFLUSH);
+    // Drain the FIFOs
+    if (tcdrain(fd) == -1) {
+        print_error("Could not flush the port. %s (%d).\n", strerror(errno), errno);
+    }
+    
+    // Set the port back to how we found it
+    if (tcsetattr(fd, TCSANOW, &original_settings) == -1) {
+        print_error("Coould not reset port - %s (%d)", strerror(errno), errno);
+    }
+
+    //tcflush(fd, TCIOFLUSH);
     close(fd);
 }

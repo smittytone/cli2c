@@ -360,7 +360,7 @@ void show_help() {
 void print_error(char* format_string, ...) {
     va_list args;
     va_start(args, format_string);
-    print_output(false, format_string, args);
+    print_output(true, format_string, args);
     va_end(args);
 }
 
