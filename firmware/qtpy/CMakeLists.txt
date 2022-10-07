@@ -1,12 +1,13 @@
 cmake_minimum_required(VERSION 3.20)
 
 # Make project data accessible to compiler
-add_compile_definitions(FW_NAME="${FW_1_NAME}")
-add_compile_definitions(FW_VERSION="${FW_1_VERSION_NUMBER}")
-add_compile_definitions(BUILD_NUM=${BUILD_NUMBER})
-add_compile_definitions(QTPY_BUILD=1)
 # IMPORTANT `HW_MODEL` must be no more than 16 characters
-add_compile_definitions(HW_MODEL="QTPY-RP2040")
+add_compile_definitions(
+    FW_NAME="${FW_1_NAME}"
+    FW_VERSION="${FW_1_VERSION_NUMBER}"
+    BUILD_NUM=${BUILD_NUMBER}
+    NEO_BUILD=1
+    HW_MODEL="ADA-QTPY-RP2040")
 
 # Set the device's I2C pins
 # These are for the board pins A2 (SCL) and A3 (SDA)
@@ -14,12 +15,18 @@ add_compile_definitions(HW_MODEL="QTPY-RP2040")
 # the STEMMA port -- both A2,A3,STEMMA all used i2c1.
 
 # Board pins A2 and A3
-add_compile_definitions(SDA_PIN=26)
-add_compile_definitions(SCL_PIN=27)
+add_compile_definitions(
+    SDA_PIN=26
+    SCL_PIN=27)
 
 # STEMMA port
-#add_compile_definitions(SDA_PIN=22)
-#add_compile_definitions(SCL_PIN=23)
+#add_compile_definitions(
+#   SDA_PIN=22
+#   SCL_PIN=23)
+
+add_compile_definitions(
+    PIN_NEO_DATA=12
+    PIN_NEO_PWR=11)
 
 set(PICO_BOARD=adafruit_qtpy_rp2040)
 set(PICO_STDIO_USB_CONNECT_WAIT_TIMEOUT_MS=2000)

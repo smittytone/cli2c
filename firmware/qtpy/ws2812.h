@@ -47,8 +47,7 @@
 #define LED_COUNT_MAX               5 * (1 << LED_COUNT_SHIFT)
 #define PROBE_SM                    0
 
-#define QTPY_PIN_NEO_DATA           12
-#define QTPY_PIN_NEO_PWR            11
+
 
 
 /*

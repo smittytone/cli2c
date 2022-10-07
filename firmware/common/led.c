@@ -24,7 +24,7 @@
  * @brief Turn the LED on.
  */
 void led_on(void) {
-#ifdef QTPY_BUILD
+#ifdef NEO_BUILD
     ws2812_pixel(RGB_COLOUR);
 #elif defined PICO_BUILD
     pico_led_on();
@@ -36,7 +36,7 @@ void led_on(void) {
  * @brief Turn the LED off.
  */
 void led_off(void) {
-#ifdef QTPY_BUILD
+#ifdef NEO_BUILD
     ws2812_pixel(0x00);
 #elif defined PICO_BUILD
     pico_led_off();
@@ -50,7 +50,7 @@ void led_off(void) {
  * @param is_on: Turn the LED on (`true`) or off (`false`).
  */
 void led_set_state(bool is_on) {
-#ifdef QTPY_BUILD
+#ifdef NEO_BUILD
     ws2812_pixel(is_on ? RGB_COLOUR : 0x00);
 #elif defined PICO_BUILD
     pico_led_set_state(is_on);
@@ -64,7 +64,7 @@ void led_set_state(bool is_on) {
  * @param count: The number of blinks.
  */
 void led_flash(uint32_t count) {
-#ifdef QTPY_BUILD
+#ifdef NEO_BUILD
     ws2812_flash(count);
 #elif defined PICO_BUILD
     pico_led_flash(count);
@@ -79,7 +79,7 @@ void led_flash(uint32_t count) {
  * @param colour: The LED colour as an RGB six-digit RGB hex value.
  */
 void led_set_colour(uint32_t colour) {
-#ifdef QTPY_BUILD
+#ifdef NEO_BUILD
    ws2812_set_colour(colour);
 #endif
 /*

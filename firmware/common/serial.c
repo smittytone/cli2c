@@ -143,7 +143,7 @@ void rx_loop(void) {
                         }
                         break;
 
-                    case 's':   // START I2C TRANSACTION
+                    case 's':   // START AN I2C TRANSACTION
                         if (transaction.is_ready) {
                             // Received data is in the form ['s', (address << 1) | op];
                             transaction.address = (rx_buffer[1] & 0xFE) >> 1;
@@ -288,7 +288,8 @@ void send_status(I2C_Trans* t) {
     );
 
     char model[HW_MODEL_NAME_SIZE_MAX + 1] = {0};
-    strncpy(model, HW_MODEL, HW_MODEL_NAME_SIZE_MAX);
+    //strncpy(model, model, HW_MODEL_NAME_SIZE_MAX);
+    strncat(model, HW_MODEL, HW_MODEL_NAME_SIZE_MAX);
 
     // Generate and return the status data string.
     // Data in the form: "1.1.100.110.QTPY-RP2040" or "1.1.100.110.PI-PICO"

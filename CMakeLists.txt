@@ -2,16 +2,20 @@ cmake_minimum_required(VERSION 3.20)
 
 # Set project data
 set(PROJECT_NAME "I2C Host Firmware")
-set(BUILD_NUMBER "10")
+set(BUILD_NUMBER "11")
 
 # Set app name(s) and version(s)
 set(FW_1_NAME "firmware_qtpy_rp2040")
-set(FW_1_VERSION_NUMBER "0.1.2")
+set(FW_1_VERSION_NUMBER "0.1.3")
 set(FW_1_SRC_DIRECTORY "${CMAKE_SOURCE_DIR}/firmware/qtpy")
 
 set(FW_2_NAME "firmware_pico")
-set(FW_2_VERSION_NUMBER "0.1.2")
+set(FW_2_VERSION_NUMBER "0.1.3")
 set(FW_2_SRC_DIRECTORY "${CMAKE_SOURCE_DIR}/firmware/pico")
+
+set(FW_3_NAME "firmware_promicro")
+set(FW_3_VERSION_NUMBER "0.1.3")
+set(FW_3_SRC_DIRECTORY "${CMAKE_SOURCE_DIR}/firmware/promicro")
 
 # Move common source code to a separate directory
 set(COMMON_CODE_DIRECTORY "${CMAKE_SOURCE_DIR}/firmware/common")
@@ -57,3 +61,4 @@ pico_sdk_init()
 # Include the apps' source code
 add_subdirectory(${FW_1_SRC_DIRECTORY})
 add_subdirectory(${FW_2_SRC_DIRECTORY})
+add_subdirectory(${FW_3_SRC_DIRECTORY})

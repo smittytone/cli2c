@@ -11,7 +11,7 @@
 #define _HEADER_LED_
 
 
-#ifdef QTPY_BUILD
+#ifdef NEO_BUILD
 #include "../qtpy/ws2812.h"
 #endif
 

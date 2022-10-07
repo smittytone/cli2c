@@ -46,14 +46,14 @@ void ws2812_init(void) {
     // Set defaults
     colour = RGB_COLOUR;
 
-    // Set PIO output to feed the WS2182 via pin QTPY_PIN_NEO_DATA
+    // Set PIO output to feed the WS2182 via pin PIN_NEO_DATA
     pio_offset = pio_add_program(pio1, &ws2812_program);
-    ws2812_program_init(pio1, PROBE_SM, pio_offset, QTPY_PIN_NEO_DATA, 800000, true);
+    ws2812_program_init(pio1, PROBE_SM, pio_offset, PIN_NEO_DATA, 800000, true);
 
     // Power up the LED
-    gpio_init(QTPY_PIN_NEO_PWR);
-    gpio_set_dir(QTPY_PIN_NEO_PWR, GPIO_OUT);
-    gpio_put(QTPY_PIN_NEO_PWR, true);
+    gpio_init(PIN_NEO_PWR);
+    gpio_set_dir(PIN_NEO_PWR, GPIO_OUT);
+    gpio_put(PIN_NEO_PWR, true);
 
     // Set the LED off
     ws2812_pixel(0x00);

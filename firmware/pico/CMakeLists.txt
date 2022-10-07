@@ -1,19 +1,21 @@
 cmake_minimum_required(VERSION 3.20)
 
 # Make project data accessible to compiler
-add_compile_definitions(FW_NAME="${FW_2_NAME}")
-add_compile_definitions(FW_VERSION="${FW_2_VERSION_NUMBER}")
-add_compile_definitions(BUILD_NUM=${BUILD_NUMBER})
-add_compile_definitions(PICO_BUILD=1)
 # IMPORTANT `HW_MODEL` must be no more than 16 characters
-add_compile_definitions(HW_MODEL="PI-PICO")
+add_compile_definitions(
+    FW_NAME="${FW_2_NAME}"
+    FW_VERSION="${FW_2_VERSION_NUMBER}"
+    BUILD_NUM=${BUILD_NUMBER}
+    PICO_BUILD=1
+    HW_MODEL="PI-PICO")
 
 # Set the device's I2C pins
 # These are for the board pins 4 (GPIO 2) and 5 (GPIO 3)
 # You can set these to other I2C pins but make sure
 # you select pins on I2C1
-add_compile_definitions(SDA_PIN=2)
-add_compile_definitions(SCL_PIN=3)
+add_compile_definitions(
+    SDA_PIN=2
+    SCL_PIN=3)
 
 # Include app source code file(s)
 add_executable(${FW_2_NAME}
