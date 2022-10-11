@@ -366,6 +366,20 @@ void print_error(char* format_string, ...) {
 
 
 /**
+ * @brief Issue a warning message.
+ *
+ * @param format_string: Message string with optional formatting
+ * @param ...:           Optional injectable values
+ */
+void print_warning(char* format_string, ...) {
+    va_list args;
+    va_start(args, format_string);
+    print_output(false, format_string, args);
+    va_end(args);
+}
+
+
+/**
  * @brief Issue any message.
  *
  * @param is_err:        Is the message an error?
