@@ -56,7 +56,7 @@ void rx_loop(void) {
                 if (status_byte >= WRITE_LENGTH_BASE) {
                     // Write data received, so send it and ACK
                     transaction.write_byte_count = status_byte - WRITE_LENGTH_BASE + 1;
-                    int bytes_sent = i2c_write_timeout_us(I2C_PORT, transaction.address, &rx_buffer[1], transaction.write_byte_count, false, 10);
+                    int bytes_sent = i2c_write_timeout_us(I2C_PORT, transaction.address, &rx_buffer[1], transaction.write_byte_count, false, 1000);
 
                     // Send an ACK to say we wrote the data -- or an ERR if we didn't
                     if (bytes_sent == PICO_ERROR_GENERIC || bytes_sent == PICO_ERROR_TIMEOUT) {
@@ -68,7 +68,7 @@ void rx_loop(void) {
                     // Read length received only
                     transaction.read_byte_count = status_byte - READ_LENGTH_BASE + 1;
                     uint8_t i2x_rx_buffer[65] = {0};
-                    int bytes_read = i2c_read_timeout_us(I2C_PORT, transaction.address, i2x_rx_buffer, transaction.read_byte_count, false, 10);
+                    int bytes_read = i2c_read_timeout_us(I2C_PORT, transaction.address, i2x_rx_buffer, transaction.read_byte_count, false, 1000);
 
                     // Return the read data
                     if (bytes_read != PICO_ERROR_GENERIC) {
