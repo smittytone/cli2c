@@ -1,7 +1,7 @@
 /*
  * I2C Host Firmware - LED control middleware
  *
- * @version     0.1.1
+ * @version     0.1.3
  * @author      Tony Smith (@smittytone)
  * @copyright   2022
  * @licence     MIT
@@ -11,11 +11,14 @@
 #define _HEADER_LED_
 
 
+/*
+ * CONSTANTS
+ */
 #ifdef NEO_BUILD
 #include "../qtpy/ws2812.h"
 #endif
 
-#ifdef PICO_BUILD
+#ifdef LED_BUILD
 #include "../pico/pico_led.h"
 #endif
 

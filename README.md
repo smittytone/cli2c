@@ -1,4 +1,4 @@
-# cli2c
+# cli2c 0.14
 
 An I2C driver for macOS used as the basis for an HT16K33-controlled LED matrix driver. It requires a Raspberry Pi Pico or QTPy RP2040 as a hardware bridge.
 

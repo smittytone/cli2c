@@ -15,14 +15,9 @@ add_compile_definitions(
 # the STEMMA port -- both A2,A3,STEMMA all used i2c1.
 
 # Board pins A2 and A3
-add_compile_definitions(
-    SDA_PIN=26
-    SCL_PIN=27)
-
+add_compile_definitions(SDA_PIN=26 SCL_PIN=27)
 # STEMMA port
-#add_compile_definitions(
-#   SDA_PIN=22
-#   SCL_PIN=23)
+#add_compile_definitions(SDA_PIN=22 SCL_PIN=23)
 
 add_compile_definitions(
     PIN_NEO_DATA=12

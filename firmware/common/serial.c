@@ -1,7 +1,7 @@
 /*
  * I2C Host
  *
- * @version     0.1.1
+ * @version     0.1.3
  * @author      Tony Smith (@smittytone)
  * @copyright   2022
  * @licence     MIT
@@ -364,7 +364,7 @@ void send_err(void) {
 /**
  * @brief Read in a single transmitted block.
  *
- * @param buffer: A pointer to the byte store buffer,
+ * @param buffer: A pointer to the byte store buffer.
  *
  * @retval The number of bytes to process.
  */
@@ -383,7 +383,7 @@ uint32_t rx(uint8_t* buffer) {
         HT16K33_set_number((uint8_t)(c & 0x0F), 1, false);
         HT16K33_draw();
 #else
-        sleep_ms(10);
+        sleep_ms(5);
 #endif
     }
 
@@ -391,6 +391,12 @@ uint32_t rx(uint8_t* buffer) {
 }
 
 
+/**
+ * @brief Send a single transmitted block.
+ *
+ * @param buffer:     A pointer to the byte store buffer.
+ * @param byte_count: The number of bytes to send.
+ */
 void tx(uint8_t* buffer, uint32_t byte_count) {
 
     for (uint32_t i = 0 ; i < byte_count ; ++i) {
@@ -402,7 +408,7 @@ void tx(uint8_t* buffer, uint32_t byte_count) {
         HT16K33_set_number((buffer[i] & 0x0F), 3, false);
         HT16K33_draw();
 #else
-        sleep_ms(10);
+        sleep_ms(5);
 #endif
     }
 

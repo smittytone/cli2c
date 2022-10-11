@@ -1,7 +1,7 @@
 /*
  * I2C Host Firmware - debugging LED segment driver
  *
- * @version     0.1.1
+ * @version     0.1.3
  * @author      Tony Smith (@smittytone)
  * @copyright   2022
  * @licence     MIT
@@ -47,8 +47,7 @@ void HT16K33_write_cmd(uint8_t cmd) {
 
 /**
  * @brief Clear the display buffer.
- *
- *  This does not clear the LED -- call `HT16K33_draw()`.
+ *        This does not clear the LED -- call `HT16K33_draw()`.
  */
 void HT16K33_clear_buffer(void) {
     
@@ -72,11 +71,11 @@ void HT16K33_draw(void) {
 
 
 /**
- *  @brief Write a single-digit hex number to the display buffer at the specified digit.
+ * @brief Write a single-digit hex number to the display buffer at the specified digit.
  *
- *  @param  number:  The value to write.
- *  @param  digit:   The digit that will show the number.
- *  @param  has_dot: `true` if the digit's decimal point should be lit,
+ * @param  number:  The value to write.
+ * @param  digit:   The digit that will show the number.
+ * @param  has_dot: `true` if the digit's decimal point should be lit,
  *                   `false` otherwise.
  */
 void HT16K33_set_number(uint8_t number, uint8_t digit, bool has_dot) {
@@ -102,9 +101,9 @@ void HT16K33_set_number(uint8_t number, uint8_t digit, bool has_dot) {
  *     | _ |
  *       3
  *
- *  @param glyph:   The glyph to write.
- *  @param digit:   The digit that will show the number.
- *  @param has_dot: `true` if the digit's decimal point should be lit,
+ * @param glyph:   The glyph to write.
+ * @param digit:   The digit that will show the number.
+ * @param has_dot: `true` if the digit's decimal point should be lit,
  *                  `false` otherwise.
  */
 void HT16K33_set_glyph(uint8_t glyph, uint8_t digit, bool has_dot) {
@@ -118,8 +117,8 @@ void HT16K33_set_glyph(uint8_t glyph, uint8_t digit, bool has_dot) {
 /**
  * @brief Write a positive decimal value to the entire 4-digit display buffer.
  *
- *  @param value:   The value to write.
- *  @param decimal: `true` if digit 1's decimal point should be lit,
+ * @param value:   The value to write.
+ * @param decimal: `true` if digit 1's decimal point should be lit,
  *                  `false` otherwise.
  */
 void HT16K33_show_value(int16_t value, bool decimal) {

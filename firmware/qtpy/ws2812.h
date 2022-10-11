@@ -48,8 +48,6 @@
 #define PROBE_SM                    0
 
 
-
-
 /*
  *  PROTOTYPES
  */

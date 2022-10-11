@@ -6,7 +6,7 @@ add_compile_definitions(
     FW_NAME="${FW_2_NAME}"
     FW_VERSION="${FW_2_VERSION_NUMBER}"
     BUILD_NUM=${BUILD_NUMBER}
-    PICO_BUILD=1
+    LED_BUILD=1
     HW_MODEL="PI-PICO")
 
 # Set the device's I2C pins

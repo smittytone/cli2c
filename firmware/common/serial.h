@@ -1,7 +1,7 @@
 /*
  * I2C Host
  *
- * @version     0.1.1
+ * @version     0.1.3
  * @author      Tony Smith (@smittytone)
  * @copyright   2022
  * @licence     MIT
@@ -43,6 +43,11 @@
 #define READ_LENGTH_BASE                        0x80
 
 #define HW_MODEL_NAME_SIZE_MAX                  16
+
+#ifndef DEBUG_SEG_ADDR
+// Just in case the user comments out the CMakeLists.txt define
+#define DEBUG_SEG_ADDR                          0x70
+#endif
 
 
 /*

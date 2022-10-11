@@ -1,7 +1,7 @@
 /*
  * I2C Host Firmware - LED control middleware
  *
- * @version     0.1.1
+ * @version     0.1.3
  * @author      Tony Smith (@smittytone)
  * @copyright   2022
  * @licence     MIT
@@ -26,7 +26,7 @@
 void led_on(void) {
 #ifdef NEO_BUILD
     ws2812_pixel(RGB_COLOUR);
-#elif defined PICO_BUILD
+#elif defined LED_BUILD
     pico_led_on();
 #endif
 }
@@ -38,7 +38,7 @@ void led_on(void) {
 void led_off(void) {
 #ifdef NEO_BUILD
     ws2812_pixel(0x00);
-#elif defined PICO_BUILD
+#elif defined LED_BUILD
     pico_led_off();
 #endif
 }
@@ -52,7 +52,7 @@ void led_off(void) {
 void led_set_state(bool is_on) {
 #ifdef NEO_BUILD
     ws2812_pixel(is_on ? RGB_COLOUR : 0x00);
-#elif defined PICO_BUILD
+#elif defined LED_BUILD
     pico_led_set_state(is_on);
 #endif
 }
@@ -66,7 +66,7 @@ void led_set_state(bool is_on) {
 void led_flash(uint32_t count) {
 #ifdef NEO_BUILD
     ws2812_flash(count);
-#elif defined PICO_BUILD
+#elif defined LED_BUILD
     pico_led_flash(count);
 #endif
 }
