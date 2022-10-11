@@ -79,6 +79,20 @@ void print_error(char* format_string, ...) {
 
 
 /**
+ * @brief Issue a warning message.
+ *
+ * @param format_string: Message string with optional formatting
+ * @param ...:           Optional injectable values
+ */
+void print_warning(char* format_string, ...) {
+    va_list args;
+    va_start(args, format_string);
+    print_output(false, format_string, args);
+    va_end(args);
+}
+
+
+/**
  * @brief Issue any message.
  *
  * @param is_err:        Is the message an error?
@@ -89,10 +103,10 @@ void print_output(bool is_err, char* format_string, va_list args) {
     
     // Write the message type to the message
     char buffer[1024] = {0};
-    sprintf(buffer, is_err ? "[ERROR] " : "[DEBUG] ");
+    sprintf(buffer, is_err ? "[ERROR] " : "[WARNING] ");
     
     // Write the formatted text to the message
-    vsnprintf(&buffer[8], sizeof(buffer) - 9, format_string, args);
+    vsnprintf(&buffer[is_err ? 8 : 10], sizeof(buffer) - (is_err ? 9 : 11), format_string, args);
     
     // Print it all out
     printf("%s\n", buffer);

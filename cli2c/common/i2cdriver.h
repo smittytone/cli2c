@@ -65,6 +65,7 @@ void        flush_and_close_port(int fd);
 
 void        i2c_connect(I2CDriver *sd, const char* portname);
 bool        i2c_init(I2CDriver *sd);
+bool        i2c_set_speed(I2CDriver *sd, long speed);
 bool        i2c_start(I2CDriver *sd, uint8_t address, uint8_t op);
 bool        i2c_reset(I2CDriver *sd);
 bool        i2c_stop(I2CDriver *sd);
