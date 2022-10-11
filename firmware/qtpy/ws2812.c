@@ -44,7 +44,7 @@ void ws2812_init(void) {
     sm = 0;
 
     // Set defaults
-    colour = RGB_COLOUR;
+    colour = NEO_COLOUR;
 
     // Set PIO output to feed the WS2182 via pin PIN_NEO_DATA
     pio_offset = pio_add_program(pio1, &ws2812_program);
@@ -66,6 +66,11 @@ void ws2812_pixel(uint32_t colour) {
     // GRB is irrational, so convert 'colour' from RGB
     uint32_t grb_colour = ((colour & 0xFF0000) >> 8) | ((colour & 0xFF00) << 8) | (colour & 0xFF);
     pio_sm_put_blocking(pio1, PROBE_SM, grb_colour << 8u);
+}
+
+
+void ws2812_set_state(bool state) {
+    ws2812_pixel(state ? colour : 0x00);
 }
 
 

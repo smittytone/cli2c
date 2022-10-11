@@ -34,7 +34,7 @@
  * CONSTANTS
  */
 #define SERIAL_READ_TIMEOUT_US                  10
-#define RX_LOOP_DELAY_MS                        50    
+#define RX_LOOP_DELAY_MS                        50
 
 #define I2C_PORT                                i2c1
 #define I2C_FREQUENCY                           400000

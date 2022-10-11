@@ -25,7 +25,7 @@
  */
 void led_on(void) {
 #ifdef NEO_BUILD
-    ws2812_pixel(RGB_COLOUR);
+    ws2812_set_state(true);
 #elif defined LED_BUILD
     pico_led_on();
 #endif
@@ -37,7 +37,7 @@ void led_on(void) {
  */
 void led_off(void) {
 #ifdef NEO_BUILD
-    ws2812_pixel(0x00);
+    ws2812_set_state(false);
 #elif defined LED_BUILD
     pico_led_off();
 #endif
@@ -51,7 +51,7 @@ void led_off(void) {
  */
 void led_set_state(bool is_on) {
 #ifdef NEO_BUILD
-    ws2812_pixel(is_on ? RGB_COLOUR : 0x00);
+    ws2812_set_state(is_on);
 #elif defined LED_BUILD
     pico_led_set_state(is_on);
 #endif

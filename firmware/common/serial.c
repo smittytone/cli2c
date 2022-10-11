@@ -47,8 +47,8 @@ void rx_loop(void) {
         if (read_count > 0) {
             // Are we expecting write data or a read op next?
             // NOTE The first byte will always be:
-            //      32-127  (ascii char as a command), 
-            //      128-191 (read 1-64 bytes), or 
+            //      32-127  (ascii char as a command),
+            //      128-191 (read 1-64 bytes), or
             //      192-255 (write 1-64 bytes)
             uint8_t status_byte = rx_buffer[0];
             if (transaction.is_started && status_byte >= READ_LENGTH_BASE) {
@@ -56,19 +56,19 @@ void rx_loop(void) {
                 if (status_byte >= WRITE_LENGTH_BASE) {
                     // Write data received, so send it and ACK
                     transaction.write_byte_count = status_byte - WRITE_LENGTH_BASE + 1;
-                    int bytes_sent = i2c_write_blocking(I2C_PORT, transaction.address, &rx_buffer[1], transaction.write_byte_count, false);
+                    int bytes_sent = i2c_write_timeout_us(I2C_PORT, transaction.address, &rx_buffer[1], transaction.write_byte_count, false, 10);
 
                     // Send an ACK to say we wrote the data -- or an ERR if we didn't
-                    if (bytes_sent != PICO_ERROR_GENERIC) {
-                        send_ack();
-                    } else {
+                    if (bytes_sent == PICO_ERROR_GENERIC || bytes_sent == PICO_ERROR_TIMEOUT) {
                         send_err();
+                    } else {
+                        send_ack();
                     }
                 } else {
                     // Read length received only
                     transaction.read_byte_count = status_byte - READ_LENGTH_BASE + 1;
                     uint8_t i2x_rx_buffer[65] = {0};
-                    int bytes_read = i2c_read_blocking(I2C_PORT, transaction.address, i2x_rx_buffer, transaction.read_byte_count, false);
+                    int bytes_read = i2c_read_timeout_us(I2C_PORT, transaction.address, i2x_rx_buffer, transaction.read_byte_count, false, 10);
 
                     // Return the read data
                     if (bytes_read != PICO_ERROR_GENERIC) {
@@ -189,7 +189,7 @@ void rx_loop(void) {
             led_set_state(state);
         }
 #endif
-        
+
         // Pause? May not be necessary or might be bad
         sleep_ms(RX_LOOP_DELAY_MS);
     }
@@ -383,7 +383,7 @@ uint32_t rx(uint8_t* buffer) {
         HT16K33_set_number((uint8_t)(c & 0x0F), 1, false);
         HT16K33_draw();
 #else
-        sleep_ms(5);
+        sleep_ms(10);
 #endif
     }
 
@@ -408,7 +408,7 @@ void tx(uint8_t* buffer, uint32_t byte_count) {
         HT16K33_set_number((buffer[i] & 0x0F), 3, false);
         HT16K33_draw();
 #else
-        sleep_ms(5);
+        sleep_ms(10);
 #endif
     }
 

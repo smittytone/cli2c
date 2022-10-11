@@ -37,5 +37,3 @@ int main(void) {
     ws2812_pixel(0xFF0000);
     return 1;
 }
-
-

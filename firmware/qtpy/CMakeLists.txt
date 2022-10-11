@@ -13,15 +13,21 @@ add_compile_definitions(
 # These are for the board pins A2 (SCL) and A3 (SDA)
 # NOT SDA and SCL. This is to ensure comptatibility with
 # the STEMMA port -- both A2,A3,STEMMA all used i2c1.
+if (DEFINED USE_STEMMA)
+    add_compile_definitions(
+        SDA_PIN=26
+        SCL_PIN=27)
+else()
+    add_compile_definitions(
+        SDA_PIN=22
+        SCL_PIN=23)
+endif()
 
-# Board pins A2 and A3
-add_compile_definitions(SDA_PIN=26 SCL_PIN=27)
-# STEMMA port
-#add_compile_definitions(SDA_PIN=22 SCL_PIN=23)
-
+# NeoPixel
 add_compile_definitions(
     PIN_NEO_DATA=12
-    PIN_NEO_PWR=11)
+    PIN_NEO_PWR=11
+    NEO_COLOUR=0x100010)
 
 set(PICO_BOARD=adafruit_qtpy_rp2040)
 set(PICO_STDIO_USB_CONNECT_WAIT_TIMEOUT_MS=2000)
@@ -42,7 +48,7 @@ target_link_libraries(${FW_1_NAME} LINK_PUBLIC
 
 target_sources(${FW_1_NAME} PRIVATE ws2812.c)
 pico_generate_pio_header(${FW_1_NAME} ${FW_1_SRC_DIRECTORY}/ws2812.pio)
-add_compile_definitions(RGB_COLOUR=0x001000) # GREEN
+#add_compile_definitions(RGB_COLOUR=0x001000) # GREEN
 
 # Enable/disable STDIO via USB and UART
 pico_enable_stdio_usb(${FW_1_NAME} 1)
