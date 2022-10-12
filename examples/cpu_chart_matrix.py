@@ -7,11 +7,12 @@ from sys import exit, argv
 from time import sleep
 
 i2cdevice = None
+i2caddress = None
 col = 0
 cols = [0,0,0,0,0,0,0,0]
 
 def handler(signum, frame):
-    run(["matrix", i2cdevice, "-a", "off"])
+    run(["matrix", i2cdevice, i2caddress, "-a", "off"])
     print("Done")
     exit(0)
 
@@ -20,8 +21,13 @@ signal.signal(signal.SIGINT, handler)
 if len(argv) > 1:
     i2cdevice = argv[1]
 
+    if len(argv) > 2:
+        i2caddress = argv[2]
+    if i2caddress == None:
+        i2caddress = 0x70
+
 if i2cdevice:
-    run(["matrix", i2cdevice, "-w", "-a", "on", "-b", "4"])
+    run(["matrix", i2cdevice, i2caddress, "-w", "-a", "on", "-b", "4"])
     
     while True:
         cpu = int(cpu_percent())
@@ -56,7 +62,7 @@ if i2cdevice:
             data_string += "0x{:02x},".format(b)
         data_string = data_string[:-1]
         
-        run(["matrix", i2cdevice, "-g", data_string])
+        run(["matrix", i2cdevice, i2caddress, "-g", data_string])
         sleep(0.5)
 else:
-    print("[ERROR] No device specified")
+    print("Usage: python cpu_chart_matrix.py {device} {i2C address}")
