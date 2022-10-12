@@ -39,7 +39,7 @@ int main(int argc, char* argv[]) {
         if (i2c.connected) {
             // Initialize the I2C host's I2C bus
             if (!(i2c_init(&i2c))) {
-                print_error("%s could not initialise I2C\n", argv[1]);
+                print_error("%s could not initialise I2C", argv[1]);
                 flush_and_close_port(i2c.port);
                 return EXIT_ERR;
             }
@@ -49,17 +49,18 @@ int main(int argc, char* argv[]) {
             if (argc > 2) {
                 char* token = argv[2];
                 if (token[0] != '-') {
-                    // Not a command, so an address
+                    // Not a command, so an address?
                     i2c_address = (int)strtol(token, NULL, 0);
                     
-                    if (i2c_address < 0 || i2c_address > 0x7F) {
+                    // Only allow legal I2C address range
+                    if (i2c_address < 0x08 || i2c_address > 0x77) {
                         print_error("I2C address out of range");
                         flush_and_close_port(i2c.port);
                         return EXIT_ERR;
                     }
                     
                     // Note the non-standard I2C address
-                    printf("I2C address: 0x%02X\n", i2c_address);
+                    print_warning("Using I2C address: 0x%02X", i2c_address);
                     delta = 3;
                 }
                 
@@ -72,7 +73,7 @@ int main(int argc, char* argv[]) {
                 return result;
             }
         } else {
-            print_error("Could not connect to device %s\n", argv[1]);
+            print_error("Could not connect to device %s", argv[1]);
         }
     }
     
@@ -390,16 +391,13 @@ void print_output(bool is_err, char* format_string, va_list args) {
     
     // Write the message type to the message
     char buffer[1024] = {0};
-    sprintf(buffer, is_err ? "[ERROR] " : "[DEBUG] ");
+    sprintf(buffer, is_err ? "[ERROR] " : "[WARNING] ");
     
     // Write the formatted text to the message
-    vsnprintf(&buffer[8], sizeof(buffer) - 9, format_string, args);
-    
-    // Add NEWLINE to the message and output to UART
-    sprintf(&buffer[strlen(buffer)], "\n");
+    vsnprintf(&buffer[is_err ? 8 : 10], sizeof(buffer) - (is_err ? 9 : 11), format_string, args);
     
     // Print it all out
-    printf("%s", buffer);
+    printf("%s\n", buffer);
 }
 
 
