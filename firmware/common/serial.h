@@ -63,6 +63,14 @@ typedef struct {
     uint32_t    write_byte_count;
 } I2C_Trans;
 
+typedef struct {
+    uint8_t     bus_count;
+    uint8_t     bus_0_pair_count;
+    uint8_t     bus_1_pair_count;
+    uint8_t     bus_0_pins[20];
+    uint8_t     bus_1_pins[20];
+} I2C_PINS;
+
 
 /*
  * PROTOTYPES
@@ -77,6 +85,7 @@ void        send_err(void);
 void        send_scan(void);
 void        send_status(I2C_Trans* t);
 void        send_commands(void);
+void        send_list(void);
 
 uint32_t    rx(uint8_t *buffer);
 void        tx(uint8_t* buffer, uint32_t byte_count);

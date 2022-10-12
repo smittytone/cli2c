@@ -365,6 +365,56 @@ void i2c_scan(I2CDriver *sd) {
 }
 
 
+void i2c_enumerate(I2CDriver* sd) {
+    
+    uint8_t read_buffer[256] = {0};
+    send_command(sd, 'e');
+    size_t result = readFromSerialPort(sd->port, read_buffer, 0);
+    if (result == -1) {
+        print_error("Could not read from device");
+        return;
+    }
+    
+    // Data string is, for example,
+    // "2.4.4.0.1.4.5.8.9.12.13.2.3.6.7.10.11.14.15"
+    int bus_count = 0;
+    int bus_0_pairs = 0;
+    int bus_1_pairs = 0;
+    
+    // Extract the data
+    sscanf((char*)read_buffer, "%i.%i.%i.",
+        &bus_count,
+        &bus_0_pairs,
+        &bus_1_pairs
+    );
+    
+    printf("I2C buses: %i\n", bus_count);
+    
+    for (int i = 0 ; i < bus_count ; ++i) {
+        printf("I2C bus %i pin pairs: %i\n", i, bus_0_pairs);
+    }
+    
+    uint8_t* ptr = &read_buffer[6];
+    for (int i = 0 ; i < (bus_0_pairs << 1); i += 2) {
+        int sda = -1;
+        int scl = -1;
+        int n = 0;
+        
+        sscanf((char*)ptr, "%i.%i.%n",
+            &sda,
+            &scl,
+            &n
+        );
+        
+        ptr += n;
+        
+        printf("I2C bus 0: SDA %i, SCL %i\n", sda, scl);
+        
+    }
+    
+}
+
+
 /**
  * @brief Tell the I2C host to Initialise the I2C bus.
  *
@@ -534,11 +584,11 @@ int i2c_commands(I2CDriver *sd, int argc, char *argv[], uint32_t delta) {
         }
 
         switch (command[0]) {
-            case 'd':   // LIST DEVICES ON BUS
-                i2c_scan(sd);
+            case 'e':   // ENUMERATE THE BUS
+                i2c_enumerate(sd);
                 break;
-
-            case 'f':   // READ FROM THE I2C BUS
+                
+            case 'f':   // SET THE BUS FREQUENCY
                 {
                     if (i < argc - 1) {
                         char* token = argv[++i];
@@ -592,6 +642,10 @@ int i2c_commands(I2CDriver *sd, int argc, char *argv[], uint32_t delta) {
                     
                     return EXIT_ERR;
                 }
+
+            case 's':   // LIST DEVICES ON BUS
+                i2c_scan(sd);
+                break;
 
             case 'w':   // WRITE TO THE I2C BUS
                 {
@@ -686,7 +740,7 @@ void show_commands(void) {
     printf("  f {frequency}       Set the I2C bus frequency in multiples of 100kHz.\n");
     printf("                      Only 1 and 4 are supported.\n");
     printf("  x                   Reset the I2C bus.\n");
-    printf("  d                   Scan for devices on the I2C bus.\n");
+    printf("  s                   Scan for devices on the I2C bus.\n");
     printf("  i                   Get I2C bus host device information.\n\n");
 }
 

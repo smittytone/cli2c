@@ -70,6 +70,7 @@ bool        i2c_start(I2CDriver *sd, uint8_t address, uint8_t op);
 bool        i2c_reset(I2CDriver *sd);
 bool        i2c_stop(I2CDriver *sd);
 void        i2c_get_info(I2CDriver *sd, bool do_print);
+void        i2c_enumerate(I2CDriver *sd);
 size_t      i2c_write(I2CDriver *sd, const uint8_t bytes[], size_t nn);
 void        i2c_read(I2CDriver *sd, uint8_t bytes[], size_t nn);
 int         i2c_commands(I2CDriver *sd, int argc, char *argv[], uint32_t delta);

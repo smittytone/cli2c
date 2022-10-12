@@ -10,6 +10,9 @@
 #include "main.h"
 
 
+extern I2C_PINS i2c_pins;
+
+
 /*
  * ENTRY POINT
  */

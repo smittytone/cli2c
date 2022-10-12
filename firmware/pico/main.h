@@ -28,4 +28,10 @@
 #include "../common/serial.h"
 
 
+/*
+ * PROTOTYPES
+ */
+void init_pins(void);
+
+
 #endif  // _MAIN_H_

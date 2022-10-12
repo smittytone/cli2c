@@ -10,6 +10,9 @@
 #include "serial.h"
 
 
+I2C_PINS i2c_pins;
+
+
 /**
  * @brief Listen on the USB-fed stdin for signals from the driver.
  */
@@ -127,6 +130,10 @@ void rx_loop(void) {
                         init_i2c(transaction.frequency);
                         transaction.is_ready = true;
                         send_ack();
+                        break;
+
+                    case 'l':   // LIST I2C BUSES, PINS
+                        send_list();
                         break;
 
                     case 'p':   // SEND AN I2C STOP
@@ -312,6 +319,41 @@ void send_status(I2C_Trans* t) {
     tx(status_buffer, strlen(status_buffer));
 }
 
+
+void send_list(void) {
+
+    char list_buffer[256] = {0};
+
+        sprintf(list_buffer, "%i.%i.%i.",
+            i2c_pins.bus_count,                      // 2 chars
+            i2c_pins.bus_0_pair_count,               // 2 chars
+            i2c_pins.bus_1_pair_count
+        );
+
+        char* ptr = &list_buffer[strlen(list_buffer)];
+        for (int i = 0 ; i < (i2c_pins.bus_0_pair_count << 1) ; i += 2) {
+            sprintf(ptr, "%i.%i.",
+                i2c_pins.bus_0_pins[i],
+                i2c_pins.bus_0_pins[i + 1]
+            );
+
+            ptr += 6;
+        }
+
+        for (int i = 0 ; i < (i2c_pins.bus_1_pair_count << 1) ; i += 2) {
+            sprintf(ptr, "%i.%i.",
+                i2c_pins.bus_0_pins[i],
+                i2c_pins.bus_0_pins[i + 1]
+            );
+
+            ptr += 6;
+        }
+
+        sprintf(ptr, "\r\n");
+
+        // Send the data
+        tx(list_buffer, strlen(list_buffer));
+}
 
 /**
  * @brief Send back a list of supported commands.

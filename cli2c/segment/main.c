@@ -308,7 +308,7 @@ int segment_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                     HT16K33_draw();
                     break;
             
-                case '!':
+                case 'i':
                     i2c_commands(i2c, argc, argv, i);
                     break;
                     
