@@ -91,6 +91,8 @@ int main(int argc, char* argv[]) {
  */
 int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
     
+    bool do_draw = false;
+    
     for (int i = delta ; i < argc ; ++i) {
         char* command = argv[i];
 
@@ -171,7 +173,7 @@ int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
 
                                 // Perform the action
                                 HT16K33_set_char(ascii, do_centre);
-                                HT16K33_draw();
+                                do_draw = true;
                                 break;
                             }
                         }
@@ -203,7 +205,7 @@ int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                                 
                                 // Perform the action
                                 HT16K33_set_glyph(bytes);
-                                HT16K33_draw();
+                                do_draw = true;
                                 break;
                             }
                         }
@@ -244,7 +246,7 @@ int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
 
                                         // Perform the action
                                         HT16K33_plot((uint8_t)x, (uint8_t)y, ink == 1);
-                                        HT16K33_draw();
+                                        do_draw = true;
                                         break;
                                     }
                                 }
@@ -303,7 +305,11 @@ int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                 
                 case 'w':
                     HT16K33_clear_buffer();
-                    HT16K33_draw();
+                    do_draw = true;
+                    break;
+                    
+                case 'z':
+                    do_draw = true;
                     break;
                 
                 case '!':
@@ -322,6 +328,7 @@ int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
         }
     }
     
+    if (do_draw) HT16K33_draw();
     return EXIT_OK;
 }
 
