@@ -1,0 +1,44 @@
+/*
+ * I2C Host Firmware Host -- Pi Pico LED
+ *
+ * @version     0.1.5
+ * @author      Tony Smith (@smittytone)
+ * @copyright   2022
+ * @licence     MIT
+ *
+ */
+#ifndef _HEADER_PICO_LED_
+#define _HEADER_PICO_LED_
+
+
+/*
+ * INCLUDES
+ */
+#include <stdbool.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+// Pico SDK Includes
+#include "pico/stdlib.h"
+#include "pico/binary_info.h"
+#include "hardware/gpio.h"
+
+
+/*
+ * CONSTANTS
+ */
+#define     PIN_PICO_LED            25
+
+
+/*
+ * PROTOTYPES
+ */
+void    pico_led_init(void);
+void    pico_led_off(void);
+void    pico_led_on(void);
+void    pico_led_set_state(bool is_on);
+void    pico_led_flash(uint32_t count);
+
+
+#endif  // _HEADER_PICO_LED_
