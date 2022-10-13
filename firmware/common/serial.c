@@ -32,9 +32,8 @@ void rx_loop(void) {
     transaction.sda_pin = DEFAULT_SDA_PIN;  // The I2C SDA pin
     transaction.scl_pin = DEFAULT_SCL_PIN;  // The I2C SCL pin
 
-    // Loop-related variables
-    bool state = false;
-    int led_flash_count = 0;
+    // Heartbeat variables
+    uint64_t last = time_us_64();
 
 #ifdef DO_DEBUG
     // Set up a parallel segment display to assist
@@ -186,12 +185,13 @@ void rx_loop(void) {
         }
 
 #ifdef SHOW_HEARTBEAT
-        // One-second heartbeat LED blink for debugging
-        led_flash_count++;
-        if (led_flash_count > 500 / RX_LOOP_DELAY_MS) {
-            led_flash_count = 0;
-            state = !state;
-            led_set_state(state);
+        // Heartbeat LED blink for debugging
+        uint64_t now = time_us_64();
+        if (now - last > HEARTBEAT_PERIOD_US) {
+            led_set_state(true);
+            last = now;
+        } else if (now - last > HEARTBEAT_FLASH_US) {
+            led_set_state(false);
         }
 #endif
 
