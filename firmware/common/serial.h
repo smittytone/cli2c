@@ -1,7 +1,7 @@
 /*
  * I2C Host
  *
- * @version     0.1.3
+ * @version     0.1.4
  * @author      Tony Smith (@smittytone)
  * @copyright   2022
  * @licence     MIT
@@ -36,8 +36,7 @@
 #define SERIAL_READ_TIMEOUT_US                  10
 #define RX_LOOP_DELAY_MS                        50
 
-#define I2C_PORT                                i2c1
-#define I2C_FREQUENCY                           400000
+#define DEFAULT_I2C_PORT                        i2c1
 
 #define WRITE_LENGTH_BASE                       0xC0
 #define READ_LENGTH_BASE                        0x80
@@ -58,18 +57,13 @@ typedef struct {
     bool        is_started;
     bool        is_read_op;
     uint8_t     address;
+    uint8_t     sda_pin;
+    uint8_t     scl_pin;
     uint32_t    frequency;
     uint32_t    read_byte_count;
     uint32_t    write_byte_count;
+    i2c_inst_t* bus;
 } I2C_Trans;
-
-typedef struct {
-    uint8_t     bus_count;
-    uint8_t     bus_0_pair_count;
-    uint8_t     bus_1_pair_count;
-    uint8_t     bus_0_pins[20];
-    uint8_t     bus_1_pins[20];
-} I2C_PINS;
 
 
 /*
@@ -77,15 +71,14 @@ typedef struct {
  */
 void        rx_loop(void);
 
-void        init_i2c(int frequency_khz);
-void        reset_i2c(int frequency_khz);
+void        init_i2c(I2C_Trans* itr);
+void        reset_i2c(I2C_Trans* itr);
 
 void        send_ack(void);
 void        send_err(void);
-void        send_scan(void);
-void        send_status(I2C_Trans* t);
+void        send_scan(I2C_Trans* itr);
+void        send_status(I2C_Trans* itr);
 void        send_commands(void);
-void        send_list(void);
 
 uint32_t    rx(uint8_t *buffer);
 void        tx(uint8_t* buffer, uint32_t byte_count);

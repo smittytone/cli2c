@@ -1,7 +1,7 @@
 /*
  * I2C Host
  *
- * @version     0.1.3
+ * @version     0.1.4
  * @author      Tony Smith (@smittytone)
  * @copyright   2022
  * @licence     MIT
@@ -10,7 +10,7 @@
 #include "serial.h"
 
 
-I2C_PINS i2c_pins;
+
 
 
 /**
@@ -24,10 +24,13 @@ void rx_loop(void) {
 
     // Prepare a transaction record with default data
     I2C_Trans transaction;
-    transaction.is_started = false;     // No transaction taking place
-    transaction.is_ready = false;       // I2C bus not yet initialised
-    transaction.frequency = 400;        // The bud frequency in use
-    transaction.address = 0xFF;         // The target I2C address
+    transaction.is_started = false;         // No transaction taking place
+    transaction.is_ready = false;           // I2C bus not yet initialised
+    transaction.frequency = 400;            // The bud frequency in use
+    transaction.address = 0xFF;             // The target I2C address
+    transaction.bus = DEFAULT_I2C_PORT;     // The I2C bus to use
+    transaction.sda_pin = DEFAULT_SDA_PIN;  // The I2C SDA pin
+    transaction.scl_pin = DEFAULT_SCL_PIN;  // The I2C SCL pin
 
     // Loop-related variables
     bool state = false;
@@ -59,7 +62,7 @@ void rx_loop(void) {
                 if (status_byte >= WRITE_LENGTH_BASE) {
                     // Write data received, so send it and ACK
                     transaction.write_byte_count = status_byte - WRITE_LENGTH_BASE + 1;
-                    int bytes_sent = i2c_write_timeout_us(I2C_PORT, transaction.address, &rx_buffer[1], transaction.write_byte_count, false, 1000);
+                    int bytes_sent = i2c_write_timeout_us(transaction.bus, transaction.address, &rx_buffer[1], transaction.write_byte_count, false, 1000);
 
                     // Send an ACK to say we wrote the data -- or an ERR if we didn't
                     if (bytes_sent == PICO_ERROR_GENERIC || bytes_sent == PICO_ERROR_TIMEOUT) {
@@ -71,7 +74,7 @@ void rx_loop(void) {
                     // Read length received only
                     transaction.read_byte_count = status_byte - READ_LENGTH_BASE + 1;
                     uint8_t i2x_rx_buffer[65] = {0};
-                    int bytes_read = i2c_read_timeout_us(I2C_PORT, transaction.address, i2x_rx_buffer, transaction.read_byte_count, false, 1000);
+                    int bytes_read = i2c_read_timeout_us(transaction.bus, transaction.address, i2x_rx_buffer, transaction.read_byte_count, false, 1000);
 
                     // Return the read data
                     if (bytes_read != PICO_ERROR_GENERIC) {
@@ -90,7 +93,7 @@ void rx_loop(void) {
 
                             // If the bus is active, reset it
                             if (transaction.is_ready) {
-                                reset_i2c(transaction.frequency);
+                                reset_i2c(&transaction);
                                 transaction.is_started = false;
                             }
                         }
@@ -103,7 +106,7 @@ void rx_loop(void) {
 
                             // If the bus is active, reset it
                             if (transaction.is_ready) {
-                                reset_i2c(transaction.frequency);
+                                reset_i2c(&transaction);
                                 transaction.is_started = false;
                             }
                         }
@@ -120,26 +123,21 @@ void rx_loop(void) {
 
                     case 'd':   // SCAN THE I2C BUS FOR DEVICES
                         if (transaction.is_ready) {
-                            send_scan();
+                            send_scan(&transaction);
                         } else {
                             send_err();
                         }
                         break;
 
                     case 'i':   // INITIALISE THE I2C BUS
-                        init_i2c(transaction.frequency);
-                        transaction.is_ready = true;
+                        init_i2c(&transaction);
                         send_ack();
-                        break;
-
-                    case 'l':   // LIST I2C BUSES, PINS
-                        send_list();
                         break;
 
                     case 'p':   // SEND AN I2C STOP
                         if (transaction.is_ready && transaction.is_started) {
                             // Send no bytes and STOP
-                            i2c_write_blocking(I2C_PORT, transaction.address, rx_buffer, 0, true);
+                            i2c_write_blocking(transaction.bus, transaction.address, rx_buffer, 0, true);
 
                             // Reset state
                             transaction.is_started = false;
@@ -167,7 +165,7 @@ void rx_loop(void) {
 
                     case 'x':   // RESET BUS
                         transaction.is_started = false;
-                        reset_i2c(transaction.frequency);
+                        reset_i2c(&transaction);
                         send_ack();
                         break;
 
@@ -213,18 +211,21 @@ void rx_loop(void) {
  *
  * @param frequency_khz: The bus speed in kHz.
  */
-void init_i2c(int frequency_khz) {
+void init_i2c(I2C_Trans* itr) {
 
     // Intialise I2C via SDK
-    i2c_init(I2C_PORT, frequency_khz * 1000);
+    i2c_init(itr->bus, itr->frequency * 1000);
 
     // Initialise pins
     // The values of SDA_PIN and SCL_PIN are set
     // in the board's individual CMakeLists.txt file.
-    gpio_set_function(SDA_PIN, GPIO_FUNC_I2C);
-    gpio_set_function(SCL_PIN, GPIO_FUNC_I2C);
-    gpio_pull_up(SDA_PIN);
-    gpio_pull_up(SCL_PIN);
+    gpio_set_function(itr->sda_pin, GPIO_FUNC_I2C);
+    gpio_set_function(itr->scl_pin, GPIO_FUNC_I2C);
+    gpio_pull_up(itr->sda_pin);
+    gpio_pull_up(itr->scl_pin);
+
+    // Mark bus as ready for use
+    itr->is_ready = true;
 }
 
 
@@ -233,18 +234,18 @@ void init_i2c(int frequency_khz) {
  *
  * @param frequency_khz: The bus speed in kHz.
  */
-void reset_i2c(int frequency_khz) {
+void reset_i2c(I2C_Trans* itr) {
 
-    i2c_deinit(I2C_PORT);
+    i2c_deinit(itr->bus);
     sleep_ms(10);
-    i2c_init(I2C_PORT, frequency_khz * 1000);
+    i2c_init(itr->bus, itr->frequency * 1000);
 }
 
 
 /**
  * @brief Scan the host's I2C bus for devices, and send the results.
  */
-void send_scan(void) {
+void send_scan(I2C_Trans* itr) {
 
     uint8_t rx_data;
     int reading;
@@ -254,7 +255,7 @@ void send_scan(void) {
     // Generate a list if devices by their addresses.
     // List in the form "13.71.A0."
     for (uint32_t i = 0 ; i < 0x78 ; ++i) {
-        reading = i2c_read_blocking(I2C_PORT, i, &rx_data, 1, false);
+        reading = i2c_read_blocking(itr->bus, i, &rx_data, 1, false);
         if (reading >= 0) {
             sprintf(scan_buffer + (device_count * 3), "%02X.", i);
             device_count++;
@@ -279,7 +280,7 @@ void send_scan(void) {
  *
  * @param t: A pointer to the current I2C transaction record.
  */
-void send_status(I2C_Trans* t) {
+void send_status(I2C_Trans* itr) {
 
     // Get the RP2040 unique ID
     char pid[2 * PICO_UNIQUE_BOARD_ID_SIZE_BYTES + 1] = {0};
@@ -300,60 +301,28 @@ void send_status(I2C_Trans* t) {
 
     // Generate and return the status data string.
     // Data in the form: "1.1.100.110.QTPY-RP2040" or "1.1.100.110.PI-PICO"
-    char status_buffer[64] = {0};
+    char status_buffer[129] = {0};
 
-    sprintf(status_buffer, "%s.%s.%i.%i.%i.%i.%i.%i.%s.%s\r\n",
-            (t->is_ready   ? "1" : "0"),        // 2 chars
-            (t->is_started ? "1" : "0"),        // 2 chars
-            t->frequency,                       // 4 chars
-            t->address,                         // 2-4 chars
-            major,                              // 2-x chars
-            minor,                              // 2-x chars
-            patch,                              // 2-x chars
-            BUILD_NUM,                          // 2-x chars
-            pid,                                // 17 chars
-            model);                             // 2-17 chars
-                                                // == 26-43 chars
+    sprintf(status_buffer, "%s.%s.%s.%i.%i.%i.%i.%i.%i.%i.%i.%s.%s\r\n",
+            (itr->is_ready   ? "1" : "0"),          // 2 chars
+            (itr->is_started ? "1" : "0"),          // 2 chars
+            (itr->bus == i2c0 ? "0" : "1"),         // 2 chars
+            itr->sda_pin,                           // 2-3 chars
+            itr->scl_pin,                           // 2-3 chars
+            itr->frequency,                         // 2 chars
+            itr->address,                           // 2-4 chars
+            major,                                  // 2-4 chars
+            minor,                                  // 2-4 chars
+            patch,                                  // 2-4 chars
+            BUILD_NUM,                              // 2-4 chars
+            pid,                                    // 17 chars
+            model);                                 // 2-17 chars
+                                                    // == 41-68 chars
 
     // Send the data
     tx(status_buffer, strlen(status_buffer));
 }
 
-
-void send_list(void) {
-
-    char list_buffer[256] = {0};
-
-        sprintf(list_buffer, "%i.%i.%i.",
-            i2c_pins.bus_count,                      // 2 chars
-            i2c_pins.bus_0_pair_count,               // 2 chars
-            i2c_pins.bus_1_pair_count
-        );
-
-        char* ptr = &list_buffer[strlen(list_buffer)];
-        for (int i = 0 ; i < (i2c_pins.bus_0_pair_count << 1) ; i += 2) {
-            sprintf(ptr, "%i.%i.",
-                i2c_pins.bus_0_pins[i],
-                i2c_pins.bus_0_pins[i + 1]
-            );
-
-            ptr += 6;
-        }
-
-        for (int i = 0 ; i < (i2c_pins.bus_1_pair_count << 1) ; i += 2) {
-            sprintf(ptr, "%i.%i.",
-                i2c_pins.bus_0_pins[i],
-                i2c_pins.bus_0_pins[i + 1]
-            );
-
-            ptr += 6;
-        }
-
-        sprintf(ptr, "\r\n");
-
-        // Send the data
-        tx(list_buffer, strlen(list_buffer));
-}
 
 /**
  * @brief Send back a list of supported commands.

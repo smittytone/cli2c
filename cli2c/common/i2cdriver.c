@@ -247,14 +247,20 @@ void i2c_get_info(I2CDriver *sd, bool do_print) {
     int minor = 0;
     int patch = 0;
     int build = 0;
+    int bus = 0;
+    int sda_pin = -1;
+    int scl_pin = -1;
     char string_data[34] = {0};
     char model[17] = {0};
     char pid[17] = {0};
     
     // Extract the data
-    sscanf((char*)read_buffer, "%i.%i.%i.%i.%i.%i.%i.%i.%s",
+    sscanf((char*)read_buffer, "%i.%i.%i.%i.%i.%i.%i.%i.%i.%i.%i.%s",
         &is_ready,
         &has_started,
+        &bus,
+        &sda_pin,
+        &scl_pin,
         &frequency,
         &address,
         &major,
@@ -273,12 +279,14 @@ void i2c_get_info(I2CDriver *sd, bool do_print) {
     sd->speed = frequency;
 
     if (do_print) {
-        printf(" I2C host device: %s\n", model);
-        printf("I2C host version: %i.%i.%i (%i)\n", major, minor, patch, build);
-        printf("     I2C host ID: %s\n", pid);
-        printf("  I2C is enabled: %s\n", is_ready == 1 ? "YES" : "NO");
-        printf("   I2C is active: %s\n", has_started == 1 ? "YES" : "NO");
-        printf("   I2C frequency: %ikHz\n", frequency);
+        printf("   I2C host device: %s\n", model);
+        printf("  I2C host version: %i.%i.%i (%i)\n", major, minor, patch, build);
+        printf("       I2C host ID: %s\n", pid);
+        printf("     Using I2C bus: %s\n", bus == 0 ? "i2c0" : "i2c1");
+        printf(" I2C bus frequency: %ikHz\n", frequency);
+        printf(" Pins used for I2C: GP%i (SDA), GP%i (SCL)\n", sda_pin, scl_pin);
+        printf("    I2C is enabled: %s\n", is_ready == 1 ? "YES" : "NO");
+        printf("     I2C is active: %s\n", has_started == 1 ? "YES" : "NO");
         
         // Check for a 'no device' I2C address
         if (address == 0xFF) {
@@ -343,7 +351,7 @@ void i2c_scan(I2CDriver *sd) {
     for (int i = 0 ; i < 0x80 ; i++) {
         if (i % 16 == 0) printf("\n%02x ", i);
         if (i < 8 || i > 0x77) {
-            printf("_ ");
+            printf("  ");
         } else {
             bool found = false;
 
@@ -362,56 +370,6 @@ void i2c_scan(I2CDriver *sd) {
     }
 
     printf("\n");
-}
-
-
-void i2c_enumerate(I2CDriver* sd) {
-    
-    uint8_t read_buffer[256] = {0};
-    send_command(sd, 'e');
-    size_t result = readFromSerialPort(sd->port, read_buffer, 0);
-    if (result == -1) {
-        print_error("Could not read from device");
-        return;
-    }
-    
-    // Data string is, for example,
-    // "2.4.4.0.1.4.5.8.9.12.13.2.3.6.7.10.11.14.15"
-    int bus_count = 0;
-    int bus_0_pairs = 0;
-    int bus_1_pairs = 0;
-    
-    // Extract the data
-    sscanf((char*)read_buffer, "%i.%i.%i.",
-        &bus_count,
-        &bus_0_pairs,
-        &bus_1_pairs
-    );
-    
-    printf("I2C buses: %i\n", bus_count);
-    
-    for (int i = 0 ; i < bus_count ; ++i) {
-        printf("I2C bus %i pin pairs: %i\n", i, bus_0_pairs);
-    }
-    
-    uint8_t* ptr = &read_buffer[6];
-    for (int i = 0 ; i < (bus_0_pairs << 1); i += 2) {
-        int sda = -1;
-        int scl = -1;
-        int n = 0;
-        
-        sscanf((char*)ptr, "%i.%i.%n",
-            &sda,
-            &scl,
-            &n
-        );
-        
-        ptr += n;
-        
-        printf("I2C bus 0: SDA %i, SCL %i\n", sda, scl);
-        
-    }
-    
 }
 
 
@@ -584,10 +542,6 @@ int i2c_commands(I2CDriver *sd, int argc, char *argv[], uint32_t delta) {
         }
 
         switch (command[0]) {
-            case 'e':   // ENUMERATE THE BUS
-                i2c_enumerate(sd);
-                break;
-                
             case 'f':   // SET THE BUS FREQUENCY
                 {
                     if (i < argc - 1) {
@@ -741,7 +695,8 @@ void show_commands(void) {
     printf("                      Only 1 and 4 are supported.\n");
     printf("  x                   Reset the I2C bus.\n");
     printf("  s                   Scan for devices on the I2C bus.\n");
-    printf("  i                   Get I2C bus host device information.\n\n");
+    printf("  i                   Get I2C bus host device information.\n");
+    printf("  h                   Show help and quit.\n");
 }
 
 

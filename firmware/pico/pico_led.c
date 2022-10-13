@@ -1,7 +1,7 @@
 /*
  * I2C Host Firmware -- Pi Pico LED
  *
- * @version     0.1.3
+ * @version     0.1.4
  * @author      Tony Smith (@smittytone)
  * @copyright   2022
  * @licence     MIT

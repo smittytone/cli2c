@@ -15,12 +15,12 @@ add_compile_definitions(
 # the STEMMA port -- both A2,A3,STEMMA all used i2c1.
 if (DEFINED USE_STEMMA)
     add_compile_definitions(
-        SDA_PIN=26
-        SCL_PIN=27)
+        DEFAULT_SDA_PIN=26
+        DEFAULT_SCL_PIN=27)
 else()
     add_compile_definitions(
-        SDA_PIN=22
-        SCL_PIN=23)
+        DEFAULT_SDA_PIN=22
+        DEFAULT_SCL_PIN=23)
 endif()
 
 # NeoPixel

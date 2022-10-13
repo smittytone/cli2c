@@ -14,8 +14,8 @@ add_compile_definitions(
 # You can set these to other I2C pins but make sure
 # you select pins on I2C1
 add_compile_definitions(
-    SDA_PIN=2
-    SCL_PIN=3)
+    DEFAULT_SDA_PIN=2
+    DEFAULT_SCL_PIN=3)
 
 # Include app source code file(s)
 add_executable(${FW_2_NAME}

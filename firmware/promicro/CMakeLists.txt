@@ -18,12 +18,12 @@ add_compile_definitions(
 # you select pins on I2C1
 if (DEFINED USE_STEMMA)
     add_compile_definitions(
-        SDA_PIN=16
-        SCL_PIN=17)
+        DEFAULT_SDA_PIN=16
+        DEFAULT_SCL_PIN=17)
 else()
     add_compile_definitions(
-        SDA_PIN=2
-        SCL_PIN=3)
+        DEFAULT_SDA_PIN=2
+        DEFAULT_SCL_PIN=3)
 endif()
 
 # NeoPixel

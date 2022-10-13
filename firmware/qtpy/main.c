@@ -1,16 +1,13 @@
 /*
  * I2C Host Firmware -- QTPy RP2040
  *
- * @version     0.1.3
+ * @version     0.1.4
  * @author      Tony Smith (@smittytone)
  * @copyright   2022
  * @licence     MIT
  *
  */
 #include "main.h"
-
-
-extern I2C_PINS i2c_pins;
 
 
 /*
