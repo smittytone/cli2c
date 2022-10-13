@@ -1,6 +1,6 @@
 # cli2c 0.1.5
 
-An I2C driver for macOS used as the basis for an HT16K33-controlled LED matrix driver. It requires a [Raspberry Pi Pico](https://www.raspberrypi.com/documentation/microcontrollers/raspberry-pi-pico.html), [Adafruit QTPy RP2040https://www.adafruit.com/product/4900), [SparkFun ProMicro RP2040](https://www.sparkfun.com/products/18288) or [Pimoroni Tiny 2040](https://shop.pimoroni.com/products/tiny-2040?variant=39560012234835) as a hardware bridge.
+An I2C driver for macOS used as the basis for an HT16K33-controlled LED matrix driver. It requires a [Raspberry Pi Pico](https://www.raspberrypi.com/documentation/microcontrollers/raspberry-pi-pico.html), [Adafruit QTPy RP2040](https://www.adafruit.com/product/4900), [SparkFun ProMicro RP2040](https://www.sparkfun.com/products/18288) or [Pimoroni Tiny 2040](https://shop.pimoroni.com/products/tiny-2040?variant=39560012234835) as a hardware bridge.
 
 ## Acknowledgements
 
@@ -69,11 +69,11 @@ Arguments in braces `{}` are required; those in square brackets `\[\]` are optio
 | `w` | 2 | `address` `data_bytes` | Write the supplied data to the I2C device at `address`. `data_bytes` are comma-separated 8-bit hex values |
 | `r` | 2 | `address` `count` | Read `count` bytes from the I2C device at `address` and issue an I2C STOP |
 | `p` | None| Issue an I2C STOP. Usually used after one or more writes |
-| 'f' | {frequency} | The I2C bus frequency in multiples of 100kHz. Supported values: 1 and 4 |
-| `x` | None| Reset the I2C bus |
-| `s` | None | Display devices on the I2C bus |
-| `i` | None | Display I2C host device information |
-| `h` | None | Display help information |
+| `f` | 1 | {frequency} | The I2C bus frequency in multiples of 100kHz. Supported values: 1 and 4 |
+| `x` | None |  | Reset the I2C bus |
+| `s` | None |  |  Display devices on the I2C bus |
+| `i` | None |  |  Display I2C host device information |
+| `h` | None |  |  Display help information |
 
 ## matrix
 
@@ -222,7 +222,7 @@ To copy the file(s), run:
 ./deploy.sh /device/file /path/to/uf2
 ```
 
-This will trick the RP2040-based board into booting into disk mode, then copy over the newly build firmware. When the copy completes, the RP2040 automatically reboots.
+This will trick the RP2040-based board into booting into disk mode, then copy over the newly build firmware. When the copy completes, the RP2040 automatically reboots. This saves of a lot of tedious power-cycling with the BOOT button held down.
 
 #### Example
 
