@@ -1,7 +1,7 @@
 /*
  * I2C Host Firmware -- QTPy RP2040
  *
- * @version     0.1.4
+ * @version     0.1.5
  * @author      Tony Smith (@smittytone)
  * @copyright   2022
  * @licence     MIT
@@ -14,7 +14,7 @@
  * ENTRY POINT
  */
 int main(void) {
-    // Initalise the LED
+    // Initialise the LED
     ws2812_init();
 
     // Enable STDIO and allow 2s for the board to come up

@@ -1,5 +1,5 @@
 /*
- * I2C Host Firmware -- Pi Pico
+ * I2C Host Firmware -- Tiny 2040
  *
  * @version     0.1.5
  * @author      Tony Smith (@smittytone)
@@ -15,8 +15,7 @@
  */
 int main(void) {
     // Initialise the LED
-    pico_led_init();
-    pico_led_off();
+    tiny_led_init();
 
     // Enable STDIO and allow 2s for the board to come up
     if (stdio_usb_init()) {
@@ -33,7 +32,8 @@ int main(void) {
 
     // Could not initialize stdio over USB,
     // so signal error (red) and end
-    pico_led_flash(10);
-    pico_led_off();
+    tiny_led_set_colour(0xFF0000);
+    tiny_led_flash(10);
+    tiny_led_on();
     return 1;
 }

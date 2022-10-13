@@ -1,7 +1,7 @@
 /*
  * I2C Host Firmware - LED control middleware
  *
- * @version     0.1.4
+ * @version     0.1.5
  * @author      Tony Smith (@smittytone)
  * @copyright   2022
  * @licence     MIT
@@ -22,6 +22,10 @@
 #include "../pico/pico_led.h"
 #endif
 
+#ifdef TINY_BUILD
+#include "../tiny/tiny_led.h"
+#endif
+
 
 /*
  * PROTOTYPES
@@ -29,7 +33,7 @@
 void led_off(void);
 void led_on(void);
 void led_set_state(bool is_on);
-void led_flash(uint32_t count) ;
+void led_flash(uint32_t count);
 void led_set_colour(uint32_t colour);
 
 

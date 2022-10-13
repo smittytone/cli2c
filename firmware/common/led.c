@@ -1,7 +1,7 @@
 /*
  * I2C Host Firmware - LED control middleware
  *
- * @version     0.1.4
+ * @version     0.1.5
  * @author      Tony Smith (@smittytone)
  * @copyright   2022
  * @licence     MIT
@@ -28,6 +28,8 @@ void led_on(void) {
     ws2812_set_state(true);
 #elif defined LED_BUILD
     pico_led_on();
+#elif defined TINY_BUILD
+    tiny_led_on();
 #endif
 }
 
@@ -40,6 +42,8 @@ void led_off(void) {
     ws2812_set_state(false);
 #elif defined LED_BUILD
     pico_led_off();
+#elif defined TINY_BUILD
+    tiny_led_off();
 #endif
 }
 
@@ -54,6 +58,8 @@ void led_set_state(bool is_on) {
     ws2812_set_state(is_on);
 #elif defined LED_BUILD
     pico_led_set_state(is_on);
+#elif defined TINY_BUILD
+    tiny_led_set_state(is_on);
 #endif
 }
 
@@ -68,6 +74,8 @@ void led_flash(uint32_t count) {
     ws2812_flash(count);
 #elif defined LED_BUILD
     pico_led_flash(count);
+#elif defined TINY_BUILD
+    tiny_led_flash(count);
 #endif
 }
 
@@ -81,6 +89,8 @@ void led_flash(uint32_t count) {
 void led_set_colour(uint32_t colour) {
 #ifdef NEO_BUILD
    ws2812_set_colour(colour);
+#elif defined TINY_BUILD
+    tiny_led_set_colour(colour);
 #endif
 /*
  * No Pico function is relevant here -- just return

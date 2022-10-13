@@ -1,7 +1,7 @@
 /*
  * I2C Host Firmware Host -- Pi Pico LED
  *
- * @version     0.1.4
+ * @version     0.1.5
  * @author      Tony Smith (@smittytone)
  * @copyright   2022
  * @licence     MIT
@@ -38,7 +38,7 @@ void    pico_led_init(void);
 void    pico_led_off(void);
 void    pico_led_on(void);
 void    pico_led_set_state(bool is_on);
-void    pico_led_flash(uint32_t count) ;
+void    pico_led_flash(uint32_t count);
 
 
 #endif  // _HEADER_PICO_LED_

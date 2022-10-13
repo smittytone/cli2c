@@ -1,5 +1,5 @@
 /*
- * I2C Host Firmware -- Pi Pico
+ * I2C Host Firmware -- Tiny 2040
  *
  * @version     0.1.5
  * @author      Tony Smith (@smittytone)
@@ -7,8 +7,8 @@
  * @licence     MIT
  *
  */
-#ifndef _MAIN_H_
-#define _MAIN_H_
+#ifndef _MAIN_HEADER_
+#define _MAIN_HEADER_
 
 
 /*
@@ -23,9 +23,10 @@
 #include "pico/stdlib.h"
 #include "pico/binary_info.h"
 #include "hardware/gpio.h"
+#include "hardware/pwm.h"
 // App includes
 #include "../common/serial.h"
-#include "../qtpy/ws2812.h"
+#include "tiny_led.h"
 
 
-#endif  // _MAIN_H_
+#endif  // _MAIN_HEADER_
