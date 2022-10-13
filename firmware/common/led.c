@@ -82,7 +82,6 @@ void led_flash(uint32_t count) {
 
 /**
  * @brief Set the LED's colour.
- *        Only relevant for Neopixels.
  *
  * @param colour: The LED colour as an RGB six-digit RGB hex value.
  */

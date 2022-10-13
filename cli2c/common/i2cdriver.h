@@ -6,8 +6,8 @@
  * Licence: MIT
  *
  */
-#ifndef _I2CDRIVER_H
-#define _I2CDRIVER_H
+#ifndef _I2C_DRIVER_H
+#define _I2C_DRIVER_H
 
 
 /*
@@ -82,4 +82,4 @@ void        show_commands(void);
 
 
 
-#endif  // I2CDRIVER_H
+#endif  // I2C_DRIVER_H

@@ -271,7 +271,7 @@ void i2c_get_info(I2CDriver *sd, bool do_print) {
     );
 
     // Store certain values in the I2C driver record
-    // NOTE This involves seaprately extracting the substrings
+    // NOTE This involves separately extracting the substrings
     //      from the read `string_data` as sscanf() doesn't
     //      separate them properly
     strncpy(pid, string_data, 16);
@@ -705,14 +705,14 @@ void show_commands(void) {
  */
 void flush_and_close_port(int fd) {
     
-    // Drain the FIFOs -- alterntive to `tcflush(fd, TCIOFLUSH)`;
+    // Drain the FIFOs -- alternative to `tcflush(fd, TCIOFLUSH)`;
     if (tcdrain(fd) == -1) {
         print_error("Could not flush the port. %s (%d).\n", strerror(errno), errno);
     }
     
     // Set the port back to how we found it
     if (tcsetattr(fd, TCSANOW, &original_settings) == -1) {
-        print_error("Coould not reset port - %s (%d)", strerror(errno), errno);
+        print_error("Could not reset port - %s (%d)", strerror(errno), errno);
     }
 
     // Close the port
