@@ -40,7 +40,7 @@
 /*
  * PROTOTYPES
  */
-void            HT16K33_init(I2CDriver *sd, int address);
+void            HT16K33_init(I2CDriver* sd, int address);
 void            HT16K33_power(bool is_on);
 void            HT16K33_flip(void);
 void            HT16K33_draw(void);

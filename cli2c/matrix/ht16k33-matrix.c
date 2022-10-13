@@ -153,7 +153,7 @@ void HT16K33_power(bool is_on) {
 
 
 /**
- * @brief Set the diplay's angle of rotation.
+ * @brief Set the display's angle of rotation.
  *
  *  @param angle: The mutiple of 90 degrees at which the matrix
  *                is oriented.

@@ -213,7 +213,7 @@ void rx_loop(void) {
  */
 void init_i2c(I2C_Trans* itr) {
 
-    // Intialise I2C via SDK
+    // Initialise I2C via SDK
     i2c_init(itr->bus, itr->frequency * 1000);
 
     // Initialise pins
