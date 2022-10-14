@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
     // Process arguments
     if (argc < 2) {
         // Insufficient arguments -- issue usage info and bail
-        printf("Usage: cli2c {DEVICE_PATH} [command] ... [command]\n");
+        fprintf(stderr, "Usage: cli2c {DEVICE_PATH} [command] ... [command]\n");
     } else {
         // Check for a help request
         for (int i = 0 ; i < argc ; ++i) {
@@ -48,7 +48,7 @@ int main(int argc, char *argv[]) {
             // Check we have commands to process
             int delta = 2;
             if (delta >= argc) {
-                printf("No commands supplied... exiting\n");
+                fprintf(stderr, "No commands supplied... exiting\n");
                 flush_and_close_port(i2c.port);
                 return EXIT_OK;
             }
@@ -70,9 +70,9 @@ int main(int argc, char *argv[]) {
  * @brief Show help.
  */
 void show_help() {
-    printf("cli2c {device} [commands]\n\n");
-    printf("Usage:\n");
-    printf("  {device} is a mandatory device path, eg. /dev/cu.usbmodem-010101.\n");
-    printf("  [commands] are optional commands, as shown below.\n\n");
+    fprintf(stderr, "cli2c {device} [commands]\n\n");
+    fprintf(stderr, "Usage:\n");
+    fprintf(stderr, "  {device} is a mandatory device path, eg. /dev/cu.usbmodem-010101.\n");
+    fprintf(stderr, "  [commands] are optional commands, as shown below.\n\n");
     show_commands();
 }

@@ -21,7 +21,7 @@ int main(int argc, char* argv[]) {
     // Process arguments
     if (argc < 2) {
         // Insufficient arguments -- issue usage info and bail
-        printf("Usage: matrix {DEVICE_PATH} [I2C Address] [command] ... [command]\n");
+        fprintf(stderr, "Usage: matrix {DEVICE_PATH} [I2C Address] [command] ... [command]\n");
     } else {
         // Check for a help request
         for (int i = 0 ; i < argc ; ++i) {
@@ -337,23 +337,23 @@ int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
  * @brief Show help.
  */
 void show_help() {
-    printf("matrix {device} [address] [commands]\n\n");
-    printf("Usage:\n");
-    printf("  {device} is a mandatory device path, eg. /dev/cu.usbmodem-010101.\n");
-    printf("  [address] is an optional display I2C address. Default: 0x70.\n");
-    printf("  [commands] are optional HT16K33 matrix commands:\n\n");
-    printf("Commands:\n");
-    printf("  -a [on|off]             Activate/deactivate the display. Default: on.\n");
-    printf("  -b {0-15}               Set the display brightness from low (0) to high (15).\n");
-    printf("  -r {0-3}                Rotate the display. Angle supplied as a multiple of 90 degrees.\n");
-    printf("  -c {ascii} [true|false] Draw the Ascii character on the screen, and optionally\n");
-    printf("                          set it to be centred (true).\n");
-    printf("  -g {glyph}              Draw the user-defined character on the screen. The definition\n");
-    printf("                          is a string of eight comma-separated 8-bit hex values, eg.\n");
-    printf("                          '0x3C,0x42,0xA9,0x85,0x85,0xA9,0x42,0x3C'.\n");
-    printf("  -p {x} {y} [1|0]        Set or clear the specified pixel. X and Y coordinates are in\n");
-    printf("                          the range 0-7.\n");
-    printf("  -t {string} [delay]     Scroll the specified string. The second argument is an optional\n");
-    printf("                          delay be between column shifts in milliseconds. Default: 250ms.\n");
-    printf("  -w                      Wipe (clear) the display.\n\n");
+    fprintf(stderr, "matrix {device} [address] [commands]\n\n");
+    fprintf(stderr, "Usage:\n");
+    fprintf(stderr, "  {device} is a mandatory device path, eg. /dev/cu.usbmodem-010101.\n");
+    fprintf(stderr, "  [address] is an optional display I2C address. Default: 0x70.\n");
+    fprintf(stderr, "  [commands] are optional HT16K33 matrix commands:\n\n");
+    fprintf(stderr, "Commands:\n");
+    fprintf(stderr, "  -a [on|off]             Activate/deactivate the display. Default: on.\n");
+    fprintf(stderr, "  -b {0-15}               Set the display brightness from low (0) to high (15).\n");
+    fprintf(stderr, "  -r {0-3}                Rotate the display. Angle supplied as a multiple of 90 degrees.\n");
+    fprintf(stderr, "  -c {ascii} [true|false] Draw the Ascii character on the screen, and optionally\n");
+    fprintf(stderr, "                          set it to be centred (true).\n");
+    fprintf(stderr, "  -g {glyph}              Draw the user-defined character on the screen. The definition\n");
+    fprintf(stderr, "                          is a string of eight comma-separated 8-bit hex values, eg.\n");
+    fprintf(stderr, "                          '0x3C,0x42,0xA9,0x85,0x85,0xA9,0x42,0x3C'.\n");
+    fprintf(stderr, "  -p {x} {y} [1|0]        Set or clear the specified pixel. X and Y coordinates are in\n");
+    fprintf(stderr, "                          the range 0-7.\n");
+    fprintf(stderr, "  -t {string} [delay]     Scroll the specified string. The second argument is an optional\n");
+    fprintf(stderr, "                          delay be between column shifts in milliseconds. Default: 250ms.\n");
+    fprintf(stderr, "  -w                      Wipe (clear) the display.\n\n");
 }

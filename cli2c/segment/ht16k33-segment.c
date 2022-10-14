@@ -92,7 +92,7 @@ void HT16K33_draw(void) {
     
     // Check for an overturned LED
     if (is_flipped) {
-        printf("FLIPPED\n");
+        fprintf(stderr, "FLIPPED\n");
         // Swap digits 0,3 and 1,2
         uint8_t a = display_buffer[POS[0]];
         display_buffer[POS[0]] = display_buffer[POS[3]];

@@ -127,11 +127,11 @@ size_t readFromSerialPort(int fd, uint8_t* buffer, size_t byte_count) {
 
 #ifdef DEBUG
     // Output the read data for debugging
-    printf("  READ %d of %d: ", (int)count, (int)byte_count);
+    fprintf(stderr, "  READ %d of %d: ", (int)count, (int)byte_count);
     for (int i = 0 ; i < count ; ++i) {
-        printf("%02X ", 0xFF & buffer[i]);
+        fprintf(stderr, "%02X ", 0xFF & buffer[i]);
     }
-    printf("\n");
+    fprintf(stderr, "\n");
 #endif
 
     return count;
@@ -154,11 +154,11 @@ void writeToSerialPort(int fd, const uint8_t* buffer, size_t byte_count) {
 
 #ifdef DEBUG
     // Output the read data for debugging
-    printf("WRITE %u: ", (int)byte_count);
+    fprintf(stderr, "WRITE %u: ", (int)byte_count);
     for (int i = 0 ; i < byte_count ; ++i) {
-        printf("%02X ", 0xFF & buffer[i]);
+        fprintf(stderr, "%02X ", 0xFF & buffer[i]);
     }
-    printf("\n");
+    fprintf(stderr, "\n");
 #endif
 }
 
@@ -234,7 +234,7 @@ void i2c_get_info(I2CDriver *sd, bool do_print) {
     }
 
 #ifdef DEBUG
-    printf("Received raw info string: %s\n", read_buffer);
+    fprintf(stderr, "Received raw info string: %s\n", read_buffer);
 #endif
 
     // Data string is, for example,
@@ -279,20 +279,20 @@ void i2c_get_info(I2CDriver *sd, bool do_print) {
     sd->speed = frequency;
 
     if (do_print) {
-        printf("   I2C host device: %s\n", model);
-        printf("  I2C host version: %i.%i.%i (%i)\n", major, minor, patch, build);
-        printf("       I2C host ID: %s\n", pid);
-        printf("     Using I2C bus: %s\n", bus == 0 ? "i2c0" : "i2c1");
-        printf(" I2C bus frequency: %ikHz\n", frequency);
-        printf(" Pins used for I2C: GP%i (SDA), GP%i (SCL)\n", sda_pin, scl_pin);
-        printf("    I2C is enabled: %s\n", is_ready == 1 ? "YES" : "NO");
-        printf("     I2C is active: %s\n", has_started == 1 ? "YES" : "NO");
+        fprintf(stderr, "   I2C host device: %s\n", model);
+        fprintf(stderr, "  I2C host version: %i.%i.%i (%i)\n", major, minor, patch, build);
+        fprintf(stderr, "       I2C host ID: %s\n", pid);
+        fprintf(stderr, "     Using I2C bus: %s\n", bus == 0 ? "i2c0" : "i2c1");
+        fprintf(stderr, " I2C bus frequency: %ikHz\n", frequency);
+        fprintf(stderr, " Pins used for I2C: GP%i (SDA), GP%i (SCL)\n", sda_pin, scl_pin);
+        fprintf(stderr, "    I2C is enabled: %s\n", is_ready == 1 ? "YES" : "NO");
+        fprintf(stderr, "     I2C is active: %s\n", has_started == 1 ? "YES" : "NO");
         
         // Check for a 'no device' I2C address
         if (address == 0xFF) {
-            printf("Target I2C address: NONE\n");
+            fprintf(stderr, "Target I2C address: NONE\n");
         } else {
-            printf("Target I2C address: 0x%02X\n", address > 1);
+            fprintf(stderr, "Target I2C address: 0x%02X\n", address > 1);
         }
         
     }
@@ -324,7 +324,7 @@ void i2c_scan(I2CDriver *sd) {
         // dest   = [18, 113, 160]
         
 #ifdef DEBUG
-        printf("Buffer: %lu bytes, %lu items\n", strlen(scan_buffer), strlen(scan_buffer) / 3);
+        fprintf(stderr, "Buffer: %lu bytes, %lu items\n", strlen(scan_buffer), strlen(scan_buffer) / 3);
 #endif
         
         for (uint32_t i = 0 ; i < strlen(scan_buffer) ; i += 3) {
@@ -346,30 +346,30 @@ void i2c_scan(I2CDriver *sd) {
     
     // Output the device list as a table (even with no devices)
     
-    printf("   0 1 2 3 4 5 6 7 8 9 A B C D E F");
+    fprintf(stderr, "   0 1 2 3 4 5 6 7 8 9 A B C D E F");
     
     for (int i = 0 ; i < 0x80 ; i++) {
-        if (i % 16 == 0) printf("\n%02x ", i);
+        if (i % 16 == 0) fprintf(stderr, "\n%02x ", i);
         if (i < 8 || i > 0x77) {
-            printf("  ");
+            fprintf(stderr, "  ");
         } else {
             bool found = false;
 
             if (device_count > 0) {
                 for (int j = 0 ; j < 120 ; j++) {
                     if (device_list[j] == i) {
-                        printf("@ ");
+                        fprintf(stderr, "@ ");
                         found = true;
                         break;
                     }
                 }
             }
 
-            if (!found) printf(". ");
+            if (!found) fprintf(stderr, ". ");
         }
     }
 
-    printf("\n");
+    fprintf(stderr, "\n");
 }
 
 
@@ -505,6 +505,12 @@ void i2c_read(I2CDriver *sd, uint8_t bytes[], size_t byte_count) {
         size_t result = readFromSerialPort(sd->port, bytes + i, length);
         if (result == -1) {
             print_error("Could not read back from device");
+        } else {
+            for (size_t i = 0 ; i < result ; ++i) {
+                fprintf(stdout, "%02X", bytes[i]);
+            }
+            
+            fprintf(stdout, "\n");
         }
     }
 }
@@ -531,7 +537,7 @@ int i2c_commands(I2CDriver *sd, int argc, char *argv[], uint32_t delta) {
         char* command = argv[i];
 
 #ifdef DEBUG
-        printf("Command: %s\n", command);
+        fprintf(stderr, "Command: %s\n", command);
 #endif
 
         // Commands should be single characters
@@ -686,17 +692,17 @@ static void print_bad_command_help(char* command) {
  * @brief Output help info.
  */
 void show_commands(void) {
-    printf("Commands:\n");
-    printf("  w {address} {bytes} Write bytes out to I2C.\n");
-    printf("  r {address} {count} Read count bytes in from I2C.\n");
-    printf("                      Issues a STOP after all the bytes have been read.\n");
-    printf("  p                   Issue an I2C STOP.\n");
-    printf("  f {frequency}       Set the I2C bus frequency in multiples of 100kHz.\n");
-    printf("                      Only 1 and 4 are supported.\n");
-    printf("  x                   Reset the I2C bus.\n");
-    printf("  s                   Scan for devices on the I2C bus.\n");
-    printf("  i                   Get I2C bus host device information.\n");
-    printf("  h                   Show help and quit.\n");
+    fprintf(stderr, "Commands:\n");
+    fprintf(stderr, "  w {address} {bytes} Write bytes out to I2C.\n");
+    fprintf(stderr, "  r {address} {count} Read count bytes in from I2C.\n");
+    fprintf(stderr, "                      Issues a STOP after all the bytes have been read.\n");
+    fprintf(stderr, "  p                   Issue an I2C STOP.\n");
+    fprintf(stderr, "  f {frequency}       Set the I2C bus frequency in multiples of 100kHz.\n");
+    fprintf(stderr, "                      Only 1 and 4 are supported.\n");
+    fprintf(stderr, "  x                   Reset the I2C bus.\n");
+    fprintf(stderr, "  s                   Scan for devices on the I2C bus.\n");
+    fprintf(stderr, "  i                   Get I2C bus host device information.\n");
+    fprintf(stderr, "  h                   Show help and quit.\n");
 }
 
 

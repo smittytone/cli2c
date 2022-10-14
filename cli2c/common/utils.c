@@ -58,7 +58,7 @@ void print_output(bool is_err, char* format_string, va_list args) {
     vsnprintf(&buffer[is_err ? 8 : 10], sizeof(buffer) - (is_err ? 9 : 11), format_string, args);
     
     // Print it all out
-    printf("%s\n", buffer);
+    fprintf(stderr, "%s\n", buffer);
 }
 
 
@@ -68,6 +68,6 @@ void print_output(bool is_err, char* format_string, va_list args) {
 void ctrl_c_handler(int dummy) {
     
     if (i2c.port != -1) flush_and_close_port(i2c.port);
-    printf("\n");
+    fprintf(stderr, "\n");
     exit(EXIT_OK);
 }

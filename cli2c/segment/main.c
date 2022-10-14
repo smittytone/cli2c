@@ -21,7 +21,7 @@ int main(int argc, char* argv[]) {
     // Process arguments
     if (argc < 2) {
         // Insufficient arguments -- issue usage info and bail
-        printf("Usage: matrix {DEVICE_PATH} [I2C Address] [command] ... [command]\n");
+        fprintf(stderr, "Usage: matrix {DEVICE_PATH} [I2C Address] [command] ... [command]\n");
     } else {
         // Check for a help request
         for (int i = 0 ; i < argc ; ++i) {
@@ -394,21 +394,21 @@ int segment_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
  * @brief Show help.
  */
 void show_help() {
-    printf("segment {device} [address] [commands]\n\n");
-    printf("Usage:\n");
-    printf("  {device} is a mandatory device path, eg. /dev/cu.usbmodem-010101.\n");
-    printf("  [address] is an optional display I2C address. Default: 0x70.\n");
-    printf("  [commands] are optional HT16K33 segment commands.\n\n");
-    printf("Commands:\n");
-    printf("  -a [on|off]                      Activate/deactivate the display. Default: on.\n");
-    printf("  -b {0-15}                        Set the display brightness from low (0) to high (15).\n");
-    printf("  -f                               Flip the display vertically.\n");
-    printf("  -n {number}                      Draw the decimal number on the screen.\n");
-    printf("                                   Range -999 to 9999.\n");
-    printf("  -v {value} {digit} [true|false]  Draw the value on the screen at the specified digit\n");
-    printf("                                   (0-15/0x00-0x0F) and optionally set its decimal point.\n");
-    printf("  -g {glyph} {digit} [true|false]  Draw the user-defined character on the screen at the\n");
-    printf("                                   specified digit. The glyph definition is a byte with bits\n");
-    printf("                                   set for each of the digit’s segments.\n");
-    printf("  -w                               Wipe (clear) the display.\n\n");
+    fprintf(stderr, "segment {device} [address] [commands]\n\n");
+    fprintf(stderr, "Usage:\n");
+    fprintf(stderr, "  {device} is a mandatory device path, eg. /dev/cu.usbmodem-010101.\n");
+    fprintf(stderr, "  [address] is an optional display I2C address. Default: 0x70.\n");
+    fprintf(stderr, "  [commands] are optional HT16K33 segment commands.\n\n");
+    fprintf(stderr, "Commands:\n");
+    fprintf(stderr, "  -a [on|off]                      Activate/deactivate the display. Default: on.\n");
+    fprintf(stderr, "  -b {0-15}                        Set the display brightness from low (0) to high (15).\n");
+    fprintf(stderr, "  -f                               Flip the display vertically.\n");
+    fprintf(stderr, "  -n {number}                      Draw the decimal number on the screen.\n");
+    fprintf(stderr, "                                   Range -999 to 9999.\n");
+    fprintf(stderr, "  -v {value} {digit} [true|false]  Draw the value on the screen at the specified digit\n");
+    fprintf(stderr, "                                   (0-15/0x00-0x0F) and optionally set its decimal point.\n");
+    fprintf(stderr, "  -g {glyph} {digit} [true|false]  Draw the user-defined character on the screen at the\n");
+    fprintf(stderr, "                                   specified digit. The glyph definition is a byte with bits\n");
+    fprintf(stderr, "                                   set for each of the digit’s segments.\n");
+    fprintf(stderr, "  -w                               Wipe (clear) the display.\n\n");
 }
