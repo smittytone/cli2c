@@ -1,4 +1,4 @@
-# cli2c 0.1.5
+# cli2c 0.1.6
 
 An I2C driver for macOS used as the basis for an HT16K33-controlled LED matrix driver. It requires a [Raspberry Pi Pico](https://www.raspberrypi.com/documentation/microcontrollers/raspberry-pi-pico.html), [Adafruit QTPy RP2040](https://www.adafruit.com/product/4900), [SparkFun ProMicro RP2040](https://www.sparkfun.com/products/18288) or [Pimoroni Tiny 2040](https://shop.pimoroni.com/products/tiny-2040?variant=39560012234835) as a hardware bridge.
 
@@ -231,6 +231,14 @@ This will trick the RP2040-based board into booting into disk mode, then copy ov
 ```shell
 ./deploy.sh /dev/cu.usbserial-DO029IEZ firmwarebuild/firmware/pico/firmware_pico.uf2
 ```
+
+## Example Code
+
+The `examples` folder contains Python scripts that make use the above apps.
+
+* `cpu_chart_matrix.py` — A rudimentary side-scrolling CPU activity chart. Requires an HT16K33-based 8x8 matrix LED.
+* `cpu_chart_segment.py` — A CPU activity numerical percentage readout. Requires an HT16K33-based 4-digit, 7-segment matrix LED.
+* `mcp9809_temp.py` — Second-by-second temperature readout. Requires an MCP98008 temperature sensor breakout.
 
 ## Licences and Copyright
 
