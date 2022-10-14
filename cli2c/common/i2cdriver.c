@@ -1,7 +1,7 @@
 /*
  * Generic macOS I2C driver
  *
- * Version 0.1.5
+ * Version 0.1.6
  * Copyright © 2022, Tony Smith (@smittytone)
  * Licence: MIT
  *
@@ -225,7 +225,7 @@ static bool i2c_ack(I2CDriver *sd) {
  */
 void i2c_get_info(I2CDriver *sd, bool do_print) {
 
-    uint8_t read_buffer[HOST_INFO_BUFFER_MAX] = {0};
+    uint8_t read_buffer[HOST_INFO_BUFFER_MAX_B] = {0};
     send_command(sd, '?');
     size_t result = readFromSerialPort(sd->port, read_buffer, 0);
     if (result == -1) {
@@ -306,8 +306,8 @@ void i2c_get_info(I2CDriver *sd, bool do_print) {
  */
 void i2c_scan(I2CDriver *sd) {
 
-    char scan_buffer[1024] = {0};
-    uint8_t device_list[120] = {0};
+    char scan_buffer[SCAN_BUFFER_MAX_B] = {0};
+    uint8_t device_list[CONNECTED_DEVICES_MAX_B] = {0};
     uint32_t device_count = 0;
     
     send_command(sd, 'd');

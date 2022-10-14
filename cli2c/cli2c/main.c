@@ -1,7 +1,7 @@
 /*
  * Generic macOS I2C driver
  *
- * Version 0.1.5
+ * Version 0.1.6
  * Copyright © 2022, Tony Smith (@smittytone)
  * Licence: MIT
  *
@@ -25,7 +25,9 @@ int main(int argc, char *argv[]) {
     } else {
         // Check for a help request
         for (int i = 0 ; i < argc ; ++i) {
-            if (strcmp(argv[i], "h") == 0 || strcmp(argv[i], "--help") == 0 || strcmp(argv[i], "-h") == 0) {
+            if (strcmp(argv[i], "h") == 0 ||
+                strcmp(argv[i], "--help") == 0 ||
+                strcmp(argv[i], "-h") == 0) {
                 show_help();
                 return EXIT_OK;
             }
@@ -65,55 +67,6 @@ int main(int argc, char *argv[]) {
 
 
 /**
- * @brief Issue an error message.
- *
- * @param format_string: Message string with optional formatting
- * @param ...:           Optional injectable values
- */
-void print_error(char* format_string, ...) {
-    va_list args;
-    va_start(args, format_string);
-    print_output(true, format_string, args);
-    va_end(args);
-}
-
-
-/**
- * @brief Issue a warning message.
- *
- * @param format_string: Message string with optional formatting
- * @param ...:           Optional injectable values
- */
-void print_warning(char* format_string, ...) {
-    va_list args;
-    va_start(args, format_string);
-    print_output(false, format_string, args);
-    va_end(args);
-}
-
-
-/**
- * @brief Issue any message.
- *
- * @param is_err:        Is the message an error?
- * @param format_string: Message string with optional formatting
- * @param args:          va_list of args from previous call
- */
-void print_output(bool is_err, char* format_string, va_list args) {
-    
-    // Write the message type to the message
-    char buffer[1024] = {0};
-    sprintf(buffer, is_err ? "[ERROR] " : "[WARNING] ");
-    
-    // Write the formatted text to the message
-    vsnprintf(&buffer[is_err ? 8 : 10], sizeof(buffer) - (is_err ? 9 : 11), format_string, args);
-    
-    // Print it all out
-    printf("%s\n", buffer);
-}
-
-
-/**
  * @brief Show help.
  */
 void show_help() {
@@ -123,16 +76,3 @@ void show_help() {
     printf("  [commands] are optional commands, as shown below.\n\n");
     show_commands();
 }
-
-
-/**
- * @brief Callback for Ctrl-C.
- */
-void ctrl_c_handler(int dummy) {
-    
-    if (i2c.port != -1) flush_and_close_port(i2c.port);
-    printf("\n");
-    exit(EXIT_OK);
-}
-
-

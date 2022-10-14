@@ -1,7 +1,7 @@
 /*
  * Generic macOS I2C driver
  *
- * Version 0.1.5
+ * Version 0.1.6
  * Copyright © 2022, Tony Smith (@smittytone)
  * Licence: MIT
  *
@@ -41,7 +41,9 @@
 #define EXIT_OK                         0
 #define EXIT_ERR                        1
 
-#define HOST_INFO_BUFFER_MAX            129
+#define HOST_INFO_BUFFER_MAX_B          129
+#define CONNECTED_DEVICES_MAX_B         120
+#define SCAN_BUFFER_MAX_B               512
 
 
 /*
