@@ -36,9 +36,12 @@ set(PICO_STDIO_USB_CONNECT_WAIT_TIMEOUT_MS=2000)
 add_executable(${FW_1_NAME}
     ${FW_1_SRC_DIRECTORY}/main.c
     ${COMMON_CODE_DIRECTORY}/serial.c
-    ${COMMON_CODE_DIRECTORY}/led.c
-    ${COMMON_CODE_DIRECTORY}/segment.c
-)
+    ${COMMON_CODE_DIRECTORY}/led.c)
+
+# Compile debug segment LED sources
+if (DO_DEBUG)
+    target_sources(${FW_1_NAME} PRIVATE segment.c)
+endif()
 
 # Link to built libraries
 target_link_libraries(${FW_1_NAME} LINK_PUBLIC
@@ -46,9 +49,9 @@ target_link_libraries(${FW_1_NAME} LINK_PUBLIC
     hardware_i2c
     hardware_pio)
 
+# Compile WS2828 sources
 target_sources(${FW_1_NAME} PRIVATE ws2812.c)
 pico_generate_pio_header(${FW_1_NAME} ${FW_1_SRC_DIRECTORY}/ws2812.pio)
-#add_compile_definitions(RGB_COLOUR=0x001000) # GREEN
 
 # Enable/disable STDIO via USB and UART
 pico_enable_stdio_usb(${FW_1_NAME} 1)

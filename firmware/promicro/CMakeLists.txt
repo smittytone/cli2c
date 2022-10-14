@@ -36,9 +36,12 @@ add_compile_definitions(
 add_executable(${FW_3_NAME}
     ${FW_3_SRC_DIRECTORY}/main.c
     ${COMMON_CODE_DIRECTORY}/serial.c
-    ${COMMON_CODE_DIRECTORY}/led.c
-    ${COMMON_CODE_DIRECTORY}/segment.c
-)
+    ${COMMON_CODE_DIRECTORY}/led.c)
+
+# Compile debug segment LED sources
+if (DO_DEBUG)
+    target_sources(${FW_3_NAME} PRIVATE segment.c)
+endif()
 
 # Set the stack size
 target_compile_definitions(${FW_3_NAME} PRIVATE PICO_STACK_SIZE=4096)
@@ -51,7 +54,6 @@ target_link_libraries(${FW_3_NAME} LINK_PUBLIC
 
 target_sources(${FW_3_NAME} PRIVATE ${FW_1_SRC_DIRECTORY}/ws2812.c)
 pico_generate_pio_header(${FW_3_NAME} ${FW_1_SRC_DIRECTORY}/ws2812.pio)
-#add_compile_definitions(RGB_COLOUR=0x001000) # GREEN
 
 # Enable/disable STDIO via USB and UART
 pico_enable_stdio_usb(${FW_3_NAME} 1)

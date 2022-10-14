@@ -1,7 +1,7 @@
 /*
- * I2C Host Firmware -- Pi Pico
+ * I2C Host Firmware -- Raspberry Pi Pico
  *
- * @version     0.1.5
+ * @version     0.1.6
  * @author      Tony Smith (@smittytone)
  * @copyright   2022
  * @licence     MIT
@@ -32,7 +32,7 @@ int main(void) {
     }
 
     // Could not initialize stdio over USB,
-    // so signal error (red) and end
+    // so signal error and end
     pico_led_flash(10);
     pico_led_off();
     return 1;

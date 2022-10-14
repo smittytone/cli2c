@@ -75,6 +75,8 @@ Arguments in braces `{}` are required; those in square brackets `\[\]` are optio
 | `i` | None |  |  Display I2C host device information |
 | `h` | None |  |  Display help information |
 
+**Note** All message output is routed via `stderr` — data read back from an I2C device is output to `stdout` so it can be captured to a file. Returned data is currently presented as hexadecimal strings.
+
 ## matrix
 
 `matrix` is a specific driver for HT16K33-based 8x8 LED matrices. It embeds `cli2c` but exposes a different set of commands.

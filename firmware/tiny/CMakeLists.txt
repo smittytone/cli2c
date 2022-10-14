@@ -22,9 +22,12 @@ add_executable(${FW_4_NAME}
     ${FW_4_SRC_DIRECTORY}/main.c
     ${FW_4_SRC_DIRECTORY}/tiny_led.c
     ${COMMON_CODE_DIRECTORY}/serial.c
-    ${COMMON_CODE_DIRECTORY}/led.c
-    ${COMMON_CODE_DIRECTORY}/segment.c
-)
+    ${COMMON_CODE_DIRECTORY}/led.c)
+
+# Compile debug segment LED sources
+if (DO_DEBUG)
+    target_sources(${FW_4_NAME} PRIVATE segment.c)
+endif()
 
 # Link to built libraries
 target_link_libraries(${FW_4_NAME} LINK_PUBLIC

@@ -1,7 +1,7 @@
 /*
  * I2C Host Firmware - LED control middleware
  *
- * @version     0.1.5
+ * @version     0.1.6
  * @author      Tony Smith (@smittytone)
  * @copyright   2022
  * @licence     MIT
@@ -12,11 +12,10 @@
 
 /*
  * This file maps calls from serial.c to the various supported boards'
- * LED implementations — eg. Neopixel or monochrome LED.
+ * LED implementations — eg. Neopixel, monochrome LED or RGB LED.
  *
  * It relies on defines set in the boards' respective CMakeList.txt
  * files.
- *
  */
 
 
@@ -82,16 +81,14 @@ void led_flash(uint32_t count) {
 
 /**
  * @brief Set the LED's colour.
+ *        NOTE No Pico function is relevant here -- so it just returns.
  *
  * @param colour: The LED colour as an RGB six-digit RGB hex value.
  */
 void led_set_colour(uint32_t colour) {
 #ifdef NEO_BUILD
-   ws2812_set_colour(colour);
+    ws2812_set_colour(colour);
 #elif defined TINY_BUILD
     tiny_led_set_colour(colour);
 #endif
-/*
- * No Pico function is relevant here -- just return
- */
 }

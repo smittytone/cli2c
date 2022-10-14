@@ -1,7 +1,7 @@
 /*
- * I2C Host
+ * I2C Host Firmware - Primary serial and command functions
  *
- * @version     0.1.5
+ * @version     0.1.6
  * @author      Tony Smith (@smittytone)
  * @copyright   2022
  * @licence     MIT

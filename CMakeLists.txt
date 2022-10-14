@@ -2,23 +2,23 @@ cmake_minimum_required(VERSION 3.20)
 
 # Set project data
 set(PROJECT_NAME "I2C Host Firmware")
-set(BUILD_NUMBER "20")
+set(BUILD_NUMBER "21")
 
 # Set app name(s) and version(s)
 set(FW_1_NAME "firmware_qtpy_rp2040")
-set(FW_1_VERSION_NUMBER "0.1.5")
+set(FW_1_VERSION_NUMBER "0.1.6")
 set(FW_1_SRC_DIRECTORY "${CMAKE_SOURCE_DIR}/firmware/qtpy")
 
 set(FW_2_NAME "firmware_pico")
-set(FW_2_VERSION_NUMBER "0.1.5")
+set(FW_2_VERSION_NUMBER "0.1.6")
 set(FW_2_SRC_DIRECTORY "${CMAKE_SOURCE_DIR}/firmware/pico")
 
 set(FW_3_NAME "firmware_promicro")
-set(FW_3_VERSION_NUMBER "0.1.5")
+set(FW_3_VERSION_NUMBER "0.1.6")
 set(FW_3_SRC_DIRECTORY "${CMAKE_SOURCE_DIR}/firmware/promicro")
 
 set(FW_4_NAME "firmware_tiny2040")
-set(FW_4_VERSION_NUMBER "0.1.5")
+set(FW_4_VERSION_NUMBER "0.1.6")
 set(FW_4_SRC_DIRECTORY "${CMAKE_SOURCE_DIR}/firmware/tiny")
 
 # Move common source code to a separate directory
@@ -54,7 +54,7 @@ include(pico_sdk_import.cmake)
 # Name the project
 project(${PROJECT_NAME}
         LANGUAGES C CXX ASM
-        VERSION 0.1.0
+        VERSION 0.1.5
         DESCRIPTION "RP2040-based I2C host"
         HOMEPAGE_URL https://smittytone.net/cli2c
 )
@@ -63,6 +63,7 @@ project(${PROJECT_NAME}
 pico_sdk_init()
 
 # Include the apps' source code
+# Comment out any that you don't require (speeds build time)
 add_subdirectory(${FW_1_SRC_DIRECTORY})
 add_subdirectory(${FW_2_SRC_DIRECTORY})
 add_subdirectory(${FW_3_SRC_DIRECTORY})

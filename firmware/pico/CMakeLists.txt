@@ -18,13 +18,16 @@ add_compile_definitions(
     DEFAULT_SCL_PIN=3)
 
 # Include app source code file(s)
-add_executable(${FW_2_NAME}
+add_executable(${FW_2_NAME} 
     ${FW_2_SRC_DIRECTORY}/main.c
     ${FW_2_SRC_DIRECTORY}/pico_led.c
     ${COMMON_CODE_DIRECTORY}/serial.c
-    ${COMMON_CODE_DIRECTORY}/led.c
-    ${COMMON_CODE_DIRECTORY}/segment.c
-)
+    ${COMMON_CODE_DIRECTORY}/led.c)
+
+# Compile debug segment LED sources
+if (DO_DEBUG)
+    target_sources(${FW_2_NAME} PRIVATE segment.c)
+endif()
 
 # Set the stack size
 target_compile_definitions(${FW_2_NAME} PRIVATE PICO_STACK_SIZE=4096)

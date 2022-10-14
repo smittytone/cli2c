@@ -1,7 +1,7 @@
 /*
- * I2C Host Firmware -- QTPy RP2040
+ * I2C Host Firmware -- Adafruit QTPy RP2040
  *
- * @version     0.1.5
+ * @version     0.1.6
  * @author      Tony Smith (@smittytone)
  * @copyright   2022
  * @licence     MIT

@@ -1,7 +1,7 @@
 /*
  * I2C Host Firmware -- Tiny 2040 LED
  *
- * @version     0.1.5
+ * @version     0.1.6
  * @author      Tony Smith (@smittytone)
  * @copyright   2022
  * @licence     MIT
@@ -41,8 +41,11 @@ void tiny_pwm_init(uint pin) {
     // Configure and enable PWM
     uint slice =  pwm_gpio_to_slice_num(pin);
     uint channel = pwm_gpio_to_channel(pin);
-    pwm_set_wrap(slice, 1000);
-    pwm_set_chan_level(slice, channel, 65535);
+    pwm_set_wrap(slice, 1000);                  // The frequency, basically
+    pwm_set_chan_level(slice, channel, 65535);  // Channel levels 0-65535
+                                                // The Tiny's LED is common cathode,
+                                                // so level 65535 is lowest brightness;
+                                                // level 0 is max brightness.   
     pwm_set_enabled(slice, true);
 }
 
@@ -101,6 +104,13 @@ void tiny_led_flash(uint32_t count) {
 }
 
 
+/**
+ * @brief Set the LED's colour, converting from a 24-bit RGB value
+ *        to invidual 8-bit primary colour values.
+ *
+ * @param rgb_colour: The colour as an RGB value bitfield:
+ *                    R = bits 23-16, G = bits 15-8, B = bits 7-0.
+ */
 void tiny_led_set_colour(uint32_t rgb_colour) {
 
     colour.blue = (rgb_colour & 0xFF);
