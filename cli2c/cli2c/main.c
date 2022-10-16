@@ -25,6 +25,7 @@ int main(int argc, char *argv[]) {
     } else {
         // Check for a help request
         for (int i = 0 ; i < argc ; ++i) {
+            lower(argv[i]);
             if (strcmp(argv[i], "h") == 0 ||
                 strcmp(argv[i], "--help") == 0 ||
                 strcmp(argv[i], "-h") == 0) {

@@ -25,7 +25,10 @@ int main(int argc, char* argv[]) {
     } else {
         // Check for a help request
         for (int i = 0 ; i < argc ; ++i) {
-            if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
+            lower(argv[i]);
+            if (strcmp(argv[i], "h") == 0 ||
+                strcmp(argv[i], "-h") == 0 ||
+                strcmp(argv[i], "--help") == 0) {
                 show_help();
                 return EXIT_OK;
             }
@@ -95,236 +98,229 @@ int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
     
     for (int i = delta ; i < argc ; ++i) {
         char* command = argv[i];
-
-        if (command[0] == '-') {
-            switch (command[1]) {
-                case 'a':   // ACTIVATE (DEFAULT) OR DEACTIVATE DISPLAY
-                    {
-                        // Check for and get the optional argument
-                        bool is_on = true;
-                        if (i < argc - 1) {
-                            command = argv[++i];
-                            if (command[0] != '-') {
-                                if (strlen(command) == 1) {
-                                    is_on = (strcmp(command, "0") != 0);
-                                } else {
-                                    is_on = (strcmp(command, "off") != 0);
-                                }
+        switch (command[1]) {
+            case 'a':   // ACTIVATE (DEFAULT) OR DEACTIVATE DISPLAY
+                {
+                    // Check for and get the optional argument
+                    bool is_on = true;
+                    if (i < argc - 1) {
+                        command = argv[++i];
+                        if (command[0] != '-') {
+                            if (strlen(command) == 1) {
+                                is_on = (strcmp(command, "0") != 0);
                             } else {
-                                i -= 1;
+                                is_on = (strcmp(command, "off") != 0);
                             }
+                        } else {
+                            i -= 1;
                         }
-
-                        // Apply the command
-                        HT16K33_power(is_on);
-                    }
-                    break;
-
-                case 'b':   // SET BRIGHTNESS
-                    {
-                        // Get the required argument
-                        if (i < argc - 1) {
-                            command = argv[++i];
-                            if (command[0] != '-') {
-                                long brightness = strtol(command, NULL, 0);
-
-                                if (brightness < 0 || brightness > 15) {
-                                    print_error("Brightness value out of range (0-15)");
-                                    return EXIT_ERR;
-                                }
-
-                                // Apply the command
-                                HT16K33_set_brightness(brightness);
-                                break;
-                            }
-                        }
-                        
-                        print_error("No brightness value supplied");
-                        return EXIT_ERR;
-                    }
-                
-                case 'c':   // DISPLAY CHARACTER
-                    {
-                        // Get the required argument
-                        if (i < argc - 1) {
-                            command = argv[++i];
-                            if (command[0] != '-') {
-                                long ascii = strtol(command, NULL, 0);
-
-                                if (ascii < 32 || ascii > 127) {
-                                    print_error("Ascii value out of range (32-127)");
-                                    return EXIT_ERR;
-                                }
-
-                                // Get an optional argument
-                                bool do_centre = false;
-                                if (i < argc - 1) {
-                                    command = argv[++i];
-                                    if (command[0] != '-') {
-                                        if (strlen(command) == 1) {
-                                            do_centre = (strcmp(command, "1") == 0);
-                                        } else {
-                                            do_centre = (strcmp(command, "true") == 0);
-                                        }
-                                    } else {
-                                        i -= 1;
-                                    }
-                                }
-
-                                // Perform the action
-                                HT16K33_set_char(ascii, do_centre);
-                                do_draw = true;
-                                break;
-                            }
-                        }
-
-                        print_error("No Ascii value supplied");
-                        return EXIT_ERR;
                     }
 
-                case 'g':   // DISPLAY GLYPH
-                    {
-                        // Get the required argument
-                        if (i < argc - 1) {
-                            command = argv[++i];
-                            if (command[0] != '-') {
-                                uint8_t bytes[8] = {0};
-                                char *endptr = command;
-                                size_t length = 0;
+                    // Apply the command
+                    HT16K33_power(is_on);
+                }
+                break;
 
-                                while (length < sizeof(bytes)) {
-                                    bytes[length++] = (uint8_t)strtol(endptr, &endptr, 0);
-                                    if (*endptr == '\0') break;
-                                    if (*endptr != ',') {
-                                        print_error("Invalid bytes");
-                                        return EXIT_ERR;
-                                    }
+            case 'b':   // SET BRIGHTNESS
+                {
+                    // Get the required argument
+                    if (i < argc - 1) {
+                        command = argv[++i];
+                        if (command[0] != '-') {
+                            long brightness = strtol(command, NULL, 0);
 
-                                    endptr++;
-                                }
-                                
-                                // Perform the action
-                                HT16K33_set_glyph(bytes);
-                                do_draw = true;
-                                break;
+                            if (brightness < 0 || brightness > 15) {
+                                print_error("Brightness value out of range (0-15)");
+                                return EXIT_ERR;
                             }
-                        }
 
-                        print_error("No glyph value supplied");
-                        return EXIT_ERR;
+                            // Apply the command
+                            HT16K33_set_brightness(brightness);
+                            break;
+                        }
                     }
+                    
+                    print_error("No brightness value supplied");
+                    return EXIT_ERR;
+                }
             
-                case 'p':   // PLOT A POINT
-                    {
-                        // Get two required arguments
-                        long x = -1, y = -1;
-                        if (i < argc - 1) {
-                            command = argv[++i];
-                            if (command[0] != '-') {
-                                x = strtol(command, NULL, 0);
-                                if (i < argc - 1) {
-                                    command = argv[++i];
-                                    if (command[0] != '-') {
-                                        y = strtol(command, NULL, 0);
+            case 'c':   // DISPLAY CHARACTER
+                {
+                    // Get the required argument
+                    if (i < argc - 1) {
+                        command = argv[++i];
+                        if (command[0] != '-') {
+                            long ascii = strtol(command, NULL, 0);
 
-                                        if (x < 0 || x > 7 || y < 0 || y > 7) {
-                                            print_error("Co-ordinate out of range (0-7)");
-                                            return EXIT_ERR;
-                                        }
-
-                                        // Get an optional argument
-                                        long ink = 1;
-                                        if (i < argc - 1) {
-                                            command = argv[++i];
-                                            if (command[0] != '-') {
-                                                ink = strtol(command, NULL, 0);
-                                                if (ink != 1 && ink != 0) ink = 1;
-                                            } else {
-                                                i -= 1;
-                                            }
-                                        }
-
-                                        // Perform the action
-                                        HT16K33_plot((uint8_t)x, (uint8_t)y, ink == 1);
-                                        do_draw = true;
-                                        break;
-                                    }
-                                }
+                            if (ascii < 32 || ascii > 127) {
+                                print_error("Ascii value out of range (32-127)");
+                                return EXIT_ERR;
                             }
-                        }
-
-                        print_error("No co-ordinate value(s) supplied");
-                        return EXIT_ERR;
-                    }
-                    break;
-
-                case 'r':       // ROTATE DISPLAY
-                    {
-                        if (i < argc - 1) {
-                            long angle = 0;
-                            command = argv[++i];
-                            
-                            if (command[0] != '-') {
-                                angle = strtol(command, NULL, 0);
-                            } else {
-                                i -= 1;
-                            }
-                            
-                            // Perform the action
-                            HT16K33_set_angle((uint8_t)angle);
-                            HT16K33_rotate((uint8_t)angle);
-                        }
-                    }
-                    break;
-                
-                case 't':     // SCROLL A TEXT STRING
-                    {
-                        // Get one required argument
-                        if (i < argc - 1) {
-                            char *scroll_string = argv[++i];
 
                             // Get an optional argument
-                            long scroll_delay = 100;
+                            bool do_centre = false;
                             if (i < argc - 1) {
                                 command = argv[++i];
                                 if (command[0] != '-') {
-                                    scroll_delay = strtol(command, NULL, 0);
+                                    if (strlen(command) == 1) {
+                                        do_centre = (strcmp(command, "1") == 0);
+                                    } else {
+                                        do_centre = (strcmp(command, "true") == 0);
+                                    }
                                 } else {
                                     i -= 1;
                                 }
                             }
-                            
+
                             // Perform the action
-                            HT16K33_print(scroll_string, (uint32_t)scroll_delay);
+                            HT16K33_set_char(ascii, do_centre);
+                            do_draw = true;
                             break;
                         }
-
-                        print_error("No string supplied");
-                        return EXIT_ERR;
                     }
-                
-                case 'w':
-                    HT16K33_clear_buffer();
-                    do_draw = true;
-                    break;
-                    
-                case 'z':
-                    do_draw = true;
-                    break;
-                
-                case '!':
-                    i2c_commands(i2c, argc, argv, i);
-                    break;
-                    
-                default:
-                    // ERROR
-                    print_error("Unknown command");
+
+                    print_error("No Ascii value supplied");
                     return EXIT_ERR;
-            }
-        } else {
-            // Bad command
-            print_error("Unknown command");
-            return EXIT_ERR;
+                }
+
+            case 'g':   // DISPLAY GLYPH
+                {
+                    // Get the required argument
+                    if (i < argc - 1) {
+                        command = argv[++i];
+                        if (command[0] != '-') {
+                            uint8_t bytes[8] = {0};
+                            char *endptr = command;
+                            size_t length = 0;
+
+                            while (length < sizeof(bytes)) {
+                                bytes[length++] = (uint8_t)strtol(endptr, &endptr, 0);
+                                if (*endptr == '\0') break;
+                                if (*endptr != ',') {
+                                    print_error("Invalid bytes");
+                                    return EXIT_ERR;
+                                }
+
+                                endptr++;
+                            }
+                            
+                            // Perform the action
+                            HT16K33_set_glyph(bytes);
+                            do_draw = true;
+                            break;
+                        }
+                    }
+
+                    print_error("No glyph value supplied");
+                    return EXIT_ERR;
+                }
+        
+            case 'p':   // PLOT A POINT
+                {
+                    // Get two required arguments
+                    long x = -1, y = -1;
+                    if (i < argc - 1) {
+                        command = argv[++i];
+                        if (command[0] != '-') {
+                            x = strtol(command, NULL, 0);
+                            if (i < argc - 1) {
+                                command = argv[++i];
+                                if (command[0] != '-') {
+                                    y = strtol(command, NULL, 0);
+
+                                    if (x < 0 || x > 7 || y < 0 || y > 7) {
+                                        print_error("Co-ordinate out of range (0-7)");
+                                        return EXIT_ERR;
+                                    }
+
+                                    // Get an optional argument
+                                    long ink = 1;
+                                    if (i < argc - 1) {
+                                        command = argv[++i];
+                                        if (command[0] != '-') {
+                                            ink = strtol(command, NULL, 0);
+                                            if (ink != 1 && ink != 0) ink = 1;
+                                        } else {
+                                            i -= 1;
+                                        }
+                                    }
+
+                                    // Perform the action
+                                    HT16K33_plot((uint8_t)x, (uint8_t)y, ink == 1);
+                                    do_draw = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    print_error("No co-ordinate value(s) supplied");
+                    return EXIT_ERR;
+                }
+                break;
+
+            case 'r':       // ROTATE DISPLAY
+                {
+                    if (i < argc - 1) {
+                        long angle = 0;
+                        command = argv[++i];
+                        
+                        if (command[0] != '-') {
+                            angle = strtol(command, NULL, 0);
+                        } else {
+                            i -= 1;
+                        }
+                        
+                        // Perform the action
+                        HT16K33_set_angle((uint8_t)angle);
+                        HT16K33_rotate((uint8_t)angle);
+                    }
+                }
+                break;
+            
+            case 't':     // SCROLL A TEXT STRING
+                {
+                    // Get one required argument
+                    if (i < argc - 1) {
+                        char *scroll_string = argv[++i];
+
+                        // Get an optional argument
+                        long scroll_delay = 100;
+                        if (i < argc - 1) {
+                            command = argv[++i];
+                            if (command[0] != '-') {
+                                scroll_delay = strtol(command, NULL, 0);
+                            } else {
+                                i -= 1;
+                            }
+                        }
+                        
+                        // Perform the action
+                        HT16K33_print(scroll_string, (uint32_t)scroll_delay);
+                        break;
+                    }
+
+                    print_error("No string supplied");
+                    return EXIT_ERR;
+                }
+            
+            case 'w':
+                HT16K33_clear_buffer();
+                do_draw = true;
+                break;
+                
+            case 'z':
+                do_draw = true;
+                break;
+            
+            case '!':
+                i2c_commands(i2c, argc, argv, i);
+                break;
+                
+            default:
+                // ERROR
+                print_error("Unknown command");
+                return EXIT_ERR;
         }
     }
     
@@ -343,17 +339,19 @@ void show_help() {
     fprintf(stderr, "  [address] is an optional display I2C address. Default: 0x70.\n");
     fprintf(stderr, "  [commands] are optional HT16K33 matrix commands:\n\n");
     fprintf(stderr, "Commands:\n");
-    fprintf(stderr, "  -a [on|off]             Activate/deactivate the display. Default: on.\n");
-    fprintf(stderr, "  -b {0-15}               Set the display brightness from low (0) to high (15).\n");
-    fprintf(stderr, "  -r {0-3}                Rotate the display. Angle supplied as a multiple of 90 degrees.\n");
-    fprintf(stderr, "  -c {ascii} [true|false] Draw the Ascii character on the screen, and optionally\n");
-    fprintf(stderr, "                          set it to be centred (true).\n");
-    fprintf(stderr, "  -g {glyph}              Draw the user-defined character on the screen. The definition\n");
-    fprintf(stderr, "                          is a string of eight comma-separated 8-bit hex values, eg.\n");
-    fprintf(stderr, "                          '0x3C,0x42,0xA9,0x85,0x85,0xA9,0x42,0x3C'.\n");
-    fprintf(stderr, "  -p {x} {y} [1|0]        Set or clear the specified pixel. X and Y coordinates are in\n");
-    fprintf(stderr, "                          the range 0-7.\n");
-    fprintf(stderr, "  -t {string} [delay]     Scroll the specified string. The second argument is an optional\n");
-    fprintf(stderr, "                          delay be between column shifts in milliseconds. Default: 250ms.\n");
-    fprintf(stderr, "  -w                      Wipe (clear) the display.\n\n");
+    fprintf(stderr, "  a [on|off]             Activate/deactivate the display. Default: on.\n");
+    fprintf(stderr, "  b {0-15}               Set the display brightness from low (0) to high (15).\n");
+    fprintf(stderr, "  r {0-3}                Rotate the display. Angle supplied as a multiple of 90 degrees.\n");
+    fprintf(stderr, "  c {ascii} [true|false] Draw the Ascii character on the screen, and optionally\n");
+    fprintf(stderr, "                         set it to be centred (true).\n");
+    fprintf(stderr, "  g {glyph}              Draw the user-defined character on the screen. The definition\n");
+    fprintf(stderr, "                         is a string of eight comma-separated 8-bit hex values, eg.\n");
+    fprintf(stderr, "                         '0x3C,0x42,0xA9,0x85,0x85,0xA9,0x42,0x3C'.\n");
+    fprintf(stderr, "  p {x} {y} [1|0]        Set or clear the specified pixel. X and Y coordinates are in\n");
+    fprintf(stderr, "                         the range 0-7.\n");
+    fprintf(stderr, "  t {string} [delay]     Scroll the specified string. The second argument is an optional\n");
+    fprintf(stderr, "                         delay be between column shifts in milliseconds. Default: 250ms.\n");
+    fprintf(stderr, "  w                      Wipe (clear) the display.\n");
+    fprintf(stderr, "  h                      Help information.\n\n");
 }
+

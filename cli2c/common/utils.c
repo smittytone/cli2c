@@ -71,3 +71,16 @@ void ctrl_c_handler(int dummy) {
     fprintf(stderr, "\n");
     exit(EXIT_OK);
 }
+
+
+/**
+ * @brief Convert a string to lowercase.
+ *
+ * @param s: Pointer to the string to convert.
+ */
+void lower(char* s) {
+    size_t l = strlen(s);
+    for (int j = 0 ; j < l ; ++j) {
+        if (s[j] >= 'A' && s[j] <= 'Z') s[j] += 32;
+    }
+}

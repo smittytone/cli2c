@@ -126,6 +126,10 @@ void rx_loop(void) {
                         break;
 
                     case 'i':   // INITIALISE THE I2C BUS
+                        // No need it initialise if we already have
+                        if (transaction.is_ready) break;
+
+                        // Otherwise...
                         init_i2c(&transaction);
                         send_ack();
                         break;
