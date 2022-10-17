@@ -2,7 +2,7 @@
 
 # Usage:
 #   ./deploy.sh {device} {path/to/uf2}
-# 
+#
 
 pico_path=/Volumes/RPI-RP2
 
@@ -22,7 +22,7 @@ if [[ ! -f ${2} ]]; then
 fi
 
 # Put the Pico onto BOOTSEL mode
-stty -f ${1} 1200 || echo "[ERROR] Could not connect to device ${1}" ; exit 1
+stty -f ${1} 1200 || { echo "[ERROR] Could not connect to device ${1}" ; exit 1; }
 echo "Waiting for Pico to mount..."
 while [ ! -d ${pico_path} ]; do
     sleep 0.1

@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.20)
 
+# Uncomment the following line to use the STEMMA
+#set(USE_STEMMA 1)
+
 # Make project data accessible to compiler
 # IMPORTANT `HW_MODEL` must be no more than 16 characters
 add_compile_definitions(
@@ -13,14 +16,17 @@ add_compile_definitions(
 # These are for the board pins A2 (SCL) and A3 (SDA)
 # NOT SDA and SCL. This is to ensure comptatibility with
 # the STEMMA port -- both A2,A3,STEMMA all used i2c1.
-if (DEFINED USE_STEMMA)
+if (USE_STEMMA)
     add_compile_definitions(
         DEFAULT_SDA_PIN=26
-        DEFAULT_SCL_PIN=27)
+        DEFAULT_SCL_PIN=27
+        DEFAULT_I2C_BUS=1)
+    unset(USE_STEMMA)
 else()
     add_compile_definitions(
         DEFAULT_SDA_PIN=22
-        DEFAULT_SCL_PIN=23)
+        DEFAULT_SCL_PIN=23
+        DEFAULT_I2C_BUS=1)
 endif()
 
 # NeoPixel

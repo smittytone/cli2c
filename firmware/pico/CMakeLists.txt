@@ -15,10 +15,11 @@ add_compile_definitions(
 # you select pins on I2C1
 add_compile_definitions(
     DEFAULT_SDA_PIN=2
-    DEFAULT_SCL_PIN=3)
+    DEFAULT_SCL_PIN=3
+    DEFAULT_I2C_BUS=1)
 
 # Include app source code file(s)
-add_executable(${FW_2_NAME} 
+add_executable(${FW_2_NAME}
     ${FW_2_SRC_DIRECTORY}/main.c
     ${FW_2_SRC_DIRECTORY}/pico_led.c
     ${COMMON_CODE_DIRECTORY}/serial.c

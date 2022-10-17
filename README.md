@@ -66,6 +66,7 @@ cli2c {device_port} [command] ... [command]
 
 | Command | Arg. Count | Args | Description |
 | :-: | :-: | --- | --- |
+| `z` | None |  | Initialise the target I2C bus. The bus is not initialised at startup |
 | `w` | 2 | `{address}` `{data_bytes}` | Write the supplied data to the I2C device at `address`. `data_bytes` are comma-separated 8-bit hex values, eg. `0x4A,0x5C,0xFF` |
 | `r` | 2 | `{address}` `{count}` | Read `count` bytes from the I2C device at `address` and issue an I2C STOP |
 | `p` | None| Issue an I2C STOP. Usually used after one or more writes |
@@ -207,8 +208,8 @@ You can build the code from the accompanying Xcode project. Archive the project 
 
 1. Copy `firmwarebuild/firmware/pico/firmware_pico_rp2040.uf2` to a Pico in boot mode.
 1. Copy `firmwarebuild/firmware/qtpy/firmware_qtpy_rp2040.uf2` to a QTPy RP2040 in boot mode.
-1. Copy `firmwarebuild/firmware/qtpy/firmware_promicro.uf2` to a ProMicro RP2040 in boot mode.
-1. Copy `firmwarebuild/firmware/qtpy/firmware_tiny2040.uf2` to a Tiny 2040 in boot mode.
+1. Copy `firmwarebuild/firmware/promicro/firmware_promicro.uf2` to a ProMicro RP2040 in boot mode.
+1. Copy `firmwarebuild/firmware/tiny/firmware_tiny2040.uf2` to a Tiny 2040 in boot mode.
 
 To copy the file(s), run:
 

@@ -38,7 +38,9 @@
 #define HEARTBEAT_PERIOD_US                     2000000
 #define HEARTBEAT_FLASH_US                      100000
 
-#define DEFAULT_I2C_PORT                        i2c1
+#ifndef DEFAULT_I2C_BUS
+#define DEFAULT_I2C_BUS                         1
+#endif
 
 #define WRITE_LENGTH_BASE                       0xC0
 #define READ_LENGTH_BASE                        0x80

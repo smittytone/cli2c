@@ -12,7 +12,8 @@ add_compile_definitions(
 # Set the device's I2C pins
 add_compile_definitions(
     DEFAULT_SDA_PIN=6
-    DEFAULT_SCL_PIN=7)
+    DEFAULT_SCL_PIN=7
+    DEFAULT_I2C_BUS=1)
 
 set(PICO_BOARD=pimoroni_tiny_2040)
 set(PICO_STDIO_USB_CONNECT_WAIT_TIMEOUT_MS=2000)

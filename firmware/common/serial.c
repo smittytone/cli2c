@@ -21,13 +21,13 @@ void rx_loop(void) {
 
     // Prepare a transaction record with default data
     I2C_Trans transaction;
-    transaction.is_started = false;         // No transaction taking place
-    transaction.is_ready = false;           // I2C bus not yet initialised
-    transaction.frequency = 400;            // The bud frequency in use
-    transaction.address = 0xFF;             // The target I2C address
-    transaction.bus = DEFAULT_I2C_PORT;     // The I2C bus to use
-    transaction.sda_pin = DEFAULT_SDA_PIN;  // The I2C SDA pin
-    transaction.scl_pin = DEFAULT_SCL_PIN;  // The I2C SCL pin
+    transaction.is_started = false;                         // No transaction taking place
+    transaction.is_ready = false;                           // I2C bus not yet initialised
+    transaction.frequency = 400;                            // The bud frequency in use
+    transaction.address = 0xFF;                             // The target I2C address
+    transaction.bus = DEFAULT_I2C_BUS == 0 ? i2c0 : i2c1;   // The I2C bus to use
+    transaction.sda_pin = DEFAULT_SDA_PIN;                  // The I2C SDA pin
+    transaction.scl_pin = DEFAULT_SCL_PIN;                  // The I2C SCL pin
 
     // Heartbeat variables
     uint64_t last = time_us_64();
@@ -117,6 +117,17 @@ void rx_loop(void) {
                         send_commands();
                         break;
 
+                    case 'c':   // CONFIGURE THE BUS PINS
+                        if (transaction.is_ready) {
+                            send_err();
+                            break;
+                        }
+
+                        uint8_t bus_index = rx_buffer[1] & 0x01;
+                        transaction.bus = bus_index == 0 ? i2c0 : i2c1;
+                        send_ack();
+                        break;
+
                     case 'd':   // SCAN THE I2C BUS FOR DEVICES
                         if (transaction.is_ready) {
                             send_scan(&transaction);
@@ -127,10 +138,7 @@ void rx_loop(void) {
 
                     case 'i':   // INITIALISE THE I2C BUS
                         // No need it initialise if we already have
-                        if (transaction.is_ready) break;
-
-                        // Otherwise...
-                        init_i2c(&transaction);
+                        if (!transaction.is_ready) init_i2c(&transaction);
                         send_ack();
                         break;
 
