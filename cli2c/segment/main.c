@@ -1,7 +1,7 @@
 /*
  * I2C driver for an HT16K33 4-digit, 7-segment display
  *
- * Version 0.1.6
+ * Version 1.0.0
  * Copyright © 2022, Tony Smith (@smittytone)
  * Licence: MIT
  *
@@ -14,10 +14,10 @@ I2CDriver i2c;
 
 
 int main(int argc, char* argv[]) {
-    
+
     // Listen for SIGINT
     signal(SIGINT, ctrl_c_handler);
-    
+
     // Process arguments
     if (argc < 2) {
         // Insufficient arguments -- issue usage info and bail
@@ -33,12 +33,12 @@ int main(int argc, char* argv[]) {
                 return EXIT_OK;
             }
         }
-        
+
         // Connect... with the device path
         i2c.port = -1;
         int i2c_address = HT16K33_I2C_ADDR;
         i2c_connect(&i2c, argv[1]);
-        
+
         if (i2c.connected) {
             // Initialize the I2C host's I2C bus
             if (!(i2c_init(&i2c))) {
@@ -46,7 +46,7 @@ int main(int argc, char* argv[]) {
                 flush_and_close_port(i2c.port);
                 return EXIT_ERR;
             }
-            
+
             // Process the remaining commands in sequence
             int delta = 2;
             if (argc > 2) {
@@ -54,22 +54,22 @@ int main(int argc, char* argv[]) {
                 if (token[0] != '-') {
                     // Not a command, so an address?
                     i2c_address = (int)strtol(token, NULL, 0);
-                    
+
                     // Only allow legal I2C address range
                     if (i2c_address < 0x08 || i2c_address > 0x77) {
                         print_error("I2C address out of range");
                         flush_and_close_port(i2c.port);
                         return EXIT_ERR;
                     }
-                    
+
                     // Note the non-standard I2C address
                     print_warning("Using I2C address: 0x%02X", i2c_address);
                     delta = 3;
                 }
-                
+
                 // Set up the display driver
                 HT16K33_init(&i2c, i2c_address);
-                
+
                 // Process the commands one by one
                 int result =  segment_commands(&i2c, argc, argv, delta);
                 flush_and_close_port(i2c.port);
@@ -79,7 +79,7 @@ int main(int argc, char* argv[]) {
             print_error("Could not connect to device %s", argv[1]);
         }
     }
-    
+
     return EXIT_ERR;
 }
 
@@ -93,9 +93,9 @@ int main(int argc, char* argv[]) {
  * @param delta: The argument list offset to locate HT16K33 commands from.
  */
 int segment_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
-   
+
     bool do_draw = false;
-    
+
     for (int i = delta ; i < argc ; ++i) {
         char* command = argv[i];
         switch (command[1]) {
@@ -139,7 +139,7 @@ int segment_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                             break;
                         }
                     }
-                    
+
                     print_error("No brightness value supplied");
                     return EXIT_ERR;
                 }
@@ -151,18 +151,18 @@ int segment_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                         command = argv[++i];
                         if (command[0] != '-') {
                             char achar = command[0];
-                            
+
                             // Get a required argument
                             if (i < argc - 1) {
                                 command = argv[++i];
                                 if (command[0] != '-') {
                                     uint8_t digit = (uint8_t)strtol(command, NULL, 0);
-                                    
+
                                     if (digit > 3) {
                                         print_error("Digit value out of range (0-3)");
                                         return EXIT_ERR;
                                     }
-                                    
+
                                     // Get an optional argument
                                     bool show_point = false;
                                     if (i < argc - 1) {
@@ -177,23 +177,23 @@ int segment_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                                             i -= 1;
                                         }
                                     }
-                                    
+
                                     // Perform the action
                                     HT16K33_set_char(achar, digit, false);
                                     do_draw = true;
                                     break;
                                 }
                             }
-                            
+
                             print_error("No digit value supplied");
                             return EXIT_ERR;
                         }
                     }
-                    
+
                     print_error("No glyph value supplied");
                     return EXIT_ERR;
                 }
-                
+
             case 'd':   // SET DECIMAL POINT ON A DIGIT (0-3)
                 {
                     // Get the required argument
@@ -213,15 +213,15 @@ int segment_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                             break;
                         }
                     }
-                    
+
                     print_error("No digit value supplied");
                     return EXIT_ERR;
                 }
-        
+
             case 'f':   // FLIP DISPLAY
                 HT16K33_flip();
                 break;
-            
+
             case 'g':   // DISPLAY A GLYPH ON A DIGIT
                 {
                     // Get the required argument
@@ -234,7 +234,7 @@ int segment_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                                 print_error("Glyph value out of range (0-255)");
                                 return EXIT_ERR;
                             }
-                            
+
                             // Get a required argument
                             if (i < argc - 1) {
                                 command = argv[++i];
@@ -245,7 +245,7 @@ int segment_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                                         print_error("Digit value out of range (0-3)");
                                         return EXIT_ERR;
                                     }
-                                    
+
                                     // Get an optional argument
                                     bool show_point = false;
                                     if (i < argc - 1) {
@@ -267,7 +267,7 @@ int segment_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                                     break;
                                 }
                             }
-                            
+
                             print_error("No digit value supplied");
                             return EXIT_ERR;
                         }
@@ -276,12 +276,12 @@ int segment_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                     print_error("No glyph value supplied");
                     return EXIT_ERR;
                 }
-            
+
             case 'k':   // SET OR UNSET THE COLON
                 HT16K33_set_colon();
                 do_draw = true;
                 break;
-                
+
             case 'n':   // DISPLAY A NUMBER ACROSS THE DISPLAY
                 {
                     // Get the required argument
@@ -313,23 +313,23 @@ int segment_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                         command = argv[++i];
                         if (command[0] != '-') {
                             uint8_t number = (uint8_t)strtol(command, NULL, 0);
-                            
+
                             if (number > 0x0F) {
                                 print_error("Value out of range (00-0F)");
                                 return EXIT_ERR;
                             }
-                            
+
                             // Get a required argument
                             if (i < argc - 1) {
                                 command = argv[++i];
                                 if (command[0] != '-') {
                                     uint8_t  digit =  (uint8_t)strtol(command, NULL, 0);
-                                    
+
                                     if (digit > 3) {
                                         print_error("Digit value out of range (0-3)");
                                         return EXIT_ERR;
                                     }
-                                    
+
                                     // Get an optional argument
                                     bool show_point = false;
                                     if (i < argc - 1) {
@@ -344,43 +344,43 @@ int segment_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                                             i -= 1;
                                         }
                                     }
-                                    
+
                                     // Perform the action
                                     HT16K33_set_number(number, digit, false);
                                     do_draw = true;
                                     break;
                                 }
                             }
-                            
+
                             print_error("No digit value supplied");
                             return EXIT_ERR;
                         }
                     }
-                    
+
                     print_error("No glyph value supplied");
                     return EXIT_ERR;
                 }
-        
+
             case 'w':
                 HT16K33_clear_buffer();
                 do_draw = true;
                 break;
-            
+
             case 'z':
                 do_draw = true;
                 break;
-        
+
             case '!':
                 i2c_commands(i2c, argc, argv, i);
                 break;
-                
+
             default:
                 // ERROR
                 print_error("Unknown command");
                 return EXIT_ERR;
         }
     }
-    
+
     if (do_draw) HT16K33_draw();
     return EXIT_OK;
 }

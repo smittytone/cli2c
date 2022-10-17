@@ -1,7 +1,7 @@
 /*
  * HT16K33 4-digit, 7-segment driver
  *
- * Version 0.1.6
+ * Version 1.0.0
  * Copyright © 2022, Tony Smith (@smittytone)
  * Licence: MIT
  *
@@ -29,7 +29,7 @@ int i2c_address = HT16K33_I2C_ADDR;
  * @param address:     A non-standard HT16K33 address, or -1.
  */
 void HT16K33_init(I2CDriver *sd, int address) {
-    
+
     if (address != -1) i2c_address = address;
     host_i2c = sd;
 }
@@ -39,7 +39,7 @@ void HT16K33_init(I2CDriver *sd, int address) {
  * @brief Flip the display through 180 degrees.
  */
 void HT16K33_flip(void) {
-    
+
     is_flipped = !is_flipped;
 }
 
@@ -51,7 +51,7 @@ void HT16K33_flip(void) {
  *               shut it down (`false`).
  */
 void HT16K33_power(bool is_on) {
-    
+
     if (is_on) {
         HT16K33_write_cmd(HT16K33_CMD_POWER_ON);
         HT16K33_write_cmd(HT16K33_CMD_DISPLAY_ON);
@@ -68,7 +68,7 @@ void HT16K33_power(bool is_on) {
  * @param brightness: The display brightness (1-15).
  */
 void HT16K33_set_brightness(uint8_t brightness) {
-    
+
     if (brightness > 15) brightness = 15;
     HT16K33_write_cmd(HT16K33_CMD_BRIGHTNESS | brightness);
 }
@@ -80,7 +80,7 @@ void HT16K33_set_brightness(uint8_t brightness) {
  * This does not clear the LED -- call `HT16K33_draw()`.
  */
 void HT16K33_clear_buffer(void) {
-    
+
     memset(&display_buffer[1], 0x00, 16);
 }
 
@@ -89,7 +89,7 @@ void HT16K33_clear_buffer(void) {
  * @brief Write the display buffer out to the LED.
  */
 void HT16K33_draw(void) {
-    
+
     // Check for an overturned LED
     if (is_flipped) {
         fprintf(stderr, "FLIPPED\n");
@@ -97,11 +97,11 @@ void HT16K33_draw(void) {
         uint8_t a = display_buffer[POS[0]];
         display_buffer[POS[0]] = display_buffer[POS[3]];
         display_buffer[POS[3]] = a;
-            
+
         a = display_buffer[POS[1]];
         display_buffer[POS[1]] = display_buffer[POS[2]];
         display_buffer[POS[2]] = a;
-            
+
         // Rotate each digit
         for (uint32_t i = 0 ; i < 4 ; ++i) {
             a = display_buffer[POS[i]];
@@ -111,7 +111,7 @@ void HT16K33_draw(void) {
             display_buffer[POS[i]] = (a | b | c);
         }
     }
-    
+
     // Display the buffer and flash the LED
     i2c_start(host_i2c, i2c_address, 0);
     i2c_write(host_i2c, display_buffer, 17);
@@ -128,7 +128,7 @@ void HT16K33_draw(void) {
  *                   `false` otherwise.
  */
 void HT16K33_set_number(uint8_t number, uint8_t digit, bool has_dot) {
-    
+
     if (digit > 3) return;
     if (number > 15) return;
     display_buffer[POS[digit]] = CHARSET[number];
@@ -156,7 +156,7 @@ void HT16K33_set_number(uint8_t number, uint8_t digit, bool has_dot) {
  *                  `false` otherwise.
  */
 void HT16K33_set_glyph(uint8_t glyph, uint8_t digit, bool has_dot) {
-    
+
     if (digit > 3) return;
     display_buffer[POS[digit]] = glyph;
     if (has_dot) display_buffer[POS[digit]] |= 0x80;
@@ -164,10 +164,10 @@ void HT16K33_set_glyph(uint8_t glyph, uint8_t digit, bool has_dot) {
 
 
 void HT16K33_set_char(char achar, uint8_t digit, bool has_dot) {
-    
+
     if (digit > 3) return;
     uint8_t char_val = 0xFF;
-    
+
     if (achar == '*') {
         char_val = HT16K33_SEGMENT_DEGREE_CHAR;
     } else if (achar == '-') {
@@ -179,10 +179,10 @@ void HT16K33_set_char(char achar, uint8_t digit, bool has_dot) {
     } else if (achar >= '0' && achar <= '9') {
         char_val = achar - 48;
     }
-    
+
     // Bail on incorrect character values
     if (char_val == 0xFF) return;
-    
+
     display_buffer[POS[digit]] = CHARSET[char_val];
     if (has_dot) display_buffer[POS[digit]] |= 0x80;
 }
@@ -196,23 +196,23 @@ void HT16K33_set_char(char achar, uint8_t digit, bool has_dot) {
  *                  `false` otherwise.
  */
 void HT16K33_show_value(int value, bool decimal) {
-    
+
     bool is_neg = false;
     if (value < 0) {
         is_neg = true;
         value *= -1;
     }
-    
+
     // Convert the value to BCD...
     uint16_t bcd_val = bcd(value);
     HT16K33_clear_buffer();
-    
+
     if (is_neg) {
         HT16K33_set_glyph(0x40, 0, false);
     } else {
         HT16K33_set_number((bcd_val >> 12) & 0x0F, 0, false);
     }
-    
+
     HT16K33_set_number((bcd_val >> 8)  & 0x0F, 1, decimal);
     HT16K33_set_number((bcd_val >> 4)  & 0x0F, 2, false);
     HT16K33_set_number(bcd_val & 0x0F,         3, false);
@@ -220,21 +220,21 @@ void HT16K33_show_value(int value, bool decimal) {
 
 
 void HT16K33_set_point(uint8_t digit) {
-    
+
     uint8_t a = display_buffer[POS[digit]];
-    
+
     if ((a & 0x80) > 0) {
         a &= 0x7F;
     } else {
         a |= 0x80;
     }
-    
+
     display_buffer[POS[digit]] = a;
 }
 
 
 void HT16K33_set_colon(void) {
-    
+
     uint8_t value = display_buffer[HT16K33_SEGMENT_COLON_ROW];
     display_buffer[HT16K33_SEGMENT_COLON_ROW] = value == 0x00 ? 0x02 : 0x00;
 }
@@ -248,7 +248,7 @@ void HT16K33_set_colon(void) {
  * @retval The BCD form of the value.
  */
 static uint32_t bcd(uint32_t base) {
-    
+
     if (base > 9999) base = 9999;
     for (uint32_t i = 0 ; i < 16 ; ++i) {
         base = base << 1;
@@ -269,7 +269,7 @@ static uint32_t bcd(uint32_t base) {
  * @param ms: The sleep period.
  */
 static void HT16K33_sleep_ms(int ms) {
-    
+
     struct timespec ts;
     int res;
 
@@ -288,7 +288,7 @@ static void HT16K33_sleep_ms(int ms) {
  * @param cmd: The single-byte command.
  */
 static void HT16K33_write_cmd(uint8_t cmd) {
-    
+
     // NOTE Already connected at this stage
     i2c_start(host_i2c, i2c_address, 0);
     i2c_write(host_i2c, &cmd, 1);

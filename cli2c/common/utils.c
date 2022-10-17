@@ -1,7 +1,7 @@
 /*
  * Generic macOS I2C driver - Utility Functions
  *
- * Version 0.1.6
+ * Version 1.0.0
  * Copyright © 2022, Tony Smith (@smittytone)
  * Licence: MIT
  *
@@ -49,14 +49,14 @@ void print_warning(char* format_string, ...) {
  * @param args:          va_list of args from previous call
  */
 void print_output(bool is_err, char* format_string, va_list args) {
-    
+
     // Write the message type to the message
     char buffer[1024] = {0};
     sprintf(buffer, is_err ? "[ERROR] " : "[WARNING] ");
-    
+
     // Write the formatted text to the message
     vsnprintf(&buffer[is_err ? 8 : 10], sizeof(buffer) - (is_err ? 9 : 11), format_string, args);
-    
+
     // Print it all out
     fprintf(stderr, "%s\n", buffer);
 }
@@ -66,7 +66,7 @@ void print_output(bool is_err, char* format_string, va_list args) {
  * @brief Callback for Ctrl-C.
  */
 void ctrl_c_handler(int dummy) {
-    
+
     if (i2c.port != -1) flush_and_close_port(i2c.port);
     fprintf(stderr, "\n");
     exit(EXIT_OK);

@@ -1,7 +1,7 @@
 /*
  * I2C driver for an HT16K33 8x8 Matrix Display
  *
- * Version 0.1.6
+ * Version 1.0.0
  * Copyright © 2022, Tony Smith (@smittytone)
  * Licence: MIT
  *
@@ -14,10 +14,10 @@ I2CDriver i2c;
 
 
 int main(int argc, char* argv[]) {
-    
+
     // Listen for SIGINT
     signal(SIGINT, ctrl_c_handler);
-    
+
     // Process arguments
     if (argc < 2) {
         // Insufficient arguments -- issue usage info and bail
@@ -33,12 +33,12 @@ int main(int argc, char* argv[]) {
                 return EXIT_OK;
             }
         }
-        
+
         // Connect... with the device path
         i2c.port = -1;
         int i2c_address = HT16K33_I2C_ADDR;
         i2c_connect(&i2c, argv[1]);
-        
+
         if (i2c.connected) {
             // Initialize the I2C host's I2C bus
             if (!(i2c_init(&i2c))) {
@@ -46,7 +46,7 @@ int main(int argc, char* argv[]) {
                 flush_and_close_port(i2c.port);
                 return EXIT_ERR;
             }
-            
+
             // Process the remaining commands in sequence
             int delta = 2;
             if (argc > 2) {
@@ -54,22 +54,22 @@ int main(int argc, char* argv[]) {
                 if (token[0] != '-') {
                     // Not a command, so an address?
                     i2c_address = (int)strtol(token, NULL, 0);
-                    
+
                     // Only allow legal I2C address range
                     if (i2c_address < 0x08 || i2c_address > 0x77) {
                         print_error("I2C address out of range");
                         flush_and_close_port(i2c.port);
                         return EXIT_ERR;
                     }
-                    
+
                     // Note the non-standard I2C address
                     print_warning("Using I2C address: 0x%02X", i2c_address);
                     delta = 3;
                 }
-                
+
                 // Set up the display driver
                 HT16K33_init(&i2c, i2c_address, HT16K33_0_DEG);
-                
+
                 // Process the commands one by one
                 int result =  matrix_commands(&i2c, argc, argv, delta);
                 flush_and_close_port(i2c.port);
@@ -79,7 +79,7 @@ int main(int argc, char* argv[]) {
             print_error("Could not connect to device %s", argv[1]);
         }
     }
-    
+
     return EXIT_ERR;
 }
 
@@ -93,9 +93,9 @@ int main(int argc, char* argv[]) {
  * @param delta: The argument list offset to locate HT16K33 commands from.
  */
 int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
-    
+
     bool do_draw = false;
-    
+
     for (int i = delta ; i < argc ; ++i) {
         char* command = argv[i];
         switch (command[1]) {
@@ -139,11 +139,11 @@ int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                             break;
                         }
                     }
-                    
+
                     print_error("No brightness value supplied");
                     return EXIT_ERR;
                 }
-            
+
             case 'c':   // DISPLAY CHARACTER
                 {
                     // Get the required argument
@@ -203,7 +203,7 @@ int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
 
                                 endptr++;
                             }
-                            
+
                             // Perform the action
                             HT16K33_set_glyph(bytes);
                             do_draw = true;
@@ -214,7 +214,7 @@ int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                     print_error("No glyph value supplied");
                     return EXIT_ERR;
                 }
-        
+
             case 'p':   // PLOT A POINT
                 {
                     // Get two required arguments
@@ -264,20 +264,20 @@ int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                     if (i < argc - 1) {
                         long angle = 0;
                         command = argv[++i];
-                        
+
                         if (command[0] != '-') {
                             angle = strtol(command, NULL, 0);
                         } else {
                             i -= 1;
                         }
-                        
+
                         // Perform the action
                         HT16K33_set_angle((uint8_t)angle);
                         HT16K33_rotate((uint8_t)angle);
                     }
                 }
                 break;
-            
+
             case 't':     // SCROLL A TEXT STRING
                 {
                     // Get one required argument
@@ -294,7 +294,7 @@ int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                                 i -= 1;
                             }
                         }
-                        
+
                         // Perform the action
                         HT16K33_print(scroll_string, (uint32_t)scroll_delay);
                         break;
@@ -303,27 +303,27 @@ int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                     print_error("No string supplied");
                     return EXIT_ERR;
                 }
-            
+
             case 'w':
                 HT16K33_clear_buffer();
                 do_draw = true;
                 break;
-                
+
             case 'z':
                 do_draw = true;
                 break;
-            
+
             case '!':
                 i2c_commands(i2c, argc, argv, i);
                 break;
-                
+
             default:
                 // ERROR
                 print_error("Unknown command");
                 return EXIT_ERR;
         }
     }
-    
+
     if (do_draw) HT16K33_draw();
     return EXIT_OK;
 }
@@ -354,4 +354,3 @@ void show_help() {
     fprintf(stderr, "  w                      Wipe (clear) the display.\n");
     fprintf(stderr, "  h                      Help information.\n\n");
 }
-

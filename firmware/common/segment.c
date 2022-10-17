@@ -1,7 +1,7 @@
 /*
  * I2C Host Firmware - Debugging LED segment driver
  *
- * @version     0.1.6
+ * @version     1.0.0
  * @author      Tony Smith (@smittytone)
  * @copyright   2022
  * @licence     MIT
@@ -26,7 +26,7 @@ uint8_t     display_buffer[17];
  * @brief Power on the LEDs and set the brightness.
  */
 void HT16K33_init(void) {
-    
+
     HT16K33_write_cmd(0x21);     // System on
     HT16K33_write_cmd(0x81);     // Display on
     HT16K33_write_cmd(0xEF);     // Set brightness
@@ -40,7 +40,7 @@ void HT16K33_init(void) {
  * @param cmd: The single-byte command.
  */
 void HT16K33_write_cmd(uint8_t cmd) {
-    
+
     i2c_write_blocking(i2c1, DEBUG_SEG_ADDR, &cmd, 1, false);
 }
 
@@ -50,7 +50,7 @@ void HT16K33_write_cmd(uint8_t cmd) {
  *        This does not clear the LED -- call `HT16K33_draw()`.
  */
 void HT16K33_clear_buffer(void) {
-    
+
     memset(display_buffer, 0x00, 8);
 }
 
@@ -59,7 +59,7 @@ void HT16K33_clear_buffer(void) {
  * @brief Write the display buffer out to the LED.
  */
 void HT16K33_draw(void) {
-    
+
     // Set up the buffer holding the data to be
     // transmitted to the LED
     uint8_t tx_buffer[17] = { 0 };
@@ -79,7 +79,7 @@ void HT16K33_draw(void) {
  *                   `false` otherwise.
  */
 void HT16K33_set_number(uint8_t number, uint8_t digit, bool has_dot) {
-    
+
     if (digit > 3) return;
     if (number > 15) return;
     display_buffer[POS[digit]] = CHARSET[number];
@@ -107,7 +107,7 @@ void HT16K33_set_number(uint8_t number, uint8_t digit, bool has_dot) {
  *                  `false` otherwise.
  */
 void HT16K33_set_glyph(uint8_t glyph, uint8_t digit, bool has_dot) {
-    
+
     if (digit > 3) return;
     display_buffer[POS[digit]] = glyph;
     if (has_dot) display_buffer[POS[digit]] |= 0x80;
@@ -122,7 +122,7 @@ void HT16K33_set_glyph(uint8_t glyph, uint8_t digit, bool has_dot) {
  *                  `false` otherwise.
  */
 void HT16K33_show_value(int16_t value, bool decimal) {
-    
+
     // Convert the value to BCD...
     uint16_t bcd_val = bcd(value);
     HT16K33_clear_buffer();
@@ -141,7 +141,7 @@ void HT16K33_show_value(int16_t value, bool decimal) {
  * @retval The BCD form of the value.
  */
 uint32_t bcd(uint32_t base) {
-    
+
     if (base > 9999) base = 9999;
     for (uint32_t i = 0 ; i < 16 ; ++i) {
         base = base << 1;

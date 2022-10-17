@@ -1,7 +1,7 @@
 /*
  * Generic macOS I2C driver
  *
- * Version 0.1.6
+ * Version 1.0.0
  * Copyright © 2022, Tony Smith (@smittytone)
  * Licence: MIT
  *
@@ -23,16 +23,16 @@ static struct termios original_settings;
  * @retval The OS file descriptor, or -1 on error.
  */
 int openSerialPort(const char *device_file) {
-    
+
     struct termios serial_settings;
-    
+
     // Open the device
     int fd = open(device_file, O_RDWR | O_NOCTTY);
     if (fd == -1) {
         print_error("Could not open the device at %s - %s (%d)", device_file, strerror(errno), errno);
         return fd;
     }
-    
+
     // Prevent additional opens except by root-owned processes
     if (ioctl(fd, TIOCEXCL) == -1) {
         print_error("Could not set TIOCEXCL on %s - %s (%d)", device_file, strerror(errno), errno);
@@ -42,7 +42,7 @@ int openSerialPort(const char *device_file) {
     // Get the port settings
     tcgetattr(fd, &original_settings);
     serial_settings = original_settings;
-    
+
     // Calls to read() will return as soon as there is
     // at least one byte available or after 100ms.
     cfmakeraw(&serial_settings);
@@ -60,14 +60,14 @@ int openSerialPort(const char *device_file) {
         print_error("Could not set port speed to 115200bps - %s (%d)", strerror(errno), errno);
         goto error;
     }
-    
+
     // Set the latency -- MAY REMOVE IF NOT NEEDED
     unsigned long lat_us = 1UL;
     if (ioctl(fd, IOSSDATALAT, &lat_us) == -1) {
         print_error("Could not set port latency - %s (%d)", strerror(errno), errno);
         goto error;
     }
-    
+
     // Return the File Descriptor
     return fd;
 
@@ -90,7 +90,7 @@ size_t readFromSerialPort(int fd, uint8_t* buffer, size_t byte_count) {
 
     size_t count = 0;
     ssize_t number_read = -1;
-    
+
     if (byte_count == 0) {
         // Unknown number of bytes -- look for \r\n
         while(1) {
@@ -109,14 +109,14 @@ size_t readFromSerialPort(int fd, uint8_t* buffer, size_t byte_count) {
         // Read a fixed, expected number of bytes
         struct timespec now, then;
         clock_gettime(CLOCK_MONOTONIC_RAW, &then);
-        
+
         while (count < byte_count) {
             // Read in the data a byte at a time
             number_read = read(fd, buffer + count, 1);
             if (number_read != -1) {
                 count += number_read;
             }
-            
+
             clock_gettime(CLOCK_MONOTONIC_RAW, &now);
             if (now.tv_sec - then.tv_sec > 15) {
                 print_error("Read timeout: %i bytes read of %i", count, byte_count);
@@ -148,7 +148,7 @@ size_t readFromSerialPort(int fd, uint8_t* buffer, size_t byte_count) {
  * @retval The number of bytes read.
  */
 void writeToSerialPort(int fd, const uint8_t* buffer, size_t byte_count) {
-    
+
     // Write the bytes
     write(fd, buffer, byte_count);
 
@@ -174,7 +174,7 @@ void writeToSerialPort(int fd, const uint8_t* buffer, size_t byte_count) {
  * @param portname: The device path as a string.
  */
 void i2c_connect(I2CDriver *sd, const char* portname) {
-    
+
     // Mark that we're not connected
     sd->connected = false;
 
@@ -190,7 +190,7 @@ void i2c_connect(I2CDriver *sd, const char* portname) {
         print_error("Could not read from device");
         return;
     }
-    
+
     // Got this far? We're good to go
     sd->connected = true;
 }
@@ -212,7 +212,7 @@ static bool i2c_ack(I2CDriver *sd) {
         print_error("Last action not ACK’d by device");
         return false;
     }
-    
+
     return ((read_buffer[0] & 0x01) == 0x01);
 }
 
@@ -253,7 +253,7 @@ void i2c_get_info(I2CDriver *sd, bool do_print) {
     char string_data[34] = {0};
     char model[17] = {0};
     char pid[17] = {0};
-    
+
     // Extract the data
     sscanf((char*)read_buffer, "%i.%i.%i.%i.%i.%i.%i.%i.%i.%i.%i.%s",
         &is_ready,
@@ -287,14 +287,14 @@ void i2c_get_info(I2CDriver *sd, bool do_print) {
         fprintf(stderr, " Pins used for I2C: GP%i (SDA), GP%i (SCL)\n", sda_pin, scl_pin);
         fprintf(stderr, "    I2C is enabled: %s\n", is_ready == 1 ? "YES" : "NO");
         fprintf(stderr, "     I2C is active: %s\n", has_started == 1 ? "YES" : "NO");
-        
+
         // Check for a 'no device' I2C address
         if (address == 0xFF) {
             fprintf(stderr, "Target I2C address: NONE\n");
         } else {
             fprintf(stderr, "Target I2C address: 0x%02X\n", address > 1);
         }
-        
+
     }
 }
 
@@ -309,45 +309,45 @@ void i2c_scan(I2CDriver *sd) {
     char scan_buffer[SCAN_BUFFER_MAX_B] = {0};
     uint8_t device_list[CONNECTED_DEVICES_MAX_B] = {0};
     uint32_t device_count = 0;
-    
+
     send_command(sd, 'd');
     size_t result = readFromSerialPort(sd->port, (uint8_t*)scan_buffer, 0);
     if (result == -1) {
         print_error("Could not read from device");
         return;
     }
-    
+
     if (scan_buffer[0] != 'Z') {
         // Extract device address hex strings and generate
         // integer values. For example:
         // source = "12.71.A0."
         // dest   = [18, 113, 160]
-        
+
 #ifdef DEBUG
         fprintf(stderr, "Buffer: %lu bytes, %lu items\n", strlen(scan_buffer), strlen(scan_buffer) / 3);
 #endif
-        
+
         for (uint32_t i = 0 ; i < strlen(scan_buffer) ; i += 3) {
-            
+
             uint8_t value[2] = {0};
             uint32_t count = 0;
-            
+
             while(1) {
                 uint8_t token = scan_buffer[i + count];
                 if (token == 0x2E) break;
                 value[count] = token;
                 count++;
             }
-            
+
             device_list[device_count] = (uint8_t)strtol((char *)value, NULL, 16);
             device_count++;
         }
     }
-    
+
     // Output the device list as a table (even with no devices)
-    
+
     fprintf(stderr, "   0 1 2 3 4 5 6 7 8 9 A B C D E F");
-    
+
     for (int i = 0 ; i < 0x80 ; i++) {
         if (i % 16 == 0) fprintf(stderr, "\n%02x ", i);
         if (i < 8 || i > 0x77) {
@@ -381,7 +381,7 @@ void i2c_scan(I2CDriver *sd) {
  * @retval Whether the command was ACK'd (`true`) or not (`false`).
  */
 bool i2c_init(I2CDriver *sd) {
-    
+
     send_command(sd, 'i');
     return i2c_ack(sd);
 };
@@ -396,7 +396,7 @@ bool i2c_init(I2CDriver *sd) {
  * @retval Whether the command was ACK'd (`true`) or not (`false`).
  */
 bool i2c_set_speed(I2CDriver *sd, long speed) {
-    
+
     switch(speed) {
         case 1:
             send_command(sd, '1');
@@ -404,7 +404,7 @@ bool i2c_set_speed(I2CDriver *sd, long speed) {
         default:
             send_command(sd, '4');
     }
-    
+
     return i2c_ack(sd);
 }
 
@@ -467,7 +467,7 @@ size_t i2c_write(I2CDriver *sd, const uint8_t bytes[], size_t byte_count) {
     // Count the bytes sent
     int count = 0;
     bool ack = false;
-    
+
     // Write the data out in blocks of 64 bytes
     for (size_t i = 0 ; i < byte_count ; i += 64) {
         // Calculate the data length for the prefix byte
@@ -509,7 +509,7 @@ void i2c_read(I2CDriver *sd, uint8_t bytes[], size_t byte_count) {
             for (size_t i = 0 ; i < result ; ++i) {
                 fprintf(stdout, "%02X", bytes[i]);
             }
-            
+
             fprintf(stdout, "\n");
         }
     }
@@ -526,12 +526,12 @@ void i2c_read(I2CDriver *sd, uint8_t bytes[], size_t byte_count) {
  * @retval The driver exit code, 0 on success, 1 on failure.
  */
 int i2c_commands(I2CDriver *sd, int argc, char *argv[], uint32_t delta) {
-    
+
     // Set a 10ms period for intra-command delay period
     struct timespec pause;
     pause.tv_sec = 0.010;
     pause.tv_nsec = 0.010 * 1000000;
-    
+
     // Process args one by one
     for (int i = delta ; i < argc ; i++) {
         char* command = argv[i];
@@ -553,17 +553,17 @@ int i2c_commands(I2CDriver *sd, int argc, char *argv[], uint32_t delta) {
                     if (i < argc - 1) {
                         char* token = argv[++i];
                         long speed = strtol(token, NULL, 0);
-                        
+
                         if (speed == 1 || speed == 4) {
                             bool result = i2c_set_speed(sd, speed);
                             if (!result) print_warning("Command f un-ACK’d");
                         } else {
                             print_warning("Incorrect I2C frequency selected. Should be 1(00kHz) or 4(00kHz)");
                         }
-                        
+
                         break;
                     }
-                    
+
                     print_error("No frequency value given");
                     return EXIT_ERR;
                 }
@@ -582,13 +582,13 @@ int i2c_commands(I2CDriver *sd, int argc, char *argv[], uint32_t delta) {
                     if (i < argc - 1) {
                         char* token = argv[++i];
                         long address = strtol(token, NULL, 0);
-                        
+
                         // Get the number of bytes if we can
                         if (i < argc - 1) {
                             token = argv[++i];
                             size_t num_bytes = strtol(token, NULL, 0);
                             uint8_t bytes[8192];
-                            
+
                             i2c_start(sd, address, 1);
                             i2c_read(sd, bytes, num_bytes);
                             i2c_stop(sd);
@@ -599,7 +599,7 @@ int i2c_commands(I2CDriver *sd, int argc, char *argv[], uint32_t delta) {
                     } else {
                         print_error("No I2C address given");
                     }
-                    
+
                     return EXIT_ERR;
                 }
 
@@ -613,14 +613,14 @@ int i2c_commands(I2CDriver *sd, int argc, char *argv[], uint32_t delta) {
                     if (i < argc - 1) {
                         char* token = argv[++i];
                         long address = strtol(token, NULL, 0);
-                        
+
                         // Get the bytes to write if we can
                         if (i < argc - 1) {
                             token = argv[++i];
                             size_t num_bytes = 0;
                             uint8_t bytes[8192];
                             char* endptr = token;
-                            
+
                             while (num_bytes < sizeof(bytes)) {
                                 bytes[num_bytes++] = (uint8_t)strtol(endptr, &endptr, 0);
                                 if (*endptr == '\0') break;
@@ -628,10 +628,10 @@ int i2c_commands(I2CDriver *sd, int argc, char *argv[], uint32_t delta) {
                                     print_error("Invalid bytes: %s\n", token);
                                     return EXIT_ERR;
                                 }
-                                
+
                                 endptr++;
                             }
-                            
+
                             i2c_start(sd, (uint8_t)address, 0);
                             i2c_write(sd, bytes, num_bytes);
                             break;
@@ -641,7 +641,7 @@ int i2c_commands(I2CDriver *sd, int argc, char *argv[], uint32_t delta) {
                     } else {
                         print_error("No I2C address given");
                     }
-                    
+
                     return EXIT_ERR;
                 }
 
@@ -653,7 +653,7 @@ int i2c_commands(I2CDriver *sd, int argc, char *argv[], uint32_t delta) {
                 print_bad_command_help(command);
                 return EXIT_ERR;
         }
-        
+
         // Pause for the UART's breath
         nanosleep(&pause, &pause);
     }
@@ -671,7 +671,7 @@ int i2c_commands(I2CDriver *sd, int argc, char *argv[], uint32_t delta) {
  * @param c:  A command character.
  */
 static void send_command(I2CDriver* sd, char c) {
-    
+
     writeToSerialPort(sd->port, (uint8_t*)&c, 1);
 }
 
@@ -682,7 +682,7 @@ static void send_command(I2CDriver* sd, char c) {
  * @param command: The bad command.
  */
 static void print_bad_command_help(char* command) {
-    
+
     print_error("Bad command: %s\n", command);
     show_commands();
 }
@@ -710,12 +710,12 @@ void show_commands(void) {
  * @brief Flush the port FIFOs and close the port.
  */
 void flush_and_close_port(int fd) {
-    
+
     // Drain the FIFOs -- alternative to `tcflush(fd, TCIOFLUSH)`;
     if (tcdrain(fd) == -1) {
         print_error("Could not flush the port. %s (%d).\n", strerror(errno), errno);
     }
-    
+
     // Set the port back to how we found it
     if (tcsetattr(fd, TCSANOW, &original_settings) == -1) {
         print_error("Could not reset port - %s (%d)", strerror(errno), errno);

@@ -1,7 +1,7 @@
 /*
  * I2C Host Firmware -- Tiny 2040 LED
  *
- * @version     0.1.6
+ * @version     1.0.0
  * @author      Tony Smith (@smittytone)
  * @copyright   2022
  * @licence     MIT
@@ -45,7 +45,7 @@ void tiny_pwm_init(uint pin) {
     pwm_set_chan_level(slice, channel, 65535);  // Channel levels 0-65535
                                                 // The Tiny's LED is common cathode,
                                                 // so level 65535 is lowest brightness;
-                                                // level 0 is max brightness.   
+                                                // level 0 is max brightness.
     pwm_set_enabled(slice, true);
 }
 

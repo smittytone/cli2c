@@ -1,4 +1,4 @@
-# cli2c 0.1.6
+# cli2c 1.0.0
 
 An I2C driver for macOS used as the basis for an HT16K33-controlled LED matrix driver. It requires a [Raspberry Pi Pico](https://www.raspberrypi.com/documentation/microcontrollers/raspberry-pi-pico.html), [Adafruit QTPy RP2040](https://www.adafruit.com/product/4900), [SparkFun ProMicro RP2040](https://www.sparkfun.com/products/18288) or [Pimoroni Tiny 2040](https://shop.pimoroni.com/products/tiny-2040?variant=39560012234835) as a hardware bridge.
 
@@ -51,23 +51,23 @@ The contents of this repo are:
 
 ## cli2c
 
-`cli2c` is a command line driver for the USB-connected RP2040-based I2C host. The host must be pre-loaded with the firmware.
+`cli2c` is a command line driver for the USB-connected RP2040-based I2C host, which must be pre-loaded with the firmware.
 
 It is a generic I2C driver with the following syntax:
 
-```
+```shell
 cli2c {device_port} [command] ... [command]
 ```
 
-Arguments in braces `{}` are required; those in square brackets `\[\]` are optional.
+**Note** Arguments in braces `{}` are required; those in square brackets `\[\]` are optional.
 
-* `device_port` is the USB-connected I2C host’s Unix device path, eg. `/dev/cu.modem-101010`.
-* [command] is an optional command block, comprising a single-character command and any required data.
+* `device_port` is the USB-connected I2C host’s Unix device path, eg. `/dev/cu.usbmodem-101`.
+* [command] is an optional command block, comprising a single-character command and any required data as described in the following table.
 
 | Command | Arg. Count | Args | Description |
 | :-: | :-: | --- | --- |
-| `w` | 2 | `address` `data_bytes` | Write the supplied data to the I2C device at `address`. `data_bytes` are comma-separated 8-bit hex values |
-| `r` | 2 | `address` `count` | Read `count` bytes from the I2C device at `address` and issue an I2C STOP |
+| `w` | 2 | `{address}` `{data_bytes}` | Write the supplied data to the I2C device at `address`. `data_bytes` are comma-separated 8-bit hex values, eg. `0x4A,0x5C,0xFF` |
+| `r` | 2 | `{address}` `{count}` | Read `count` bytes from the I2C device at `address` and issue an I2C STOP |
 | `p` | None| Issue an I2C STOP. Usually used after one or more writes |
 | `f` | 1 | {frequency} | The I2C bus frequency in multiples of 100kHz. Supported values: 1 and 4 |
 | `x` | None |  | Reset the I2C bus |
@@ -75,11 +75,15 @@ Arguments in braces `{}` are required; those in square brackets `\[\]` are optio
 | `i` | None |  |  Display I2C host device information |
 | `h` | None |  |  Display help information |
 
-**Note** All message output is routed via `stderr` — data read back from an I2C device is output to `stdout` so it can be captured to a file. Returned data is currently presented as hexadecimal strings.
+All message output is routed via `stderr` — data read back from an I2C device is output to `stdout` so it can be captured to a file. Returned data is currently presented as hexadecimal strings. For example:
+
+```shell
+cli2c /dev/cu.usbmodem-101 r 0x18 16 > data.bin
+```
 
 ## matrix
 
-`matrix` is a specific driver for HT16K33-based 8x8 LED matrices. It embeds `cli2c` but exposes a different set of commands.
+`matrix` is a specific driver for HT16K33-based 8x8 LED matrices. It embeds `cli2c` but exposes a different, display-oriented set of commands.
 
 You use the driver with this command-line call:
 
@@ -87,67 +91,63 @@ You use the driver with this command-line call:
 matrix {device} [I2C address] [commands]
 ```
 
-Arguments in braces `{}` are required; those in square brackets `\[\]` are optional.
+**Note** Again, arguments in braces `{}` are required; those in square brackets `\[\]` are optional.
 
 * `{device}` is the path to the I2C Mini’s device file, eg. `/dev/cu.usbserial-DO029IEZ`.
 * `[I2C address]` is an optional I2C address. By default, the HT16K33 uses the address `0x70`, but this can be changed.
 * `[commands]` are a sequence of command blocks as described below.
 
-### Commands
-
-These are the currently supported commands. Arguments in braces `{}` are required; those in square brackets `[]` are optional.
-
 | Command | Arguments | Description |
 | :-: | :-: | :-- |
-| `-a` | [`on`\|`off`] | Activate or deactivate the display. Once activated, the matrix will remain so for as long as it is powered. Pass `on` (or `1`) to activate, `off` (or `0`) to deactivate. Calling without an argument is a *de facto* activation |
-| `-b` | {0-15} | Set the brightness to a value between 0 (low but not off) and 15 (high) |
-| `-c` | {ascii_code} [`true`\|`false`] | Plot the specified character, by code, on the display. If the second argument is included and is `true` (or `1`), the character will be centred on the display |
-| `-g` | {hex_values} | Plot a user-generated glyph on the display. The glyph is supplied as eight comma-separated 8-bit hex values, eg. `0x3C,0x42,0xA9,0x85,0x85,0xA9,0x42,0x3C` |
-| `-p` | {x} {y} [1\|0] | Plot a point as the coordinates `{x,y}`. If the third argument is `1` (or missing), the pixel will be set; if it is `0`, the pixel will be cleared |
-| `-t` | {string} [delay] | Scroll the specified string. The second argument is an optional delay be between column shifts in milliseconds. Default: 250ms |
-| `-w` | None | Clear the screen |
-| `-r` | {angle} | Rotate the display by the specified multiple of 90 degrees |
-| `-h` | None | Display help information |
+| `a` | [`on`\|`off`] | Activate or deactivate the display. Once activated, the matrix will remain so for as long as it is powered. Pass `on` (or `1`) to activate, `off` (or `0`) to deactivate. Calling without an argument is a *de facto* activation |
+| `b` | {0-15} | Set the brightness to a value between 0 (low but not off) and 15 (high) |
+| `c` | {ascii_code} [`true`\|`false`] | Plot the specified character, by code, on the display. If the second argument is included and is `true` (or `1`), the character will be centred on the display |
+| `g` | {hex_values} | Plot a user-generated glyph on the display. The glyph is supplied as eight comma-separated 8-bit hex values, eg. `0x3C,0x42,0xA9,0x85,0x85,0xA9,0x42,0x3C` |
+| `p` | {x} {y} [1\|0] | Plot a point as the coordinates `{x,y}`. If the third argument is `1` (or missing), the pixel will be set; if it is `0`, the pixel will be cleared |
+| `t` | {string} [delay] | Scroll the specified string. The second argument is an optional delay be between column shifts in milliseconds. Default: 250ms |
+| `w` | None | Clear the screen |
+| `r` | {angle} | Rotate the display by the specified multiple of 90 degrees |
+| `h` | None | Display help information |
 
 Multiple commands can be issued by sequencing them at the command line. For example:
 
 ```shell
-matrix /dev/cu.usbserial-DO029IEZ 0x71 -w -r 3 -p 0 0 -p 1 1 -p 2 2 -p 3 3 -p 4 4 -p 5 5 -p 6 6 -p 7 7
+matrix /dev/cu.usbserial-DO029IEZ 0x71 w r 3 p 0 0 p 1 1 p 2 2 p 3 3 p 4 4 p 5 5 p 6 6 p 7 7
 ```
 
-**Note** The display buffer is not persisted across calls to `matrix`, so building up an image across calls will not work. While the display retains its own image data, the local buffer is implicitly cleared with each new call. This may be mitigated in a future release.
+**Note** The client-side display buffer is not persisted across calls to `matrix`, so building up an image across calls will not work. While the display retains its own image data, the local buffer is implicitly cleared with each new call. This may be mitigated in a future release.
 
 #### Examples
 
 **Draw a dot at 1,1**
 
 ```
-matrix /dev/cu.usbserial-DO029IEZ -p 1 1
+matrix /dev/cu.usbserial-DO029IEZ p 1 1
 ```
 
 **Draw T, centred**
 
 ```
-matrix /dev/cu.usbserial-DO029IEZ -c 123 true
+matrix /dev/cu.usbserial-DO029IEZ c 123 true
 ```
 
 **Draw a smiley**
 
 ```
-matrix /dev/cu.usbserial-DO029IEZ -g 0x3C,0x42,0xA9,0x85,0x85,0xA9,0x42,0x3C
+matrix /dev/cu.usbserial-DO029IEZ g 0x3C,0x42,0xA9,0x85,0x85,0xA9,0x42,0x3C
 ```
 
 **Scroll “Hello, World!” across the display**
 
 ```
-matrix /dev/cu.usbserial-DO029IEZ -t "Hello, World!    "
+matrix /dev/cu.usbserial-DO029IEZ t "Hello, World!    "
 ```
 
-**Note** The four spaces (two matrix columns) ensure the text disappears of the screen at the end of the scroll.
+**Note** The four spaces (two matrix columns each) ensure the text disappears of the screen at the end of the scroll.
 
 ## segment
 
-`segment` is a specific driver for HT16K33-based 4-digit, 7-segment LEDs. It embeds `cli2c` but exposes a different set of commands.
+`segment` is a specific driver for HT16K33-based 4-digit, 7-segment LEDs. It embeds `cli2c` but exposes a different, display-oriented set of commands.
 
 You use the driver with this command-line call:
 
@@ -155,53 +155,47 @@ You use the driver with this command-line call:
 segment {device} [I2C address] [commands]
 ```
 
-Arguments in braces `{}` are required; those in square brackets `\[\]` are optional.
+**Note** Again, arguments in braces `{}` are required; those in square brackets `\[\]` are optional.
 
 * `{device}` is the path to the I2C Mini’s device file, eg. `/dev/cu.usbserial-DO029IEZ`.
 * `[I2C address]` is an optional I2C address. By default, the HT16K33 uses the address `0x70`, but this can be changed.
 * `[commands]` are a sequence of command blocks as described below.
 
-### Commands
-
-These are the currently supported commands. Arguments in braces `{}` are required; those in square brackets `[]` are optional.
-
 | Command | Arguments | Description |
 | :-: | :-: | :-- |
-| `-a` | [`on`\|`off`] | Activate or deactivate the display. Once activated, the matrix will remain so for as long as it is powered. Pass `on` (or `1`) to activate, `off` (or `0`) to deactivate. Calling without an argument is a *de facto* activation |
-| `-b` | {0-15} | Set the brightness to a value between 0 (low but not off) and 15 (high) |
-| `-f` | None | Flip the display vertically. Handy if your LED is mounted upside down |
-| `-g` | {definition} {digit} [true\|false] | Write a user-generated glyph on the display at the specified digit. The glyph is supplied as an 8-bit value comprising bits set for the segments to be lit. Optionally specify if its decimal point should be lit |
-| `-v` | {value} {digit} [true\|false] | Write a single-digit number (0-9, 0x0-0xF) on the display at the specified digit. Optionally specify if its decimal point should be lit |
-| `-c` | {char} {digit} [true\|false] | Write the character on the display at the specified digit. Only the following characters can be used: 0-9, a-f, -, space (use `' '`) and the degree symbol (used `'*'`) Optionally specify if its decimal point should be lit |
-| `-n` | {number} | Write a number between -999 and 9999 across the display |
-| `-k` | None | Light the segment’s central colon symbol |
-| `-w` | None | Clear the screen |
-| `-z` | None | Write the buffer to the screen |
-| `-h` | None | Display help information |
+| `a` | [`on`\|`off`] | Activate or deactivate the display. Once activated, the matrix will remain so for as long as it is powered. Pass `on` (or `1`) to activate, `off` (or `0`) to deactivate. Calling without an argument is a *de facto* activation |
+| `b` | {0-15} | Set the brightness to a value between 0 (low but not off) and 15 (high) |
+| `f` | None | Flip the display vertically. Handy if your LED is mounted upside down |
+| `g` | {definition} {digit} [true\|false] | Write a user-generated glyph on the display at the specified digit. The glyph is supplied as an 8-bit value comprising bits set for the segments to be lit. Optionally specify if its decimal point should be lit |
+| `v` | {value} {digit} [true\|false] | Write a single-digit number (0-9, 0x0-0xF) on the display at the specified digit. Optionally specify if its decimal point should be lit |
+| `c` | {char} {digit} [true\|false] | Write the character on the display at the specified digit. Only the following characters can be used: 0-9, a-f, -, space (use `' '`) and the degree symbol (used `'*'`) Optionally specify if its decimal point should be lit |
+| `n` | {number} | Write a number between -999 and 9999 across the display |
+| `k` | None | Light the segment’s central colon symbol |
+| `w` | None | Clear the screen |
+| `z` | None | Write the buffer to the screen immediately |
+| `h` | None | Display help information |
 
 Multiple commands can be issued by sequencing them at the command line. For example:
 
 ```shell
-segment /dev/cu.usbserial-DO029IEZ 0x71 -w -f -n 7777 -z
+segment /dev/cu.usbserial-DO029IEZ 0x71 w f n 7777
 ```
 
-Always finish with a `-z` to write the buffer to the screen.
-
-**Note** The display buffer is not persisted across calls to `matrix`, so building up an image across calls will not work. While the display retains its own image data, the local buffer is implicitly cleared with each new call. This may be mitigated in a future release.
+**Note** The display buffer is not persisted across calls to `segment`, so building up an image across calls will not work. While the display retains its own image data, the local buffer is implicitly cleared with each new call. This may be mitigated in a future release.
 
 #### Examples
 
 **Draw 42.4 degrees**
 
 ```
-segment /dev/cu.usbserial-DO029IEZ -n 42.40 -d 1 -c '*' -z
+segment /dev/cu.usbserial-DO029IEZ n 42.40 d 1 c '*'
 ```
 
 ## Build the Drivers
 
 #### Xcode
 
-You can build the code from the accompanying Xcode project. However, I use the command line tool `xcodebuild`, called from the project directory, because this makes it easier to notarise and package the binary. For more details, please see my script [`packcli.zsh`](https://github.com/smittytone/scripts/blob/main/packcli.zsh).
+You can build the code from the accompanying Xcode project. Archive the project and save the build products on the desktop. Copy the binaries to your preferred in-`$PATH` location.
 
 ## Build the Firmware
 
@@ -215,8 +209,6 @@ You can build the code from the accompanying Xcode project. However, I use the c
 1. Copy `firmwarebuild/firmware/qtpy/firmware_qtpy_rp2040.uf2` to a QTPy RP2040 in boot mode.
 1. Copy `firmwarebuild/firmware/qtpy/firmware_promicro.uf2` to a ProMicro RP2040 in boot mode.
 1. Copy `firmwarebuild/firmware/qtpy/firmware_tiny2040.uf2` to a Tiny 2040 in boot mode.
-
-**Note** You only need perform step 1 or 2, of course, not both.
 
 To copy the file(s), run:
 
