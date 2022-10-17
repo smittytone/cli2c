@@ -410,6 +410,22 @@ bool i2c_set_speed(I2CDriver *sd, long speed) {
 
 
 /**
+ * @brief Choose the I2C host's target bus: 0 (i2c0) or 1 (i2c1).
+ *
+ * @param sd: Pointer to an I2CDriver structure.
+ *
+ * @retval Whether the command was ACK'd (`true`) or not (`false`).
+ */
+bool i2c_set_bus(I2CDriver *sd, int bus_id) {
+    
+    if (bus_id < 0 || bus_id > 1) return false;
+    uint8_t set_bus_data[2] = {'c', (uint8_t)(bus_id & 0x01)};
+    writeToSerialPort(sd->port, set_bus_data, sizeof(set_bus_data));
+    return i2c_ack(sd);
+}
+
+
+/**
  * @brief Tell the I2C host to reset the I2C bus.
  *
  * @param sd: Pointer to an I2CDriver structure.
@@ -548,6 +564,28 @@ int i2c_commands(I2CDriver *sd, int argc, char *argv[], uint32_t delta) {
         }
 
         switch (command[0]) {
+            case 'C':
+            case 'c':   // CHOOSE I2C BUS
+                {
+                    if (i < argc - 1) {
+                        char* token = argv[++i];
+                        long bus_id = strtol(token, NULL, 0);
+
+                        if (bus_id == 1 || bus_id == 0) {
+                            bool result = i2c_set_bus(sd, bus_id);
+                            if (!result) print_warning("Command f un-ACK’d");
+                        } else {
+                            print_warning("Incorrect I2C bus ID selected. Should be 0 or 1");
+                        }
+
+                        break;
+                    }
+
+                    print_error("No frequency value given");
+                    return EXIT_ERR;
+                }
+                
+            case 'F':
             case 'f':   // SET THE BUS FREQUENCY
                 {
                     if (i < argc - 1) {
@@ -567,15 +605,18 @@ int i2c_commands(I2CDriver *sd, int argc, char *argv[], uint32_t delta) {
                     print_error("No frequency value given");
                     return EXIT_ERR;
                 }
-
+            
+            case 'I':
             case 'i':   // PRINT HOST STATUS INFO
                 i2c_get_info(sd, true);
                 break;
 
+            case 'P':
             case 'p':   // ISSUE AN I2C STOP
                 i2c_stop(sd);
                 break;
 
+            case 'R':
             case 'r':   // READ FROM THE I2C BUS
                 {
                     // Get the address if we can
@@ -603,10 +644,12 @@ int i2c_commands(I2CDriver *sd, int argc, char *argv[], uint32_t delta) {
                     return EXIT_ERR;
                 }
 
+            case 'S':
             case 's':   // LIST DEVICES ON BUS
                 i2c_scan(sd);
                 break;
 
+            case 'W':
             case 'w':   // WRITE TO THE I2C BUS
                 {
                     // Get the address if we can
@@ -645,10 +688,22 @@ int i2c_commands(I2CDriver *sd, int argc, char *argv[], uint32_t delta) {
                     return EXIT_ERR;
                 }
 
+            case 'X':
             case 'x':   // RESET BUS
                 i2c_reset(sd);
                 break;
+                
+            case 'Z':
+            case 'z':   // INITIALISE BUS
+                // Initialize the I2C host's I2C bus
+                if (!(i2c_init(sd))) {
+                    print_error("Could not initialise I2C");
+                    flush_and_close_port(sd->port);
+                    return EXIT_ERR;
+                }
 
+                break;
+                
             default:    // NO COMMAND/UNKNOWN COMMAND
                 print_bad_command_help(command);
                 return EXIT_ERR;

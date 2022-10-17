@@ -48,7 +48,7 @@
 void        HT16K33_init(I2CDriver *sd, int address, uint8_t angle);
 void        HT16K33_power(bool is_on);
 void        HT16K33_set_angle(uint8_t angle);
-void        HT16K33_draw(void);
+void        HT16K33_draw(bool and_stop);
 void        HT16K33_clear_buffer(void);
 void        HT16K33_set_brightness(uint8_t brightness);
 void        HT16K33_plot(uint8_t x, uint8_t y, bool is_set);

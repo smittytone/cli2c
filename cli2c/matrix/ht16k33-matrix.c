@@ -194,7 +194,7 @@ void HT16K33_clear_buffer(void) {
 /**
  * @brief Write the display buffer out to the LED.
  */
-void HT16K33_draw(void) {
+void HT16K33_draw(bool and_stop) {
 
     // Set up the buffer holding the data to be
     // transmitted to the LED
@@ -214,7 +214,7 @@ void HT16K33_draw(void) {
     // Display the buffer and flash the LED
     i2c_start(host_i2c, i2c_address, 0);
     i2c_write(host_i2c, tx_buffer, 17);
-    i2c_stop(host_i2c);
+    if (and_stop) i2c_stop(host_i2c);
 }
 
 
@@ -308,11 +308,11 @@ void HT16K33_print(const char *text, uint32_t delay_ms) {
             a += 1;
         }
 
-        HT16K33_draw();
         cursor++;
+        HT16K33_draw(cursor > length - 8);
         if (cursor > length - 8) break;
 
-        HT16K33_sleep_ms(display_angle == 0 ? delay_ms : (delay_ms * 2 / 3));
+        //HT16K33_sleep_ms(display_angle == 0 ? delay_ms : (delay_ms * 2 / 3));
     };
 }
 
@@ -355,7 +355,8 @@ void HT16K33_rotate(uint8_t angle) {
  * @param ms: The sleep period.
  */
 static void HT16K33_sleep_ms(int ms) {
-
+    
+    /*
     struct timespec ts;
     int res;
 
@@ -365,6 +366,9 @@ static void HT16K33_sleep_ms(int ms) {
     do {
         res = nanosleep(&ts, &ts);
     } while (res && errno == EINTR);
+    */
+    
+    usleep(ms * 1000);
 }
 
 

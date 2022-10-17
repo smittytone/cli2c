@@ -25,10 +25,9 @@ int main(int argc, char *argv[]) {
     } else {
         // Check for a help request
         for (int i = 0 ; i < argc ; ++i) {
-            lower(argv[i]);
-            if (strcmp(argv[i], "h") == 0 ||
-                strcmp(argv[i], "--help") == 0 ||
-                strcmp(argv[i], "-h") == 0) {
+            if (strcasecmp(argv[i], "h") == 0 ||
+                strcasecmp(argv[i], "--help") == 0 ||
+                strcasecmp(argv[i], "-h") == 0) {
                 show_help();
                 return EXIT_OK;
             }
@@ -39,13 +38,6 @@ int main(int argc, char *argv[]) {
         i2c_connect(&i2c, argv[1]);
 
         if (i2c.connected) {
-            // Initialize the I2C host's I2C bus
-            if (!(i2c_init(&i2c))) {
-                print_error("%s could not initialise I2C\n", argv[1]);
-                flush_and_close_port(i2c.port);
-                return EXIT_ERR;
-            }
-
             // Check we have commands to process
             int delta = 2;
             if (delta >= argc) {

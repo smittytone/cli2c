@@ -92,7 +92,6 @@ void HT16K33_draw(void) {
 
     // Check for an overturned LED
     if (is_flipped) {
-        fprintf(stderr, "FLIPPED\n");
         // Swap digits 0,3 and 1,2
         uint8_t a = display_buffer[POS[0]];
         display_buffer[POS[0]] = display_buffer[POS[3]];
@@ -132,6 +131,7 @@ void HT16K33_set_number(uint8_t number, uint8_t digit, bool has_dot) {
     if (digit > 3) return;
     if (number > 15) return;
     display_buffer[POS[digit]] = CHARSET[number];
+    if (has_dot) display_buffer[POS[digit]] |= 0x80;
 }
 
 
@@ -197,15 +197,11 @@ void HT16K33_set_char(char achar, uint8_t digit, bool has_dot) {
  */
 void HT16K33_show_value(int value, bool decimal) {
 
-    bool is_neg = false;
-    if (value < 0) {
-        is_neg = true;
-        value *= -1;
-    }
+    bool is_neg = (value < 0);
+    if (is_neg) value *= -1;
 
     // Convert the value to BCD...
     uint16_t bcd_val = bcd(value);
-    HT16K33_clear_buffer();
 
     if (is_neg) {
         HT16K33_set_glyph(0x40, 0, false);
@@ -236,7 +232,7 @@ void HT16K33_set_point(uint8_t digit) {
 void HT16K33_set_colon(void) {
 
     uint8_t value = display_buffer[HT16K33_SEGMENT_COLON_ROW];
-    display_buffer[HT16K33_SEGMENT_COLON_ROW] = value == 0x00 ? 0x02 : 0x00;
+    display_buffer[HT16K33_SEGMENT_COLON_ROW] = (value == 0x00 ? 0x02 : 0x00);
 }
 
 

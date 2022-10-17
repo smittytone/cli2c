@@ -25,10 +25,9 @@ int main(int argc, char* argv[]) {
     } else {
         // Check for a help request
         for (int i = 0 ; i < argc ; ++i) {
-            lower(argv[i]);
-            if (strcmp(argv[i], "h") == 0 ||
-                strcmp(argv[i], "-h") == 0 ||
-                strcmp(argv[i], "--help") == 0) {
+            if (strcasecmp(argv[i], "h") == 0 ||
+                strcasecmp(argv[i], "-h") == 0 ||
+                strcasecmp(argv[i], "--help") == 0) {
                 show_help();
                 return EXIT_OK;
             }
@@ -51,7 +50,7 @@ int main(int argc, char* argv[]) {
             int delta = 2;
             if (argc > 2) {
                 char* token = argv[2];
-                if (token[0] != '-') {
+                if (token[0] >= '0' && token[0] <= '9') {
                     // Not a command, so an address?
                     i2c_address = (int)strtol(token, NULL, 0);
 
@@ -63,7 +62,7 @@ int main(int argc, char* argv[]) {
                     }
 
                     // Note the non-standard I2C address
-                    print_warning("Using I2C address: 0x%02X", i2c_address);
+                    fprintf(stderr, "Using I2C address: 0x%02X", i2c_address);
                     delta = 3;
                 }
 
@@ -98,20 +97,18 @@ int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
 
     for (int i = delta ; i < argc ; ++i) {
         char* command = argv[i];
-        switch (command[1]) {
+        switch (command[0]) {
+            case 'A':
             case 'a':   // ACTIVATE (DEFAULT) OR DEACTIVATE DISPLAY
+                        // 1 parameter: on|off
                 {
                     // Check for and get the optional argument
                     bool is_on = true;
                     if (i < argc - 1) {
                         command = argv[++i];
-                        if (command[0] != '-') {
-                            if (strlen(command) == 1) {
-                                is_on = (strcmp(command, "0") != 0);
-                            } else {
-                                is_on = (strcmp(command, "off") != 0);
-                            }
-                        } else {
+                        if (strcmp(command, "off") == 0) {
+                            is_on = false;
+                        } else if (strcmp(command, "on") != 0) {
                             i -= 1;
                         }
                     }
@@ -120,13 +117,15 @@ int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                     HT16K33_power(is_on);
                 }
                 break;
-
+                
+            case 'B':
             case 'b':   // SET BRIGHTNESS
+                        // 1 parameter: 0-15
                 {
                     // Get the required argument
                     if (i < argc - 1) {
                         command = argv[++i];
-                        if (command[0] != '-') {
+                        if (command[0] >= '0' && command[0] <= '9') {
                             long brightness = strtol(command, NULL, 0);
 
                             if (brightness < 0 || brightness > 15) {
@@ -144,16 +143,18 @@ int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                     return EXIT_ERR;
                 }
 
-            case 'c':   // DISPLAY CHARACTER
+            case 'C':
+            case 'c':   // DISPLAY A CHARACTER
+                        // 2 parameters: 0-255, true|false
                 {
                     // Get the required argument
                     if (i < argc - 1) {
                         command = argv[++i];
-                        if (command[0] != '-') {
-                            long ascii = strtol(command, NULL, 0);
-
-                            if (ascii < 32 || ascii > 127) {
-                                print_error("Ascii value out of range (32-127)");
+                        if (strlen(command) == 1) {
+                            char achar = command[0];
+                            
+                            if (achar < 32 || achar > 127) {
+                                print_error("Character out of range (Ascii 32-127)");
                                 return EXIT_ERR;
                             }
 
@@ -161,19 +162,15 @@ int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                             bool do_centre = false;
                             if (i < argc - 1) {
                                 command = argv[++i];
-                                if (command[0] != '-') {
-                                    if (strlen(command) == 1) {
-                                        do_centre = (strcmp(command, "1") == 0);
-                                    } else {
-                                        do_centre = (strcmp(command, "true") == 0);
-                                    }
-                                } else {
+                                if (strcmp(command, "true") == 0) {
+                                    do_centre = true;
+                                } else if (strcmp(command, "false") != 0) {
                                     i -= 1;
                                 }
                             }
 
                             // Perform the action
-                            HT16K33_set_char(ascii, do_centre);
+                            HT16K33_set_char(achar, do_centre);
                             do_draw = true;
                             break;
                         }
@@ -183,12 +180,14 @@ int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                     return EXIT_ERR;
                 }
 
-            case 'g':   // DISPLAY GLYPH
+            case 'G':
+            case 'g':   // DISPLAY A GLYPH
+                        // 1 parameter: string hex sequence
                 {
                     // Get the required argument
                     if (i < argc - 1) {
                         command = argv[++i];
-                        if (command[0] != '-') {
+                        if (command[0] == '0' && command[1] == 'x') {
                             uint8_t bytes[8] = {0};
                             char *endptr = command;
                             size_t length = 0;
@@ -214,18 +213,20 @@ int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                     print_error("No glyph value supplied");
                     return EXIT_ERR;
                 }
-
+            
+            case 'P':
             case 'p':   // PLOT A POINT
+                        // 3 parameters: 0-7, 0-7, 1|0
                 {
                     // Get two required arguments
                     long x = -1, y = -1;
                     if (i < argc - 1) {
                         command = argv[++i];
-                        if (command[0] != '-') {
+                        if (command[0] >= '0' && command[0] <= '9') {
                             x = strtol(command, NULL, 0);
                             if (i < argc - 1) {
                                 command = argv[++i];
-                                if (command[0] != '-') {
+                                if (command[0] >= '0' && command[0] <= '9') {
                                     y = strtol(command, NULL, 0);
 
                                     if (x < 0 || x > 7 || y < 0 || y > 7) {
@@ -237,7 +238,7 @@ int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                                     long ink = 1;
                                     if (i < argc - 1) {
                                         command = argv[++i];
-                                        if (command[0] != '-') {
+                                        if (command[0] == '0' || command[0] == '1') {
                                             ink = strtol(command, NULL, 0);
                                             if (ink != 1 && ink != 0) ink = 1;
                                         } else {
@@ -259,62 +260,68 @@ int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                 }
                 break;
 
-            case 'r':       // ROTATE DISPLAY
+            case 'R':
+            case 'r':   // ROTATE DISPLAY
+                        // 1 parameter: 0-3 (x 90 degrees)
                 {
+                    // Get an optional argument
+                    long angle = 0;
                     if (i < argc - 1) {
-                        long angle = 0;
                         command = argv[++i];
-
-                        if (command[0] != '-') {
+                        if (command[0] >= '0' && command[0] <= '9') {
                             angle = strtol(command, NULL, 0);
                         } else {
                             i -= 1;
                         }
-
-                        // Perform the action
-                        HT16K33_set_angle((uint8_t)angle);
-                        HT16K33_rotate((uint8_t)angle);
                     }
+                    
+                    // Perform the action
+                    HT16K33_set_angle((uint8_t)angle);
+                    HT16K33_rotate((uint8_t)angle);
                 }
                 break;
 
-            case 't':     // SCROLL A TEXT STRING
+            case 'T':
+            case 't':   // SCROLL A TEXT STRING
+                        // 2 parameters: string to scroll, delay
                 {
                     // Get one required argument
                     if (i < argc - 1) {
+                        // Assume the whole next arg is the string
                         char *scroll_string = argv[++i];
 
                         // Get an optional argument
-                        long scroll_delay = 100;
+                        uint32_t scroll_delay_ms = 100;
                         if (i < argc - 1) {
                             command = argv[++i];
-                            if (command[0] != '-') {
-                                scroll_delay = strtol(command, NULL, 0);
+                            if (command[0] >= '0' && command[0] <= '9') {
+                                scroll_delay_ms = (uint32_t)strtol(command, NULL, 0);
                             } else {
                                 i -= 1;
                             }
                         }
 
                         // Perform the action
-                        HT16K33_print(scroll_string, (uint32_t)scroll_delay);
+                        HT16K33_print(scroll_string, scroll_delay_ms);
                         break;
                     }
 
                     print_error("No string supplied");
                     return EXIT_ERR;
                 }
-
-            case 'w':
+                
+            case 'W':
+            case 'w':   // WIPE (CLEAR) THE DISPLAY
+                        // No parameters
                 HT16K33_clear_buffer();
                 do_draw = true;
                 break;
-
-            case 'z':
-                do_draw = true;
-                break;
-
-            case '!':
-                i2c_commands(i2c, argc, argv, i);
+            
+            case 'Z':
+            case 'z':   // DRAW THE DISPLAY IMMEDIATELY
+                        // No parameters
+                HT16K33_draw(false);
+                do_draw = false;
                 break;
 
             default:
@@ -324,7 +331,7 @@ int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
         }
     }
 
-    if (do_draw) HT16K33_draw();
+    if (do_draw) HT16K33_draw(true);
     return EXIT_OK;
 }
 
