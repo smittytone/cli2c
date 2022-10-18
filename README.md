@@ -235,7 +235,7 @@ The `examples` folder contains Python scripts that make use the above apps.
 
 ## Release Notes
 
-* 1.0.1 *Unreleased*
+* 1.0.1 *18 October 2022*
     * Behind-the-scenes fixes for the client apps.
 * 1.0.0 *18 October 2022*
     * Initial public release.
