@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleGetInfoString</key>
-	<string>matrix $(MARKETING_VERSION) copyright © 2022, Tony Smith. All rights reserved</string>
+	<string>segment $(MARKETING_VERSION) copyright © 2022, Tony Smith. All rights reserved</string>
 	<key>CFBundleIdentifier</key>
 	<string>com.bps.segment</string>
 	<key>CFBundleName</key>
