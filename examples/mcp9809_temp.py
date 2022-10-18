@@ -7,7 +7,7 @@ from sys import exit, argv
 from time import sleep
 
 i2c_device = None
-i2c_address = None
+i2c_address = 0x18
 
 def handler(signum, frame):
     run(["cli2c", i2c_device, "x"])
@@ -18,11 +18,6 @@ signal.signal(signal.SIGINT, handler)
 
 if len(argv) > 1:
     i2c_device = argv[1]
-
-    if len(argv) > 2:
-        i2c_address = argv[2]
-    if i2c_address == None:
-        i2c_address = 0x18
 
 if i2c_device:
     while True:
