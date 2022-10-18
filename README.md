@@ -76,8 +76,6 @@ cli2c {device_port} [command] ... [command]
 | `i` | None |  |  Display I2C host device information |
 | `h` | None |  |  Display help information |
 
-
-
 All message output is routed via `stderr` — data read back from an I2C device is output to `stdout` so it can be captured to a file. Returned data is currently presented as hexadecimal strings. For example:
 
 ```shell
@@ -191,7 +189,7 @@ segment /dev/cu.usbserial-DO029IEZ 0x71 w f n 7777
 **Draw 42.4 degrees**
 
 ```
-segment /dev/cu.usbserial-DO029IEZ n 42.40 d 1 c '*'
+segment /dev/cu.usbserial-DO029IEZ n 4240 d 1 c '*' 3
 ```
 
 ## Build the Drivers
