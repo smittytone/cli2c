@@ -129,11 +129,8 @@ void rx_loop(void) {
                         break;
 
                     case 'd':   // SCAN THE I2C BUS FOR DEVICES
-                        if (transaction.is_ready) {
-                            send_scan(&transaction);
-                        } else {
-                            send_err();
-                        }
+                        if (!transaction.is_ready) init_i2c(&transaction);
+                        send_scan(&transaction);
                         break;
 
                     case 'i':   // INITIALISE THE I2C BUS

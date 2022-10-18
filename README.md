@@ -72,9 +72,11 @@ cli2c {device_port} [command] ... [command]
 | `p` | None| Issue an I2C STOP. Usually used after one or more writes |
 | `f` | 1 | {frequency} | The I2C bus frequency in multiples of 100kHz. Supported values: 1 and 4 |
 | `x` | None |  | Reset the I2C bus |
-| `s` | None |  |  Display devices on the I2C bus |
+| `s` | None |  |  Display devices on the I2C bus. **Note** This will initialise the bus if it is not already initialised |
 | `i` | None |  |  Display I2C host device information |
 | `h` | None |  |  Display help information |
+
+
 
 All message output is routed via `stderr` — data read back from an I2C device is output to `stdout` so it can be captured to a file. Returned data is currently presented as hexadecimal strings. For example:
 

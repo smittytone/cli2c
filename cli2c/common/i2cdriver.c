@@ -90,6 +90,8 @@ size_t readFromSerialPort(int fd, uint8_t* buffer, size_t byte_count) {
 
     size_t count = 0;
     ssize_t number_read = -1;
+    struct timespec now, then;
+    clock_gettime(CLOCK_MONOTONIC_RAW, &then);
 
     if (byte_count == 0) {
         // Unknown number of bytes -- look for \r\n
@@ -104,12 +106,15 @@ size_t readFromSerialPort(int fd, uint8_t* buffer, size_t byte_count) {
                 count -= 2;
                 break;
             }
+            
+            clock_gettime(CLOCK_MONOTONIC_RAW, &now);
+            if (now.tv_sec - then.tv_sec > 15) {
+                print_error("Read timeout: %i bytes read of %i", count, byte_count);
+                return -1;
+            }
         }
     } else {
         // Read a fixed, expected number of bytes
-        struct timespec now, then;
-        clock_gettime(CLOCK_MONOTONIC_RAW, &then);
-
         while (count < byte_count) {
             // Read in the data a byte at a time
             number_read = read(fd, buffer + count, 1);
@@ -572,7 +577,7 @@ int i2c_commands(I2CDriver *sd, int argc, char *argv[], uint32_t delta) {
                         long bus_id = strtol(token, NULL, 0);
 
                         if (bus_id == 1 || bus_id == 0) {
-                            bool result = i2c_set_bus(sd, bus_id);
+                            bool result = i2c_set_bus(sd, (int)bus_id);
                             if (!result) print_warning("Command f un-ACK’d");
                         } else {
                             print_warning("Incorrect I2C bus ID selected. Should be 0 or 1");
