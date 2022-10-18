@@ -5,7 +5,7 @@
 	<key>CFBundleGetInfoString</key>
 	<string>i2ccl $(MARKETING_VERSION) copyright © 2019 James Bowman; 2022, Tony Smith. All rights reserved</string>
 	<key>CFBundleIdentifier</key>
-	<string>com.bps.i2ccl</string>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleName</key>
 	<string>i2ccl</string>
 	<key>CFBundleShortVersionString</key>
