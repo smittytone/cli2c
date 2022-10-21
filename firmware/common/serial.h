@@ -1,7 +1,7 @@
 /*
  * I2C Host Firmware - Primary serial and command functions
  *
- * @version     1.0.0
+ * @version     1.1.0
  * @author      Tony Smith (@smittytone)
  * @copyright   2022
  * @licence     MIT
@@ -45,12 +45,18 @@
 #define WRITE_LENGTH_BASE                       0xC0
 #define READ_LENGTH_BASE                        0x80
 
-#define HW_MODEL_NAME_SIZE_MAX                  16
+#define HW_MODEL_NAME_SIZE_MAX                  24
 
 #ifndef DEBUG_SEG_ADDR
 // Just in case the user comments out the CMakeLists.txt define
 #define DEBUG_SEG_ADDR                          0x70
 #endif
+
+#define GPIO_PIN_DIRN_BIT                       1
+#define GPIO_PIN_STATE_BIT                      0
+
+#define ACK                                     0x0F
+#define ERR                                     0xF0
 
 
 /*
@@ -67,24 +73,32 @@ typedef struct {
     uint32_t    read_byte_count;
     uint32_t    write_byte_count;
     i2c_inst_t* bus;
-} I2C_Trans;
+} I2C_State;
 
+typedef struct {
+    uint8_t     state_map[32];
+} GPIO_State;
 
 /*
  * PROTOTYPES
  */
 void        rx_loop(void);
 
-void        init_i2c(I2C_Trans* itr);
-void        reset_i2c(I2C_Trans* itr);
+void        init_i2c(I2C_State* itr);
+void        reset_i2c(I2C_State* itr);
 
 void        send_ack(void);
 void        send_err(void);
-void        send_scan(I2C_Trans* itr);
-void        send_status(I2C_Trans* itr);
+void        send_scan(I2C_State* itr);
+void        send_status(I2C_State* itr);
 void        send_commands(void);
 
 uint32_t    rx(uint8_t *buffer);
 void        tx(uint8_t* buffer, uint32_t byte_count);
+
+// FROM 1.1.0
+bool        check_pins(uint8_t bus, uint8_t sda, uint8_t scl);
+bool        pin_check(uint8_t* pins, uint8_t pin);
+
 
 #endif  // _MONITOR_HEADER_

@@ -1,11 +1,11 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.18)
 
 # Make project data accessible to compiler
-# IMPORTANT `HW_MODEL` must be no more than 16 characters
+# IMPORTANT `HW_MODEL` must be no more than 24 characters
 add_compile_definitions(
     FW_NAME="${FW_2_NAME}"
-    FW_VERSION="${FW_2_VERSION_NUMBER}"
-    BUILD_NUM=${BUILD_NUMBER}
+    FW_VERSION="${FW_VERSION_NUMBER}"
+    BUILD_NUM=${FW_BUILD_NUMBER}
     LED_BUILD=1
     HW_MODEL="PI-PICO")
 
@@ -22,6 +22,7 @@ add_compile_definitions(
 add_executable(${FW_2_NAME}
     ${FW_2_SRC_DIRECTORY}/main.c
     ${FW_2_SRC_DIRECTORY}/pico_led.c
+    ${FW_2_SRC_DIRECTORY}/pins.c
     ${COMMON_CODE_DIRECTORY}/serial.c
     ${COMMON_CODE_DIRECTORY}/led.c)
 

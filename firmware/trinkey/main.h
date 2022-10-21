@@ -1,5 +1,5 @@
 /*
- * I2C Host Firmware -- Adafruit QTPy RP2040
+ * I2C Host Firmware -- Adafruit QT2040 Trinkey
  *
  * @version     1.1.0
  * @author      Tony Smith (@smittytone)
@@ -7,8 +7,8 @@
  * @licence     MIT
  *
  */
-#ifndef _MAIN_HEADER_
-#define _MAIN_HEADER_
+#ifndef _MAIN_H_
+#define _MAIN_H_
 
 
 /*
@@ -25,7 +25,7 @@
 #include "hardware/gpio.h"
 // App includes
 #include "../common/serial.h"
-#include "ws2812.h"
+#include "../qtpy/ws2812.h"
 
 
-#endif  // _MAIN_HEADER_
+#endif  // _MAIN_H_

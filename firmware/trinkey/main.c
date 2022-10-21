@@ -1,5 +1,5 @@
 /*
- * I2C Host Firmware -- Adafruit QTPy RP2040
+ * I2C Host Firmware -- Adafruit QT2040 Trinkey
  *
  * @version     1.1.0
  * @author      Tony Smith (@smittytone)

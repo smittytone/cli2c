@@ -1,7 +1,7 @@
 /*
  * Generic macOS I2C driver
  *
- * Version 1.0.0
+ * Version 1.1.0
  * Copyright © 2022, Tony Smith (@smittytone)
  * Licence: MIT
  *
@@ -13,7 +13,7 @@
 static struct termios original_settings;
 
 
-#pragma mark - Serial Port Functions
+#pragma mark - Serial Port Control Functions
 
 /**
  * @brief Open a Mac serial port.
@@ -22,7 +22,7 @@ static struct termios original_settings;
  *
  * @retval The OS file descriptor, or -1 on error.
  */
-int openSerialPort(const char *device_file) {
+static int openSerialPort(const char *device_file) {
 
     struct termios serial_settings;
 
@@ -56,18 +56,25 @@ int openSerialPort(const char *device_file) {
 
     // Set the port speed
     speed_t speed = (speed_t)115200;
+#ifndef BUILD_FOR_LINUX
     if (ioctl(fd, IOSSIOSPEED, &speed) == -1) {
         print_error("Could not set port speed to 115200bps - %s (%d)", strerror(errno), errno);
         goto error;
     }
-
+#else
+    cfsetispeed(&serial_settings, speed);
+    cfsetospeed(&serial_settings, speed);
+#endif
+    
     // Set the latency -- MAY REMOVE IF NOT NEEDED
+#ifndef BUILD_FOR_LINUX
     unsigned long lat_us = 1UL;
     if (ioctl(fd, IOSSDATALAT, &lat_us) == -1) {
         print_error("Could not set port latency - %s (%d)", strerror(errno), errno);
         goto error;
     }
-
+#endif
+    
     // Return the File Descriptor
     return fd;
 
@@ -86,7 +93,7 @@ error:
  *
  * @retval The number of bytes read.
  */
-size_t readFromSerialPort(int fd, uint8_t* buffer, size_t byte_count) {
+static size_t readFromSerialPort(int fd, uint8_t* buffer, size_t byte_count) {
 
     size_t count = 0;
     ssize_t number_read = -1;
@@ -152,7 +159,7 @@ size_t readFromSerialPort(int fd, uint8_t* buffer, size_t byte_count) {
  *
  * @retval The number of bytes read.
  */
-void writeToSerialPort(int fd, const uint8_t* buffer, size_t byte_count) {
+static void writeToSerialPort(int fd, const uint8_t* buffer, size_t byte_count) {
 
     // Write the bytes
     write(fd, buffer, byte_count);
@@ -165,6 +172,26 @@ void writeToSerialPort(int fd, const uint8_t* buffer, size_t byte_count) {
     }
     fprintf(stderr, "\n");
 #endif
+}
+
+
+/**
+ * @brief Flush the port FIFOs and close the port.
+ */
+void flush_and_close_port(int fd) {
+
+    // Drain the FIFOs -- alternative to `tcflush(fd, TCIOFLUSH)`;
+    if (tcdrain(fd) == -1) {
+        print_error("Could not flush the port. %s (%d).\n", strerror(errno), errno);
+    }
+
+    // Set the port back to how we found it
+    if (tcsetattr(fd, TCSANOW, &original_settings) == -1) {
+        print_error("Could not reset port - %s (%d)", strerror(errno), errno);
+    }
+
+    // Close the port
+    close(fd);
 }
 
 
@@ -214,11 +241,11 @@ static bool i2c_ack(I2CDriver *sd) {
 
     uint8_t read_buffer[1] = {0};
     if (readFromSerialPort(sd->port, read_buffer, 1) != 1) {
-        print_error("Last action not ACK’d by device");
+        // print_error("Last action not ACK’d by device");
         return false;
     }
-
-    return ((read_buffer[0] & 0x01) == 0x01);
+    
+    return ((read_buffer[0] & ACK) == ACK);
 }
 
 
@@ -234,7 +261,7 @@ void i2c_get_info(I2CDriver *sd, bool do_print) {
     send_command(sd, '?');
     size_t result = readFromSerialPort(sd->port, read_buffer, 0);
     if (result == -1) {
-        print_error("Could not read from device");
+        print_error("Could not read information from device");
         return;
     }
 
@@ -255,8 +282,8 @@ void i2c_get_info(I2CDriver *sd, bool do_print) {
     int bus = 0;
     int sda_pin = -1;
     int scl_pin = -1;
-    char string_data[34] = {0};
-    char model[17] = {0};
+    char string_data[67] = {0};
+    char model[25] = {0};
     char pid[17] = {0};
 
     // Extract the data
@@ -417,14 +444,17 @@ bool i2c_set_speed(I2CDriver *sd, long speed) {
 /**
  * @brief Choose the I2C host's target bus: 0 (i2c0) or 1 (i2c1).
  *
- * @param sd: Pointer to an I2CDriver structure.
+ * @param sd:      Pointer to an I2CDriver structure.
+ * @param bus_id:  The Pico SDK I2C bus ID: 0 or 1.
+ * @param sda_pin: The SDA pin GPIO number.
+ * @param scl_pin: The SCL pin GPIO number.
  *
  * @retval Whether the command was ACK'd (`true`) or not (`false`).
  */
-bool i2c_set_bus(I2CDriver *sd, int bus_id) {
+bool i2c_set_bus(I2CDriver *sd, uint8_t bus_id, uint8_t sda_pin, uint8_t scl_pin) {
     
     if (bus_id < 0 || bus_id > 1) return false;
-    uint8_t set_bus_data[2] = {'c', (uint8_t)(bus_id & 0x01)};
+    uint8_t set_bus_data[4] = {'c', (bus_id & 0x01), sda_pin, scl_pin};
     writeToSerialPort(sd->port, set_bus_data, sizeof(set_bus_data));
     return i2c_ack(sd);
 }
@@ -537,6 +567,102 @@ void i2c_read(I2CDriver *sd, uint8_t bytes[], size_t byte_count) {
 }
 
 
+#pragma mark - GPIO Functions
+
+/**
+ * @brief Set a GPIO pin.
+ *
+ * @param sd:  Pointer to an I2CDriver structure.
+ * @param pin: The state, direction and number of the target GPIO.
+ *
+ * @retval Was the command ACK'd (`true`) or not (`false`).
+ */
+bool gpio_set_pin(I2CDriver *sd, uint8_t pin) {
+    
+    uint8_t set_pin_data[2] = {'g', pin};
+    writeToSerialPort(sd->port, set_pin_data, sizeof(set_pin_data));
+    return i2c_ack(sd);
+}
+
+
+/**
+ * @brief Read a GPIO pin
+ *
+ * @param sd:  Pointer to an I2CDriver structure.
+ * @param pin: The state, direction and number of the target GPIO.
+ *
+ * @retval Was the command ACK'd (`true`) or not (`false`).
+ */
+uint8_t gpio_get_pin(I2CDriver *sd, uint8_t pin) {
+    
+    uint8_t set_pin_data[2] = {'g', pin};
+    writeToSerialPort(sd->port, set_pin_data, sizeof(set_pin_data));
+    uint8_t pin_read = 0;
+    i2c_read(sd, &pin_read, 1);
+    return pin_read;
+}
+
+
+#pragma mark - Board Control Functions
+
+static bool board_set_led(I2CDriver *sd, bool is_on) {
+    
+    uint8_t set_led_data[2] = {'*', (is_on ? 1 : 0)};
+    writeToSerialPort(sd->port, set_led_data, sizeof(set_led_data));
+    return i2c_ack(sd);
+}
+
+
+/**
+ * @brief Write a single-byte command to the serial port.
+ *
+ * @param sd: Pointer to an I2CDriver structure.
+ * @param c:  A command character.
+ */
+static void send_command(I2CDriver* sd, char c) {
+
+    writeToSerialPort(sd->port, (uint8_t*)&c, 1);
+}
+
+
+#pragma mark - User Feedback Functions
+
+
+/**
+ * @brief Output help info on receipt of a bad command.
+ *
+ * @param command: The bad command.
+ */
+static void print_bad_command_help(char* command) {
+
+    print_error("Bad command: %s\n", command);
+    show_commands();
+}
+
+
+/**
+ * @brief Output help info.
+ */
+void show_commands(void) {
+    fprintf(stderr, "Commands:\n");
+    fprintf(stderr, "  z                                Initialise the I2C bus.\n");
+    fprintf(stderr, "  c {bus ID} {SDA pin} {SCL pin}   Configure the I2C bus.\n");
+    fprintf(stderr, "  f {frequency}                    Set the I2C bus frequency in multiples of 100kHz.\n");
+    fprintf(stderr, "                                   Only 1 and 4 are supported.\n");
+    fprintf(stderr, "  w {address} {bytes}              Write bytes out to I2C.\n");
+    fprintf(stderr, "  r {address} {count}              Read count bytes in from I2C.\n");
+    fprintf(stderr, "                                   Issues a STOP after all the bytes have been read.\n");
+    fprintf(stderr, "  p                                Manually issue an I2C STOP.\n");
+    fprintf(stderr, "  x                                Reset the I2C bus.\n");
+    fprintf(stderr, "  s                                Scan for devices on the I2C bus.\n");
+    fprintf(stderr, "  i                                Get I2C bus host device information.\n");
+    fprintf(stderr, "  l {on|off}                       Turn the I2C bus host LED on or off.\n");
+    fprintf(stderr, "  h                                Show help and quit.\n");
+}
+
+
+#pragma mark - Command Parsing and Processing
+
 /**
  * @brief Parse driver commands.
  *
@@ -546,7 +672,7 @@ void i2c_read(I2CDriver *sd, uint8_t bytes[], size_t byte_count) {
  *
  * @retval The driver exit code, 0 on success, 1 on failure.
  */
-int i2c_commands(I2CDriver *sd, int argc, char *argv[], uint32_t delta) {
+int process_commands(I2CDriver *sd, int argc, char *argv[], uint32_t delta) {
 
     // Set a 10ms period for intra-command delay period
     struct timespec pause;
@@ -563,30 +689,56 @@ int i2c_commands(I2CDriver *sd, int argc, char *argv[], uint32_t delta) {
 
         // Commands should be single characters
         if (strlen(command) != 1) {
-            // TODO Check for a flag mark, `-`
-            print_bad_command_help(command);
-            return EXIT_ERR;
+            // FROM 1.1.0 -- Allow for commands with a - prefix
+            if (command[0] == '-') {
+                command++;
+            } else {
+                print_bad_command_help(command);
+                return EXIT_ERR;
+            }
         }
 
         switch (command[0]) {
             case 'C':
-            case 'c':   // CHOOSE I2C BUS
+            case 'c':   // CHOOSE I2C BUS AND (FROM 1.1.0) PINS
                 {
                     if (i < argc - 1) {
                         char* token = argv[++i];
                         long bus_id = strtol(token, NULL, 0);
-
-                        if (bus_id == 1 || bus_id == 0) {
-                            bool result = i2c_set_bus(sd, (int)bus_id);
-                            if (!result) print_warning("Command f un-ACK’d");
-                        } else {
-                            print_warning("Incorrect I2C bus ID selected. Should be 0 or 1");
+                        
+                        if (i < argc - 1) {
+                            token = argv[++i];
+                            long sda_pin = strtol(token, NULL, 0);
+                            
+                            if (i < argc - 1) {
+                                token = argv[++i];
+                                long scl_pin = strtol(token, NULL, 0);
+                                
+                                // Make sure we have broadly valid pin numbers
+                                if (sda_pin < 0 || sda_pin > 32 ||
+                                    scl_pin < 0 || scl_pin > 32 ||
+                                    sda_pin == scl_pin) {
+                                    print_error("Unsupported pin value(s) specified");
+                                    return EXIT_ERR;
+                                }
+                                
+                                if (bus_id != 1 && bus_id != 0) {
+                                    print_warning("Incorrect I2C bus ID selected. Should be 0 or 1");
+                                    bus_id = 0;
+                                }
+                                
+#if DEBUG
+                                printf("BUS %li, SDA %li, SCL %li\n", bus_id, sda_pin, scl_pin);
+#endif
+                                
+                                bool result = i2c_set_bus(sd, (uint8_t)bus_id, (uint8_t)sda_pin, (uint8_t)scl_pin);
+                                if (!result) print_warning("I2C bus config un-ACK’d");
+                                break;
+                            }
                         }
-
-                        break;
                     }
 
-                    print_error("No frequency value given");
+                    print_error("Incomplete I2C setup data given");
                     return EXIT_ERR;
                 }
                 
@@ -599,7 +751,7 @@ int i2c_commands(I2CDriver *sd, int argc, char *argv[], uint32_t delta) {
 
                         if (speed == 1 || speed == 4) {
                             bool result = i2c_set_speed(sd, speed);
-                            if (!result) print_warning("Command f un-ACK’d");
+                            if (!result) print_warning("Frequency set un-ACK’d");
                         } else {
                             print_warning("Incorrect I2C frequency selected. Should be 1(00kHz) or 4(00kHz)");
                         }
@@ -611,11 +763,109 @@ int i2c_commands(I2CDriver *sd, int argc, char *argv[], uint32_t delta) {
                     return EXIT_ERR;
                 }
             
+            case 'G':   // FROM 1.5.0
+            case 'g':   // SET OR GET A GPIO PIN
+                {
+                    if (i < argc - 1) {
+                        char* token = argv[++i];
+                        long pin_number = strtol(token, NULL, 0);
+                        
+                        if (pin_number < 0 || pin_number > 31) {
+                            print_error("Pin out of range (0-31");
+                            return EXIT_ERR;
+                        }
+                        
+                        if (i < argc - 1) {
+                            token = argv[++i];
+                            // Is this a read op?
+                            bool do_read   = (token[0] == 'r' || token[0] == 'R');
+                            
+                            // Is it a state change?
+                            bool pin_state = (token[0] == '1');
+                            bool want_high = (strncasecmp(token, "hi", 2) == 0);
+                            bool want_low  = (strncasecmp(token, "lo", 2) == 0);
+                            if (want_high || want_low) pin_state = want_high || !want_low;
+                            
+                            // Pin direction is optional
+                            bool pin_direction = true;
+                            if (i < argc - 1) {
+                                token = argv[++i];
+                                if (token[0] == '0' || token[0] == '1') {
+                                    pin_direction = (token[0] == '1');
+                                } else if (token[0] == 'i' || token[0] == 'o') {
+                                    bool dir_in  = (strcasecmp(token, "in") == 0);
+                                    bool dir_out = (strcasecmp(token, "out") == 0);
+                                    if (dir_in || dir_out) pin_direction = dir_out || !dir_in;
+                                } else {
+                                    i -= 1;
+                                }
+                            }
+
+                            // Encode the TX data:
+                            // Bit 7 6 5 4 3 2 1 0
+                            //     | | | |_______|________ Pin number 0-31
+                            //     | | |__________________ Read flag (1 = read op)
+                            //     | |____________________ Direction bit (1 = out, 0 = in)
+                            //     |______________________ State bit (1 = HIGH, 0 = LOW)
+                            
+                            uint8_t send_byte = (uint8_t)pin_number;
+                            send_byte &= 0x1F;
+                            if (pin_state) send_byte |= 0x80;
+                            if (pin_direction) send_byte |= 0x40;
+                            if (do_read) send_byte |= 0x20;
+                            
+                            if (do_read) {
+                                // Read back the pin value
+                                uint8_t result = gpio_get_pin(sd, send_byte);
+                                
+                                // Issue value to STDOUT
+                                fprintf(stdout, "%02X\n", ((result & 0x80) >> 7));
+                                
+                                // Check we got the same pin back that we asked for
+                                if ((result & 0x1F) != pin_number) print_warning("GPIO pin set un-ACK’d");
+                            } else {
+                                // Set the pin and wait for ACK
+                                bool result = gpio_set_pin(sd, send_byte);
+                                if (!result) print_warning("GPIO pin set un-ACK’d");
+                            }
+                            break;
+                        }
+                        
+                        print_error("No state value given");
+                        return EXIT_ERR;
+                    }
+                    
+                    print_error("No pin value given");
+                    return EXIT_ERR;
+                }
+        
             case 'I':
             case 'i':   // PRINT HOST STATUS INFO
                 i2c_get_info(sd, true);
                 break;
 
+            // FROM 1.1.0
+            case 'L':
+            case 'l':   // SET THE BOARD LED
+                {
+                    // Get the address if we can
+                    if (i < argc - 1) {
+                        char* token = argv[++i];
+                        bool is_on = (strcasecmp(token, "on") == 0);
+                        if (is_on || strcasecmp(token, "off") == 0 ) {
+                            bool result = board_set_led(sd, is_on);
+                            if (!result) print_warning("LED set un-ACK'd");
+                            break;
+                        }
+
+                        print_error("Invalid LED state give");
+                        return EXIT_ERR;
+                    }
+                    
+                    print_error("No LED state given");
+                    return EXIT_ERR;
+                }
+        
             case 'P':
             case 'p':   // ISSUE AN I2C STOP
                 i2c_stop(sd);
@@ -719,68 +969,4 @@ int i2c_commands(I2CDriver *sd, int argc, char *argv[], uint32_t delta) {
     }
 
     return 0;
-}
-
-
-#pragma mark - Misc. Functions
-
-/**
- * @brief Write a single-byte command to the serial port.
- *
- * @param sd: Pointer to an I2CDriver structure.
- * @param c:  A command character.
- */
-static void send_command(I2CDriver* sd, char c) {
-
-    writeToSerialPort(sd->port, (uint8_t*)&c, 1);
-}
-
-
-/**
- * @brief Output help info on receipt of a bad command.
- *
- * @param command: The bad command.
- */
-static void print_bad_command_help(char* command) {
-
-    print_error("Bad command: %s\n", command);
-    show_commands();
-}
-
-
-/**
- * @brief Output help info.
- */
-void show_commands(void) {
-    fprintf(stderr, "Commands:\n");
-    fprintf(stderr, "  w {address} {bytes} Write bytes out to I2C.\n");
-    fprintf(stderr, "  r {address} {count} Read count bytes in from I2C.\n");
-    fprintf(stderr, "                      Issues a STOP after all the bytes have been read.\n");
-    fprintf(stderr, "  p                   Issue an I2C STOP.\n");
-    fprintf(stderr, "  f {frequency}       Set the I2C bus frequency in multiples of 100kHz.\n");
-    fprintf(stderr, "                      Only 1 and 4 are supported.\n");
-    fprintf(stderr, "  x                   Reset the I2C bus.\n");
-    fprintf(stderr, "  s                   Scan for devices on the I2C bus.\n");
-    fprintf(stderr, "  i                   Get I2C bus host device information.\n");
-    fprintf(stderr, "  h                   Show help and quit.\n");
-}
-
-
-/**
- * @brief Flush the port FIFOs and close the port.
- */
-void flush_and_close_port(int fd) {
-
-    // Drain the FIFOs -- alternative to `tcflush(fd, TCIOFLUSH)`;
-    if (tcdrain(fd) == -1) {
-        print_error("Could not flush the port. %s (%d).\n", strerror(errno), errno);
-    }
-
-    // Set the port back to how we found it
-    if (tcsetattr(fd, TCSANOW, &original_settings) == -1) {
-        print_error("Could not reset port - %s (%d)", strerror(errno), errno);
-    }
-
-    // Close the port
-    close(fd);
 }

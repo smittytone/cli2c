@@ -1,7 +1,7 @@
 /*
  * Generic macOS I2C driver
  *
- * Version 1.0.0
+ * Version 1.1.0
  * Copyright © 2022, Tony Smith (@smittytone)
  * Licence: MIT
  *
@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
             }
 
             // Process the remaining commands in sequence
-            int result = i2c_commands(&i2c, argc, argv, delta);
+            int result = process_commands(&i2c, argc, argv, delta);
             flush_and_close_port(i2c.port);
             return result;
         } else {
@@ -65,7 +65,7 @@ int main(int argc, char *argv[]) {
 void show_help() {
     fprintf(stderr, "cli2c {device} [commands]\n\n");
     fprintf(stderr, "Usage:\n");
-    fprintf(stderr, "  {device} is a mandatory device path, eg. /dev/cu.usbmodem-010101.\n");
+    fprintf(stderr, "  {device} is a mandatory device path, eg. /dev/cu.usbmodem-101.\n");
     fprintf(stderr, "  [commands] are optional commands, as shown below.\n\n");
     show_commands();
 }

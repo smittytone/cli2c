@@ -1,7 +1,7 @@
 /*
  * I2C Host Firmware Host -- Tiny 2040 LED
  *
- * @version     1.0.0
+ * @version     1.1.0
  * @author      Tony Smith (@smittytone)
  * @copyright   2022
  * @licence     MIT
@@ -33,7 +33,7 @@
 #define     PIN_TINY_LED_GREEN          19
 #define     PIN_TINY_LED_RED            18
 
-#define     DEFAULT_LED_COLOUR          0x010010
+#define     DEFAULT_LED_COLOUR          0x001010    // Cyan
 
 
 /*

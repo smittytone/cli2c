@@ -1,7 +1,7 @@
 /*
  * Generic macOS I2C driver
  *
- * Version 1.0.0
+ * Version 1.1.0
  * Copyright © 2022, Tony Smith (@smittytone)
  * Licence: MIT
  *
@@ -20,6 +20,7 @@
 #include <stdarg.h>
 #include <stdint.h>
 #include <unistd.h>
+#include <inttypes.h>
 #include <errno.h>
 #include <time.h>
 #include <assert.h>
@@ -27,9 +28,13 @@
 #include <fcntl.h>
 #include <termios.h>
 #include <sys/ioctl.h>
+
+#ifndef BUILD_FOR_LINUX
 #include <IOKit/serial/ioss.h>
+#endif
+
 #define __STDC_FORMAT_MACROS
-#include <inttypes.h>
+
 
 
 /*
@@ -45,13 +50,16 @@
 #define CONNECTED_DEVICES_MAX_B         120
 #define SCAN_BUFFER_MAX_B               512
 
+#define ACK                             0x0F
+#define ERR                             0xF0
+
 
 /*
  * STRUCTURES
  */
 typedef struct {
     bool            connected;          // Set to true when connected
-    int             port;
+    int             port;               // OS file descriptor for host
     unsigned int    speed;              // I2C line speed (in kHz)
 } I2CDriver;
 
@@ -59,30 +67,39 @@ typedef struct {
 /*
  * PROTOTYPES
  */
+// Serial Port Control Functions
+static int      openSerialPort(const char *portname);
+static size_t   readFromSerialPort(int fd, uint8_t* b, size_t s);
+static void     writeToSerialPort(int fd, const uint8_t* b, size_t s);
+void            flush_and_close_port(int fd);
 
-int         openSerialPort(const char *portname);
-size_t      readFromSerialPort(int fd, uint8_t* b, size_t s);
-void        writeToSerialPort(int fd, const uint8_t* b, size_t s);
-void        flush_and_close_port(int fd);
+// I2C Driver Functions
+void            i2c_connect(I2CDriver *sd, const char* portname);
+bool            i2c_init(I2CDriver *sd);
+bool            i2c_set_bus(I2CDriver *sd, uint8_t bus_id, uint8_t sda_pin, uint8_t scl_pin);
+bool            i2c_set_speed(I2CDriver *sd, long speed);
+bool            i2c_start(I2CDriver *sd, uint8_t address, uint8_t op);
+bool            i2c_reset(I2CDriver *sd);
+bool            i2c_stop(I2CDriver *sd);
+void            i2c_get_info(I2CDriver *sd, bool do_print);
+size_t          i2c_write(I2CDriver *sd, const uint8_t bytes[], size_t nn);
+void            i2c_read(I2CDriver *sd, uint8_t bytes[], size_t nn);
+static bool     i2c_ack(I2CDriver *sd);
 
-void        i2c_connect(I2CDriver *sd, const char* portname);
-bool        i2c_init(I2CDriver *sd);
-bool        i2c_set_bus(I2CDriver *sd, int bus_id);
-bool        i2c_set_speed(I2CDriver *sd, long speed);
-bool        i2c_start(I2CDriver *sd, uint8_t address, uint8_t op);
-bool        i2c_reset(I2CDriver *sd);
-bool        i2c_stop(I2CDriver *sd);
-void        i2c_get_info(I2CDriver *sd, bool do_print);
-size_t      i2c_write(I2CDriver *sd, const uint8_t bytes[], size_t nn);
-void        i2c_read(I2CDriver *sd, uint8_t bytes[], size_t nn);
-int         i2c_commands(I2CDriver *sd, int argc, char *argv[], uint32_t delta);
-static bool i2c_ack(I2CDriver *sd);
+// GPIO Functions
+bool            gpio_set_pin(I2CDriver *sd, uint8_t pin);
+uint8_t         gpio_get_pin(I2CDriver *sd, uint8_t pin);
 
-static void send_command(I2CDriver *sd, char c);
-static void print_bad_command_help(char* token);
+// Board Control Functions
+static bool     board_set_led(I2CDriver *sd, bool is_on);
+static void     send_command(I2CDriver *sd, char c);
 
-void        show_commands(void);
+// User-feedback Functions
+static void     print_bad_command_help(char* token);
+void            show_commands(void);
 
+// Command Parsing and Processing
+int             process_commands(I2CDriver *sd, int argc, char *argv[], uint32_t delta);
 
 
 #endif  // I2C_DRIVER_H

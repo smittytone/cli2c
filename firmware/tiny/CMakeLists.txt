@@ -1,13 +1,13 @@
-cmake_minimum_required(VERSION 3.20)
+cmake_minimum_required(VERSION 3.18)
 
 # Make project data accessible to compiler
-# IMPORTANT `HW_MODEL` must be no more than 16 characters
+# IMPORTANT `HW_MODEL` must be no more than 24 characters
 add_compile_definitions(
     FW_NAME="${FW_4_NAME}"
-    FW_VERSION="${FW_4_VERSION_NUMBER}"
-    BUILD_NUM=${BUILD_NUMBER}
+    FW_VERSION="${FW_VERSION_NUMBER}"
+    BUILD_NUM=${FW_BUILD_NUMBER}
     TINY_BUILD=1
-    HW_MODEL="PIMRONI-TINY")
+    HW_MODEL="PIMORONI-TINY")
 
 # Set the device's I2C pins
 add_compile_definitions(
@@ -22,6 +22,7 @@ set(PICO_STDIO_USB_CONNECT_WAIT_TIMEOUT_MS=2000)
 add_executable(${FW_4_NAME}
     ${FW_4_SRC_DIRECTORY}/main.c
     ${FW_4_SRC_DIRECTORY}/tiny_led.c
+    ${FW_4_SRC_DIRECTORY}/pins.c
     ${COMMON_CODE_DIRECTORY}/serial.c
     ${COMMON_CODE_DIRECTORY}/led.c)
 

@@ -13,7 +13,8 @@
             "binary_info.h": "c",
             "string.h": "c",
             "main.h": "c",
-            "algorithm": "c"
+            "algorithm": "c",
+            "stdint.h": "c"
         }
     }
 }
