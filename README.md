@@ -10,7 +10,7 @@ There’s more information [in this blog post](https://blog.smittytone.net/2022/
 
 #### macOS
 
-You can build the code from the accompanying Xcode project. 
+You can build the code from the accompanying Xcode project.
 
 1. Archive the project.
 1. Save the build products on the desktop.
@@ -274,7 +274,7 @@ Thanks are also due to Hermann Stamm-Wilbrandt ([@Hermann-SW](https://github.com
 
 ## Release Notes
 
-* 1.1.0 *Unreleased*
+* 1.1.0 *22 October 2022*
     * Support I2C bus and pin selection.
     * Support building and running client apps on Linux (RPiOS).
     * Support firmware transfer to board on Linux (RPiOS).
