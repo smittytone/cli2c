@@ -215,7 +215,8 @@ void i2c_connect(I2CDriver *sd, const char* portname) {
     if (sd->port == -1) return;
 
     // Perform a basic communications check
-    send_command(sd, 'z');
+    // FROM 1.1.1 -- use ! in place of z (internal change)
+    send_command(sd, '!');
     uint8_t rx[4] = {0};
     size_t result = readFromSerialPort(sd->port, rx, 4);
     if (result == -1 || ((rx[0] != 'O') && (rx[1] != 'K'))) {

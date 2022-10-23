@@ -1,7 +1,7 @@
 /*
  * I2C Host Firmware - Primary serial and command functions
  *
- * @version     1.1.0
+ * @version     1.1.1
  * @author      Tony Smith (@smittytone)
  * @copyright   2022
  * @licence     MIT
@@ -124,8 +124,12 @@ void rx_loop(void) {
                         send_status(&i2c_state);
                         break;
 
-                    case '!':   // GET COMMANDS LIST
-                        send_commands();
+                    // FROM 1.1.1 -- change command from z to !
+                    case '!':   // CONNECTION TEST DATA
+                        {
+                            char tx_buffer[4] = "OK\r\n";
+                            tx(tx_buffer, 4);
+                        }
                         break;
 
                     // FROM 1.1.0
@@ -243,13 +247,6 @@ void rx_loop(void) {
                         i2c_state.is_started = false;
                         reset_i2c(&i2c_state);
                         send_ack();
-                        break;
-
-                    case 'z':   // CONNECTION TEST DATA
-                        {
-                            char tx_buffer[4] = "OK\r\n";
-                            tx(tx_buffer, 4);
-                        }
                         break;
 
                     default:    // UNKNOWN COMMAND -- FAIL
@@ -400,16 +397,6 @@ void send_status(I2C_State* itr) {
 
     // Send the data
     tx(status_buffer, strlen(status_buffer));
-}
-
-
-/**
- * @brief Send back a list of supported commands.
- */
-void send_commands(void) {
-
-    char cmd_list_buffer[] = "?.!.d.1.4.i.s.p.x\r\n";
-    tx(cmd_list_buffer, strlen(cmd_list_buffer));
 }
 
 

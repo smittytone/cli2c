@@ -1,7 +1,7 @@
 /*
  * I2C Host Firmware - Primary serial and command functions
  *
- * @version     1.1.0
+ * @version     1.1.1
  * @author      Tony Smith (@smittytone)
  * @copyright   2022
  * @licence     MIT
@@ -91,7 +91,6 @@ void        send_ack(void);
 void        send_err(void);
 void        send_scan(I2C_State* itr);
 void        send_status(I2C_State* itr);
-void        send_commands(void);
 
 uint32_t    rx(uint8_t *buffer);
 void        tx(uint8_t* buffer, uint32_t byte_count);

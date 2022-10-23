@@ -1,7 +1,7 @@
 /*
  * I2C Host Firmware -- Pimoroni Tiny 2040
  *
- * @version     1.1.0
+ * @version     1.1.1
  * @author      Tony Smith (@smittytone)
  * @copyright   2022
  * @licence     MIT
