@@ -125,11 +125,9 @@ void rx_loop(void) {
                         break;
 
                     // FROM 1.1.1 -- change command from z to !
+                    case 'z':
                     case '!':   // CONNECTION TEST DATA
-                        {
-                            char tx_buffer[4] = "OK\r\n";
-                            tx(tx_buffer, 4);
-                        }
+                        tx("OK\r\n", 4);
                         break;
 
                     // FROM 1.1.0

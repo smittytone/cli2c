@@ -93,3 +93,4 @@ iOSInjectionProject/
 Linux/*build/
 Linux/.exports
 .exports
+.vscode/
