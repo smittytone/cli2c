@@ -13,6 +13,7 @@
  * STATIC PROTOTYPES
  */
 static void    show_help(void);
+static void    show_version(void);
 
 
 /*
@@ -41,6 +42,13 @@ int main(int argc, char *argv[]) {
                 strcasecmp(argv[i], "--help") == 0 ||
                 strcasecmp(argv[i], "-h") == 0) {
                 show_help();
+                return EXIT_OK;
+            }
+
+            if (strcasecmp(argv[i], "v") == 0 ||
+                strcasecmp(argv[i], "--version") == 0 ||
+                strcasecmp(argv[i], "-v") == 0) {
+                show_version();
                 return EXIT_OK;
             }
         }
@@ -75,9 +83,20 @@ int main(int argc, char *argv[]) {
  * @brief Show help.
  */
 static void show_help() {
+    
     fprintf(stderr, "cli2c {device} [commands]\n\n");
     fprintf(stderr, "Usage:\n");
     fprintf(stderr, "  {device} is a mandatory device path, eg. /dev/cu.usbmodem-101.\n");
     fprintf(stderr, "  [commands] are optional commands, as shown below.\n\n");
     show_commands();
+}
+
+
+/**
+ * @brief Show app version.
+ */
+static void show_version() {
+    
+    fprintf(stderr, "cli2c 1.1.1\n");
+    fprintf(stderr, "Copyright © 2022, Tony Smith.\n");
 }
