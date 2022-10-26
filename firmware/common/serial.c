@@ -10,6 +10,29 @@
 #include "serial.h"
 
 
+
+/*
+ * STATIC PROTOTYPES
+ */
+static void     init_i2c(I2C_State* itr);
+static void     reset_i2c(I2C_State* itr);
+
+static void     send_ack(void);
+static void     send_err(void);
+static void     send_scan(I2C_State* itr);
+static void     send_status(I2C_State* itr);
+
+static void     tx(uint8_t* buffer, uint32_t byte_count);
+static uint32_t rx(uint8_t *buffer);
+
+// FROM 1.1.0
+static bool     check_pins(uint8_t bus, uint8_t sda, uint8_t scl);
+static bool     pin_check(uint8_t* pins, uint8_t pin);
+
+
+/*
+ * GLOBALS
+ */
 // FROM 1.1.0
 // Access individual boards' pin arrays
 extern uint8_t PIN_PAIRS_BUS_0[];
@@ -126,7 +149,7 @@ void rx_loop(void) {
 
                     // FROM 1.1.1 -- change command from z to !
                     case 'z':
-                    case '!':   // CONNECTION TEST DATA
+                    case '!':   // RESPOND TO CONNECTION REQUEST
                         tx("OK\r\n", 4);
                         break;
 
@@ -285,7 +308,7 @@ void rx_loop(void) {
  *
  * @param frequency_khz: The bus speed in kHz.
  */
-void init_i2c(I2C_State* itr) {
+static void init_i2c(I2C_State* itr) {
 
     // Initialise I2C via SDK
     i2c_init(itr->bus, itr->frequency * 1000);
@@ -308,7 +331,7 @@ void init_i2c(I2C_State* itr) {
  *
  * @param frequency_khz: The bus speed in kHz.
  */
-void reset_i2c(I2C_State* itr) {
+static void reset_i2c(I2C_State* itr) {
 
     i2c_deinit(itr->bus);
     sleep_ms(10);
@@ -319,7 +342,7 @@ void reset_i2c(I2C_State* itr) {
 /**
  * @brief Scan the host's I2C bus for devices, and send the results.
  */
-void send_scan(I2C_State* itr) {
+static void send_scan(I2C_State* itr) {
 
     uint8_t rx_data;
     int reading;
@@ -354,7 +377,7 @@ void send_scan(I2C_State* itr) {
  *
  * @param t: A pointer to the current I2C transaction record.
  */
-void send_status(I2C_State* itr) {
+static void send_status(I2C_State* itr) {
 
     // Get the RP2040 unique ID
     char pid[2 * PICO_UNIQUE_BOARD_ID_SIZE_BYTES + 1] = {0};
@@ -401,7 +424,7 @@ void send_status(I2C_State* itr) {
 /**
  * @brief Send a single-byte ACK.
  */
-void send_ack(void) {
+static void send_ack(void) {
 #ifdef BUILD_FOR_TERMINAL_TESTING
     printf("OK\r\n");
 #else
@@ -420,7 +443,7 @@ void send_ack(void) {
 /**
  * @brief Send a single-byte ERR.
  */
-void send_err(void) {
+static void send_err(void) {
 #ifdef BUILD_FOR_TERMINAL_TESTING
     printf("ERR\r\n");
 #else
@@ -443,7 +466,7 @@ void send_err(void) {
  *
  * @retval The number of bytes to process.
  */
-uint32_t rx(uint8_t* buffer) {
+static uint32_t rx(uint8_t* buffer) {
 
     uint32_t data_count = 0;
     int c = PICO_ERROR_TIMEOUT;
@@ -472,7 +495,7 @@ uint32_t rx(uint8_t* buffer) {
  * @param buffer:     A pointer to the byte store buffer.
  * @param byte_count: The number of bytes to send.
  */
-void tx(uint8_t* buffer, uint32_t byte_count) {
+static void tx(uint8_t* buffer, uint32_t byte_count) {
 
     for (uint32_t i = 0 ; i < byte_count ; ++i) {
         putchar((buffer[i]));
@@ -501,7 +524,7 @@ void tx(uint8_t* buffer, uint32_t byte_count) {
  * 
  * @retval Whether the pins are good (`true`) or not (`false`).
  */
-bool check_pins(uint8_t bus, uint8_t sda, uint8_t scl) {
+static bool check_pins(uint8_t bus, uint8_t sda, uint8_t scl) {
     
     // Same pin? Bail
     if (sda == scl) return false;
@@ -526,7 +549,7 @@ bool check_pins(uint8_t bus, uint8_t sda, uint8_t scl) {
  * 
  * @retval Whether the pins are good (`true`) or not (`false`).
  */
-bool pin_check(uint8_t* pins, uint8_t pin) {
+static bool pin_check(uint8_t* pins, uint8_t pin) {
 
     uint8_t a_pin = *pins;
     while (a_pin != 255) {

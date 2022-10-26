@@ -1,7 +1,7 @@
 /*
  * HT16K33 8x8 matrix driver
  *
- * Version 1.1.0
+ * Version 1.1.1
  * Copyright © 2022, Tony Smith (@smittytone)
  * Licence: MIT
  *
@@ -9,6 +9,16 @@
 #include "main.h"
 
 
+/*
+ * STATIC PROTOTYPES
+ */
+static void HT16K33_sleep_ms(int ms);
+static void HT16K33_write_cmd(uint8_t cmd);
+
+
+/*
+ * GLOBALS
+ */
 // The Ascii character set
 const char CHARSET[128][6] = {
     "\x00\x00\x00",              // space - Ascii 32

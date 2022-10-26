@@ -1,7 +1,7 @@
 /*
  * HT16K33 4-digit, 7-segment driver
  *
- * Version 1.1.0
+ * Version 1.1.1
  * Copyright © 2022, Tony Smith (@smittytone)
  * Licence: MIT
  *
@@ -9,11 +9,22 @@
 #include "main.h"
 
 
+/*
+ * STATIC PROTOYPYES
+ */
+static uint32_t bcd(uint32_t base);
+static void     HT16K33_sleep_ms(int ms);
+static void     HT16K33_write_cmd(uint8_t cmd);
+
+
+/*
+ * GLOBALS
+ */
 // The hex character set
-char CHARSET[19] = "\x3F\x06\x5B\x4F\x66\x6D\x7D\x07\x7F\x6F\x5F\x7C\x58\x5E\x7B\x71\x40\x63";
+const char CHARSET[19] = "\x3F\x06\x5B\x4F\x66\x6D\x7D\x07\x7F\x6F\x5F\x7C\x58\x5E\x7B\x71\x40\x63";
 
 // Map display digits to bytes in the buffer
-uint8_t POS[4] = {1, 3, 7, 9};
+const uint8_t POS[4] = {1, 3, 7, 9};
 uint8_t display_buffer[17] = {0};
 bool is_flipped = false;
 

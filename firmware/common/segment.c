@@ -10,6 +10,15 @@
 #include "segment.h"
 
 
+/*
+ * STATIC PROTOTYPES
+ */
+static uint32_t bcd(uint32_t value);
+
+
+/*
+ * GLOBALS
+ */
 // The hex character set
 char        CHARSET[19] = "\x3F\x06\x5B\x4F\x66\x6D\x7D\x07\x7F\x6F\x5F\x7C\x58\x5E\x7B\x71\x40\x63";
 
@@ -140,7 +149,7 @@ void HT16K33_show_value(int16_t value, bool decimal) {
  *
  * @retval The BCD form of the value.
  */
-uint32_t bcd(uint32_t base) {
+static uint32_t bcd(uint32_t base) {
 
     if (base > 9999) base = 9999;
     for (uint32_t i = 0 ; i < 16 ; ++i) {

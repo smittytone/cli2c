@@ -1,13 +1,33 @@
 /*
  * Generic macOS I2C driver
  *
- * Version 1.1.0
+ * Version 1.1.1
  * Copyright © 2022, Tony Smith (@smittytone)
  * Licence: MIT
  *
  */
 #include "main.h"
 
+
+#pragma mark - Static Function Prototypes
+
+// FROM 1.1.1 -- implement internal functions as statics
+static int      openSerialPort(const char *portname);
+static size_t   readFromSerialPort(int fd, uint8_t* b, size_t s);
+static void     writeToSerialPort(int fd, const uint8_t* b, size_t s);
+static void     print_bad_command_help(char* token);
+static bool     board_set_led(I2CDriver *sd, bool is_on);
+static void     send_command(I2CDriver *sd, char c);
+static bool     i2c_ack(I2CDriver *sd);
+static bool     i2c_set_bus(I2CDriver *sd, uint8_t bus_id, uint8_t sda_pin, uint8_t scl_pin);
+static bool     i2c_set_speed(I2CDriver *sd, long speed);
+static bool     i2c_reset(I2CDriver *sd);
+static void     i2c_get_info(I2CDriver *sd, bool do_print);
+static bool     gpio_set_pin(I2CDriver *sd, uint8_t pin);
+static uint8_t  gpio_get_pin(I2CDriver *sd, uint8_t pin);
+
+
+#pragma mark - Globals
 
 // Retain the original port settings
 static struct termios original_settings;
@@ -256,7 +276,7 @@ static bool i2c_ack(I2CDriver *sd) {
  * @param sd:       Pointer to an I2CDriver structure.
  * @param do_print: Should we output the results?
  */
-void i2c_get_info(I2CDriver *sd, bool do_print) {
+static void i2c_get_info(I2CDriver *sd, bool do_print) {
 
     uint8_t read_buffer[HOST_INFO_BUFFER_MAX_B] = {0};
     send_command(sd, '?');
@@ -428,7 +448,7 @@ bool i2c_init(I2CDriver *sd) {
  *
  * @retval Whether the command was ACK'd (`true`) or not (`false`).
  */
-bool i2c_set_speed(I2CDriver *sd, long speed) {
+static bool i2c_set_speed(I2CDriver *sd, long speed) {
 
     switch(speed) {
         case 1:
@@ -452,7 +472,7 @@ bool i2c_set_speed(I2CDriver *sd, long speed) {
  *
  * @retval Whether the command was ACK'd (`true`) or not (`false`).
  */
-bool i2c_set_bus(I2CDriver *sd, uint8_t bus_id, uint8_t sda_pin, uint8_t scl_pin) {
+static bool i2c_set_bus(I2CDriver *sd, uint8_t bus_id, uint8_t sda_pin, uint8_t scl_pin) {
     
     if (bus_id < 0 || bus_id > 1) return false;
     uint8_t set_bus_data[4] = {'c', (bus_id & 0x01), sda_pin, scl_pin};
@@ -468,7 +488,7 @@ bool i2c_set_bus(I2CDriver *sd, uint8_t bus_id, uint8_t sda_pin, uint8_t scl_pin
  *
  * @retval Whether the command was ACK'd (`true`) or not (`false`).
  */
-bool i2c_reset(I2CDriver *sd) {
+static bool i2c_reset(I2CDriver *sd) {
 
     send_command(sd, 'x');
     return i2c_ack(sd);
@@ -578,7 +598,7 @@ void i2c_read(I2CDriver *sd, uint8_t bytes[], size_t byte_count) {
  *
  * @retval Was the command ACK'd (`true`) or not (`false`).
  */
-bool gpio_set_pin(I2CDriver *sd, uint8_t pin) {
+static bool gpio_set_pin(I2CDriver *sd, uint8_t pin) {
     
     uint8_t set_pin_data[2] = {'g', pin};
     writeToSerialPort(sd->port, set_pin_data, sizeof(set_pin_data));
@@ -594,7 +614,7 @@ bool gpio_set_pin(I2CDriver *sd, uint8_t pin) {
  *
  * @retval Was the command ACK'd (`true`) or not (`false`).
  */
-uint8_t gpio_get_pin(I2CDriver *sd, uint8_t pin) {
+static uint8_t gpio_get_pin(I2CDriver *sd, uint8_t pin) {
     
     uint8_t set_pin_data[2] = {'g', pin};
     writeToSerialPort(sd->port, set_pin_data, sizeof(set_pin_data));

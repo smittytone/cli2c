@@ -1,7 +1,7 @@
 /*
  * Generic macOS I2C driver
  *
- * Version 1.1.0
+ * Version 1.1.1
  * Copyright © 2022, Tony Smith (@smittytone)
  * Licence: MIT
  *
@@ -68,34 +68,19 @@ typedef struct {
  * PROTOTYPES
  */
 // Serial Port Control Functions
-static int      openSerialPort(const char *portname);
-static size_t   readFromSerialPort(int fd, uint8_t* b, size_t s);
-static void     writeToSerialPort(int fd, const uint8_t* b, size_t s);
 void            flush_and_close_port(int fd);
 
 // I2C Driver Functions
 void            i2c_connect(I2CDriver *sd, const char* portname);
 bool            i2c_init(I2CDriver *sd);
-bool            i2c_set_bus(I2CDriver *sd, uint8_t bus_id, uint8_t sda_pin, uint8_t scl_pin);
-bool            i2c_set_speed(I2CDriver *sd, long speed);
+
 bool            i2c_start(I2CDriver *sd, uint8_t address, uint8_t op);
-bool            i2c_reset(I2CDriver *sd);
 bool            i2c_stop(I2CDriver *sd);
-void            i2c_get_info(I2CDriver *sd, bool do_print);
+
 size_t          i2c_write(I2CDriver *sd, const uint8_t bytes[], size_t nn);
 void            i2c_read(I2CDriver *sd, uint8_t bytes[], size_t nn);
-static bool     i2c_ack(I2CDriver *sd);
-
-// GPIO Functions
-bool            gpio_set_pin(I2CDriver *sd, uint8_t pin);
-uint8_t         gpio_get_pin(I2CDriver *sd, uint8_t pin);
-
-// Board Control Functions
-static bool     board_set_led(I2CDriver *sd, bool is_on);
-static void     send_command(I2CDriver *sd, char c);
 
 // User-feedback Functions
-static void     print_bad_command_help(char* token);
 void            show_commands(void);
 
 // Command Parsing and Processing

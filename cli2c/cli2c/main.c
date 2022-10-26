@@ -1,7 +1,7 @@
 /*
  * Generic macOS I2C driver
  *
- * Version 1.1.0
+ * Version 1.1.1
  * Copyright © 2022, Tony Smith (@smittytone)
  * Licence: MIT
  *
@@ -9,10 +9,22 @@
 #include "main.h"
 
 
+/*
+ * STATIC PROTOTYPES
+ */
+static void    show_help(void);
+
+
+/*
+ * GLOBALS
+ */
 // Hold an I2C data structure
 I2CDriver i2c;
 
 
+/**
+ * @brief Main entry point.
+ */
 int main(int argc, char *argv[]) {
 
     // Listen for SIGINT
@@ -62,7 +74,7 @@ int main(int argc, char *argv[]) {
 /**
  * @brief Show help.
  */
-void show_help() {
+static void show_help() {
     fprintf(stderr, "cli2c {device} [commands]\n\n");
     fprintf(stderr, "Usage:\n");
     fprintf(stderr, "  {device} is a mandatory device path, eg. /dev/cu.usbmodem-101.\n");

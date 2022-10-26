@@ -1,7 +1,7 @@
 /*
  * HT16K33 8x8 matrix driver
  *
- * Version 1.1.0
+ * Version 1.1.1
  * Copyright © 2022, Tony Smith (@smittytone)
  * Licence: MIT
  *
@@ -56,9 +56,6 @@ void        HT16K33_print(const char *text, uint32_t delay_ms);
 void        HT16K33_rotate(uint8_t angle);
 void        HT16K33_set_char(uint8_t ascii, bool is_centred);
 void        HT16K33_set_glyph(uint8_t* bytes);
-
-static void HT16K33_sleep_ms(int ms);
-static void HT16K33_write_cmd(uint8_t cmd);
 
 
 #endif  // _HT16K33_MATRIX_HEADER_

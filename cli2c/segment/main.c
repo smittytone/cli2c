@@ -1,7 +1,7 @@
 /*
  * I2C driver for an HT16K33 4-digit, 7-segment display
  *
- * Version 1.1.0
+ * Version 1.1.1
  * Copyright © 2022, Tony Smith (@smittytone)
  * Licence: MIT
  *
@@ -9,10 +9,23 @@
 #include "main.h"
 
 
+/*
+ * STATIC PROTOTYPES
+ */
+static int  segment_commands(I2CDriver* sd, int argc, char* argv[], int delta);
+static void show_help(void);
+
+
+/*
+ * GLOBALS
+ */
 // Hold an I2C data structure
 I2CDriver i2c;
 
 
+/**
+ * @brief Main entry point.
+ */
 int main(int argc, char* argv[]) {
 
     // Listen for SIGINT
@@ -91,7 +104,7 @@ int main(int argc, char* argv[]) {
  * @param argv:  The arguments.
  * @param delta: The argument list offset to locate HT16K33 commands from.
  */
-int segment_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
+static int segment_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
 
     bool do_draw = false;
 
@@ -393,7 +406,7 @@ int segment_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
 /**
  * @brief Show help.
  */
-void show_help() {
+static void show_help() {
     fprintf(stderr, "segment {device} [address] [commands]\n\n");
     fprintf(stderr, "Usage:\n");
     fprintf(stderr, "  {device} is a mandatory device path, eg. /dev/cu.usbmodem-010101.\n");

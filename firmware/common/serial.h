@@ -79,25 +79,11 @@ typedef struct {
     uint8_t     state_map[32];
 } GPIO_State;
 
+
 /*
  * PROTOTYPES
  */
 void        rx_loop(void);
-
-void        init_i2c(I2C_State* itr);
-void        reset_i2c(I2C_State* itr);
-
-void        send_ack(void);
-void        send_err(void);
-void        send_scan(I2C_State* itr);
-void        send_status(I2C_State* itr);
-
-uint32_t    rx(uint8_t *buffer);
-void        tx(uint8_t* buffer, uint32_t byte_count);
-
-// FROM 1.1.0
-bool        check_pins(uint8_t bus, uint8_t sda, uint8_t scl);
-bool        pin_check(uint8_t* pins, uint8_t pin);
 
 
 #endif  // _MONITOR_HEADER_

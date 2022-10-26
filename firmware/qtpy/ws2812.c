@@ -70,6 +70,7 @@ void ws2812_pixel(uint32_t colour) {
 
 
 void ws2812_set_state(bool state) {
+    
     ws2812_pixel(state ? colour : 0x00);
 }
 

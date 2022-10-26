@@ -1,7 +1,7 @@
 /*
  * HT16K33 4-digit, 7-segment driver
  *
- * Version 1.1.0
+ * Version 1.1.1
  * Copyright © 2022, Tony Smith (@smittytone)
  * Licence: MIT
  *
@@ -56,10 +56,6 @@ void            HT16K33_set_char(char achar, uint8_t digit, bool has_dot);
 void            HT16K33_set_colon(void);
 void            HT16K33_show_value(int value, bool decimal);
 void            HT16K33_set_point(uint8_t digit);
-
-static uint32_t bcd(uint32_t base);
-static void     HT16K33_sleep_ms(int ms);
-static void     HT16K33_write_cmd(uint8_t cmd);
 
 
 #endif  // _HT16K33_SEGMENT_HEADER_

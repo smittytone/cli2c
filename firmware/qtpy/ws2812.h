@@ -57,7 +57,6 @@ void    ws2812_flash(int count);
 void    ws2812_set_colour(uint32_t new_colour);
 void    ws2812_set_state(bool state);
 void    ws2812_task(void);
-void    ws2812_signal_activity(uint total_bits);
 
 
 #endif  // _WS2812_H
