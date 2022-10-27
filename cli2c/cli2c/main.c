@@ -36,7 +36,7 @@ int main(int argc, char *argv[]) {
         // Insufficient arguments -- issue usage info and bail
         fprintf(stderr, "Usage: cli2c {DEVICE_PATH} [command] ... [command]\n");
     } else {
-        // Check for a help request
+        // Check for a help and/or version request
         for (int i = 0 ; i < argc ; ++i) {
             if (strcasecmp(argv[i], "h") == 0 ||
                 strcasecmp(argv[i], "--help") == 0 ||

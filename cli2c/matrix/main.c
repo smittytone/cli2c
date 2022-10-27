@@ -75,7 +75,7 @@ int main(int argc, char* argv[]) {
                     }
 
                     // Note the non-standard I2C address
-                    fprintf(stderr, "Using I2C address: 0x%02X", i2c_address);
+                    fprintf(stderr, "Using I2C address: 0x%02X\n", i2c_address);
                     delta = 3;
                 }
 
@@ -109,8 +109,15 @@ static int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
     bool do_draw = false;
 
     for (int i = delta ; i < argc ; ++i) {
+        // Get the next command
         char* command = argv[i];
-        switch (command[0]) {
+        char cmd = command[0];
+        
+        // Check for a switch marker
+        if (cmd == '-' && strlen(command) > 1) cmd = command[1];
+        
+        // Look up the command
+        switch (cmd) {
             case 'A':
             case 'a':   // ACTIVATE (DEFAULT) OR DEACTIVATE DISPLAY
                         // 1 parameter: on|off
