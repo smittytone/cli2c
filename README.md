@@ -274,7 +274,7 @@ Thanks are also due to Hermann Stamm-Wilbrandt ([@Hermann-SW](https://github.com
 
 ## Release Notes
 
-* 1.1.1 *Unreleased*
+* 1.1.1 *27 October 2022*
     * Internal changes.
 * 1.1.0 *22 October 2022*
     * Support I2C bus and pin selection.
