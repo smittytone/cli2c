@@ -83,7 +83,10 @@ The contents of this repo are:
 
 Under macOS, RP2040-based boards will appear in `/dev` as `cu.usbmodemXXXXX` or `cu.usbserialXXXXXX`. You can use my [`dlist()`](https://blog.smittytone.net/2022/09/08/how-to-manage-serial-devices-on-mac/) shell function to save looking up and keying in these names, which can vary across boots.
 
-Under Linux, specifically Raspberry Pi OS, boards appear as `/dev/ttyACM0`.
+Under Linux, specifically Raspberry Pi OS, boards appear as `/dev/ttyACM0`. You may need to add your user account to the group `dialout` in order to access the port:
+
+1. Run `sudo adduser smitty dialout`
+1. Log out and then back in again.
 
 ## cli2c
 
