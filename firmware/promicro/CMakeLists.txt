@@ -29,6 +29,13 @@ else()
         DEFAULT_I2C_BUS=1)
 endif()
 
+add_compile_definitions(
+    DEFAULT_SPI_BUS=1
+    DEFAULT_SPI_RX_PIN=20
+    DEFAULT_SPI_TX_PIN=23
+    DEFAULT_SPI_CS_PIN=21
+    DEFAULT_SPI_SCK_PIN=22)
+
 # NeoPixel
 add_compile_definitions(
     PIN_NEO_DATA=25
@@ -40,7 +47,10 @@ add_executable(${FW_3_NAME}
     ${FW_3_SRC_DIRECTORY}/main.c
     ${FW_3_SRC_DIRECTORY}/pins.c
     ${COMMON_CODE_DIRECTORY}/serial.c
-    ${COMMON_CODE_DIRECTORY}/led.c)
+    ${COMMON_CODE_DIRECTORY}/led.c
+    ${COMMON_CODE_DIRECTORY}/i2c.c
+    ${COMMON_CODE_DIRECTORY}/spi.c
+    ${COMMON_CODE_DIRECTORY}/gpio.c)
 
 # Compile debug segment LED sources
 if (DO_DEBUG)
@@ -54,6 +64,7 @@ target_compile_definitions(${FW_3_NAME} PRIVATE PICO_STACK_SIZE=4096)
 target_link_libraries(${FW_3_NAME} LINK_PUBLIC
     pico_stdlib
     hardware_i2c
+    hardware_spi
     hardware_pio)
 
 target_sources(${FW_3_NAME} PRIVATE ${FW_1_SRC_DIRECTORY}/ws2812.c)

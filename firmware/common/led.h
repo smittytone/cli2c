@@ -1,7 +1,7 @@
 /*
- * I2C Host Firmware - LED control middleware
+ * Bus Host Firmware - LED control middleware
  *
- * @version     1.1.1
+ * @version     2.0.0
  * @author      Tony Smith (@smittytone)
  * @copyright   2022
  * @licence     MIT

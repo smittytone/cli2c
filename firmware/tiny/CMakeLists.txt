@@ -35,6 +35,7 @@ endif()
 target_link_libraries(${FW_4_NAME} LINK_PUBLIC
     pico_stdlib
     hardware_i2c
+    hardware_spi
     hardware_pwm)
 
 # Enable/disable STDIO via USB and UART

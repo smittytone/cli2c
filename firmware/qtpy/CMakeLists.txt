@@ -54,6 +54,7 @@ endif()
 target_link_libraries(${FW_1_NAME} LINK_PUBLIC
     pico_stdlib
     hardware_i2c
+    hardware_spi
     hardware_pio)
 
 # Compile WS2828 sources

@@ -44,6 +44,7 @@ target_compile_definitions(${FW_5_NAME} PRIVATE PICO_STACK_SIZE=4096)
 target_link_libraries(${FW_5_NAME} LINK_PUBLIC
     pico_stdlib
     hardware_i2c
+    hardware_spi
     hardware_pio)
 
 target_sources(${FW_5_NAME} PRIVATE ${FW_1_SRC_DIRECTORY}/ws2812.c)
