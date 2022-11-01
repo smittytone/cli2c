@@ -1,4 +1,4 @@
-# cli2c 1.1.1
+# cli2c 1.2.0
 
 An I2C client for macOS and Linux. It is used as the basis for client apps to operate HT16K33-controlled matrix and segment LED displays.
 
@@ -277,6 +277,11 @@ Thanks are also due to Hermann Stamm-Wilbrandt ([@Hermann-SW](https://github.com
 
 ## Release Notes
 
+* 1.2.0 *Unreleased*
+    * Add host error record.
+    * Document GPIO usage.
+    * Refactor code to support future expansion.
+    * Deprecate old methods.
 * 1.1.1 *27 October 2022*
     * Internal changes.
 * 1.1.0 *22 October 2022*

@@ -1,7 +1,7 @@
 /*
- * Bus Host Firmware - SPI functions
+ * RP2040 Bus Host Firmware - SPI functions
  *
- * @version     2.0.0
+ * @version     1.2.0
  * @author      Tony Smith (@smittytone)
  * @copyright   2022
  * @licence     MIT
@@ -104,4 +104,23 @@ bool check_spi_pins(uint8_t* data) {
     if (!pin_check(pin_quads, data[5], 4)) return false;
 
     return true;
+}
+
+
+/**
+ * @brief Write out SPI state data.
+ *
+ * @param sps:    The SPI state record.
+ * @param output: A pointer to the string storage into which to write the info.
+ */
+void get_spi_state(SPI_State* sps, char* output) {
+
+    sprintf(output, "%s.%s.%i.%i.%i.%i.%i\r\n",
+        (sps->is_ready   ? "1" : "0"),          // 2 chars
+        (sps->bus == spi0 ? "0" : "1"),         // 2 chars
+        sps->rx_pin,                            // 2-3 chars
+        sps->tx_pin,                            // 2-3 chars
+        sps->cs_pin,                            // 2-3 chars
+        sps->sck_pin,                           // 2-3 chars
+        sps->baudrate);                         // 2-4 chars
 }

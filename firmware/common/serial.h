@@ -1,7 +1,7 @@
 /*
- * Bus Host Firmware - Primary serial and command functions
+ * RP2040 Bus Host Firmware - Primary serial and command functions
  *
- * @version     2.0.0
+ * @version     1.2.0
  * @author      Tony Smith (@smittytone)
  * @copyright   2022
  * @licence     MIT
@@ -30,6 +30,7 @@
 #include "i2c.h"
 #include "spi.h"
 #include "gpio.h"
+#include "errors.h"
 #ifdef DO_DEBUG
 #include "segment.h"
 #endif
@@ -56,7 +57,7 @@
 #define ACK                                     0x0F
 #define ERR                                     0xF0
 
-// FROM 2.0.0
+// FROM 1.2.0
 #define MODE_NONE                               0
 #define MODE_I2C                                1
 #define MODE_SPI                                2
@@ -67,6 +68,8 @@
 #define COLOUR_MODE_SPI                         0x100010
 #define COLOUR_MODE_UART                        0x001000
 #define COLOUR_MODE_ONE_WIRE                    0x102000
+
+#define ERROR_BUFFER_LENGTH_B                   129
 
 
 /*

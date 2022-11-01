@@ -1,7 +1,7 @@
 /*
- * Bus Host Firmware - GPIO functions
+ * RP2040 Bus Host Firmware - GPIO functions
  *
- * @version     2.0.0
+ * @version     1.2.0
  * @author      Tony Smith (@smittytone)
  * @copyright   2022
  * @licence     MIT
@@ -10,9 +10,15 @@
 #include "gpio.h"
 
 
-
-
-
+/**
+ * @brief Set a GPIO pin.
+ *
+ * @param gps:        The GPIO state record.
+ * @param read_value: Pointer to a byte into which to read the pin value, if read.
+ * @param data:       The command data.
+ * 
+ * @retval Whether the operation was successful (`true`) or not (`false`).
+ */
 bool set_gpio(GPIO_State* gps, uint8_t* read_value, uint8_t* data) {
 
     uint8_t gpio_pin = (data[1] & 0x1F);
@@ -23,7 +29,7 @@ bool set_gpio(GPIO_State* gps, uint8_t* read_value, uint8_t* data) {
     // TODO
     // Make sure the pin's not in use for active I2C and/or active SPI
 
-    // Register pin usage, state
+    // Register pin usage, state and initialise if necessary
     if (gps->state_map[gpio_pin] == 0x00) {
         gpio_init(gpio_pin);
         gpio_set_dir(gpio_pin, (is_dir_out ? GPIO_OUT : GPIO_IN));

@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.18)
 
 # Set project data
-set(PROJECT_NAME "I2C Host Firmware")
-set(FW_BUILD_NUMBER "40")
-set(FW_VERSION_NUMBER "2.0.0")
+set(PROJECT_NAME "Multi-bus Host Firmware")
+set(FW_BUILD_NUMBER "41")
+set(FW_VERSION_NUMBER "1.2.0")
 
 # Set app name(s) and version(s)
 set(FW_1_NAME "firmware_qtpy_rp2040")
@@ -65,5 +65,5 @@ pico_sdk_init()
 #add_subdirectory(${FW_1_SRC_DIRECTORY})
 add_subdirectory(${FW_2_SRC_DIRECTORY})
 add_subdirectory(${FW_3_SRC_DIRECTORY})
-#add_subdirectory(${FW_4_SRC_DIRECTORY})
+add_subdirectory(${FW_4_SRC_DIRECTORY})
 #add_subdirectory(${FW_5_SRC_DIRECTORY})

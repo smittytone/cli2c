@@ -1,7 +1,7 @@
 /*
- * Bus Host Firmware - Primary serial and command functions
+ * RP2040 Bus Host Firmware - Primary serial and command functions
  *
- * @version     2.0.0
+ * @version     1.2.0
  * @author      Tony Smith (@smittytone)
  * @copyright   2022
  * @licence     MIT
@@ -18,9 +18,10 @@ static void     send_status(I2C_State* itr);
 static void     send_ack(void);
 static void     send_err(void);
 static uint32_t rx(uint8_t *buffer);
-// FROM 2.0.0
+// FROM 1.2.0
 static uint8_t  get_mode(char mode_key);
 static void     send_host_status(uint8_t mode);
+static void     set_last_error(uint error_code, char* error_string);
 
 
 /**
@@ -47,7 +48,7 @@ void rx_loop(void) {
     GPIO_State gpio_state;
     memset(gpio_state.state_map, 0, 32);
 
-    // FROM 2.0.0 -- Prepare an SPI transaction record with default data
+    // FROM 1.2.0 -- Prepare an SPI transaction record with default data
     SPI_State spi_state;
     spi_state.is_ready = false;
     spi_state.is_started = false;
@@ -58,14 +59,20 @@ void rx_loop(void) {
     spi_state.cs_pin = DEFAULT_SPI_CS_PIN;                  // The SPI CS pin
     spi_state.sck_pin = DEFAULT_SPI_SCK_PIN;                // The SPI SCK pin
 
-    // FROM 2.0.0
+    // FROM 1.2.0
     // Default current mode to I2C, for backwards compatibility
     // NOTE Call the function so the LED colour is correctly set
-    uint8_t current_mode = get_mode('i');
+    uint8_t current_mode = MODE_I2C; //get_mode('i');
     void* bus_states[2] = {&i2c_state, &spi_state};
 
     // Heartbeat variables
     uint64_t last = time_us_64();
+
+    // FROM 1.2.0
+    // Last error string
+    char last_error[ERROR_BUFFER_LENGTH_B] = {0};
+    uint8_t last_error_code = GEN_NO_ERROR;
+    set_last_error(last_error_code, last_error);
 
 #ifdef DO_DEBUG
     // Set up a parallel segment display to assist
@@ -92,12 +99,13 @@ void rx_loop(void) {
             uint8_t* rx_ptr = rx_buffer;
             char cmd = (char)status_byte;
 
-            // FROM 2.0.0
+            // FROM 1.2.0
             // Look for the key and mode specifier bytes
             if (cmd == '#') {
                 // Make sure we have enough subsequent bytes
                 if (read_count < 3) {
                     send_err();
+                    last_error_code = GEN_TOO_FEW_KEY_BYTES;
                     continue;
                 }
 
@@ -122,30 +130,42 @@ void rx_loop(void) {
                         case MODE_I2C:
                             if (i2c_state.is_started) {
                                 i2c_state.write_byte_count = status_byte - WRITE_LENGTH_BASE + 1;
-                                bytes_sent = i2c_write_timeout_us(i2c_state.bus, i2c_state.address, &rx_buffer[1], i2c_state.write_byte_count, false, 1000);
+                                bytes_sent = i2c_write_timeout_us(i2c_state.bus, i2c_state.address, &rx_ptr[1], i2c_state.write_byte_count, false, 1000);
 
                                 // Send an ACK to say we wrote the data
-                                if (bytes_sent != PICO_ERROR_GENERIC && bytes_sent != PICO_ERROR_TIMEOUT) {
+                                if (bytes_sent < 0) {
+                                    send_err();
+                                    last_error_code = I2C_COULD_NOT_WRITE;
+                                } else {
                                     send_ack();
-                                    break;
                                 }
+                            } else {
+                                send_err();
+                                last_error_code = I2C_NOT_STARTED;
                             }
-                            send_err();
                             break;
                         case MODE_SPI:
-                            if (spi_state.is_started) {
+                            if (spi_state.is_ready) {
                                 spi_state.write_byte_count = status_byte - WRITE_LENGTH_BASE + 1;
                                 spi_state.read_byte_count = spi_state.write_byte_count;
                                 uint8_t rx_data[spi_state.read_byte_count];
-                                bytes_sent = spi_write_read_blocking(spi_state.bus, &rx_buffer[1], rx_data, spi_state.write_byte_count);
+                                bytes_sent = spi_write_read_blocking(spi_state.bus, &rx_ptr[1], rx_data, spi_state.write_byte_count);
 
                                 // Send back any read data -- or an ERR
-                                if (bytes_sent != PICO_ERROR_GENERIC && bytes_sent != PICO_ERROR_TIMEOUT) {
+                                if (bytes_sent < 0) {
+                                    send_err();
+                                    last_error_code = SPI_COULD_NOT_WRITE;
+                                } else {
                                     tx(rx_data, spi_state.read_byte_count);
                                     break;
                                 }
+                            } else {
+                                send_err();
+                                last_error_code = SPI_NOT_STARTED;
                             }
+                        default:
                             send_err();
+                            last_error_code = GEN_UNKNOWN_MODE;
                     }
                 } else {
                     switch(current_mode) {
@@ -157,20 +177,30 @@ void rx_loop(void) {
                                 int bytes_read = i2c_read_timeout_us(i2c_state.bus, i2c_state.address, i2x_rx_buffer, i2c_state.read_byte_count, false, 1000);
 
                                 // Return the read data
-                                if (bytes_read != PICO_ERROR_GENERIC) {
+                                if (bytes_read < 0) {
+                                    send_err();
+                                    last_error_code = I2C_COULD_NOT_READ;
+                                } else {
                                     tx(i2x_rx_buffer, i2c_state.read_byte_count);
-                                    send_ack();
+                                    //send_ack();
                                     break;
                                 }
+                            } else {
+                                send_err();
+                                last_error_code = I2C_NOT_STARTED;
                             }
-                            send_err();
                             break;
                         case MODE_SPI:
-                            if (spi_state.is_started) {
+                            if (spi_state.is_ready) {
 
 
+                            } else {
+                                send_err();
+                                last_error_code = SPI_NOT_STARTED;
                             }
+                        default:
                             send_err();
+                            last_error_code = GEN_UNKNOWN_MODE;
                     }
                 }
             } else {
@@ -188,7 +218,7 @@ void rx_loop(void) {
                         }
                         break;
 
-                        // FROM 2.0.0 -- remove z
+                        // FROM 1.2.0 -- remove z
                         // FROM 1.1.1 -- change command from z to !
                         case '!':   // RESPOND TO CONNECTION REQUEST
                             tx("OK\r\n", 4);
@@ -202,7 +232,14 @@ void rx_loop(void) {
                             send_ack();
 #else
                             send_err();
+                            last_error_code = GEN_LED_NOT_ENABLED;
 #endif
+                            break;
+
+                        // FROM 1.2.0
+                        case '$':   // RETURN LAST ERROR
+                            set_last_error(last_error_code, last_error);
+                            tx(last_error, strlen(last_error));
                             break;
 
                         /*
@@ -221,6 +258,7 @@ void rx_loop(void) {
                                 }
                                 // Send ACK or ERR on success or failure
                                 putchar(done ? ACK : ERR);
+                                if (!done) last_error_code = GEN_CANT_CONFIG_BUS;
                                 break;
                             }
 
@@ -251,6 +289,31 @@ void rx_loop(void) {
                             send_ack();
                             break;
 
+                        // FROM 2.0.0
+                        case 'q':   // GET BUS INFO
+                                    // APPLIES TO I2C, SPI
+                            {   
+                                char status_buffer[129] = {0};
+                                switch(current_mode) {
+                                    case MODE_I2C:
+                                        get_i2c_state(&i2c_state, status_buffer);
+                                        break;
+                                    case MODE_SPI:
+                                        get_spi_state(&spi_state, status_buffer);
+                                        break;
+                                }
+
+                                // Send the data if we can
+                                size_t length = strlen(status_buffer);
+                                if (length > 0) {
+                                    tx(status_buffer, length);
+                                } else {
+                                    send_err();
+                                    last_error_code = GEN_CANT_GET_BUS_INFO;
+                                }
+                                break;
+                            }
+                             
                         /*
                          * I2C-SPECIFIC COMMANDS
                          */
@@ -274,6 +337,7 @@ void rx_loop(void) {
                                 send_ack();
                             } else {
                                 send_err();
+                                last_error_code = I2C_ALREADY_STOPPED;
                             }
                             break;
 
@@ -282,6 +346,7 @@ void rx_loop(void) {
                                 send_ack();
                             } else {
                                 send_err();
+                                last_error_code = I2C_NOT_STARTED;
                             }
                             break;
 
@@ -298,6 +363,7 @@ void rx_loop(void) {
                                 uint8_t read_value = 0;
                                 if (!set_gpio(&gpio_state, &read_value, rx_ptr)) {
                                     send_err();
+                                    last_error_code = GPIO_CANT_SET_PIN;
                                     break;
                                 }
 
@@ -308,6 +374,7 @@ void rx_loop(void) {
 
                         default:    // UNKNOWN COMMAND -- FAIL
                             send_err();
+                            last_error_code = GEN_UNKNOWN_COMMAND;
                 }
             }
 
@@ -329,7 +396,6 @@ void rx_loop(void) {
 #endif
 
         // Pause? May not be necessary or might be bad
-        current_mode = MODE_NONE;
         sleep_ms(RX_LOOP_DELAY_MS);
     }
 
@@ -346,6 +412,8 @@ void rx_loop(void) {
  * @brief Scan the host's I2C bus for devices, and send the results.
  *
  * @param itr: A pointer to the current I2C transaction record.
+ * 
+ * @deprecated This function will be removed in a future release.
  */
 static void send_status(I2C_State* itr) {
 
@@ -412,6 +480,13 @@ static void send_host_status(uint8_t mode) {
     // Generate and return the status data string.
     // Data in the form:
     // "xxx.yyy.zzz.aaa.b.A0B1C2D3E4F5A6B7.RP-PI-PICO"
+    //                                     |___________ Model Name
+    //                    |____________________________ RP2040 ID
+    //                  |______________________________ Current Mode
+    //              |__________________________________ FW Build No.
+    //          |______________________________________ FW Version Patch
+    //      |__________________________________________ FW Version Minor
+    //  |______________________________________________ FW Version Major
     char status_buffer[256] = {0};
 
     sprintf(status_buffer, "%i.%i.%i.%i.%i.%s.%s\r\n",
@@ -517,6 +592,7 @@ void tx(uint8_t* buffer, uint32_t byte_count) {
 #endif
     }
 
+    // puts_raw((char*)buffer);
     stdio_flush();
 }
 
@@ -579,4 +655,17 @@ static uint8_t get_mode(char mode_key) {
 
     // Error condition
     return MODE_NONE;
+}
+
+
+/**
+ * @brief Clear the last error string and write in a new error.
+ *
+ * @param error_code:   The error ID.
+ * @param error_string: The last error string.  
+ */
+static void set_last_error(uint error_code, char* error_string) {
+
+    memset(error_string, 0x00, ERROR_BUFFER_LENGTH_B);
+    sprintf(error_string, "%i.%s\r\n", error_code, HOST_ERROR_STRINGS[error_code]);
 }

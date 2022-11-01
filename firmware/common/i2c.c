@@ -1,7 +1,7 @@
 /*
- * Bus Host Firmware - I2C functions
+ * RP2040 Bus Host Firmware - I2C functions
  *
- * @version     2.0.0
+ * @version     1.2.0
  * @author      Tony Smith (@smittytone)
  * @copyright   2022
  * @licence     MIT
@@ -116,7 +116,7 @@ void send_scan(I2C_State* its) {
     // Generate a list if devices by their addresses.
     // List in the form "13.71.A0."
     for (uint32_t i = 0 ; i < 0x78 ; ++i) {
-        reading = i2c_read_blocking(its->bus, i, &rx_data, 1, false);
+        reading = i2c_write_timeout_us(its->bus, i, &rx_data, 1, false, 1000);
         if (reading >= 0) {
             sprintf(scan_buffer + (device_count * 3), "%02X.", i);
             device_count++;
@@ -224,7 +224,7 @@ bool stop_i2c(I2C_State* its) {
  */
 void get_i2c_state(I2C_State* its, char* output) {
 
-    sprintf(output, "%s.%s.%s.%i.%i.%i.%i",
+    sprintf(output, "%s.%s.%s.%i.%i.%i.%i\r\n",
         (its->is_ready   ? "1" : "0"),          // 2 chars
         (its->is_started ? "1" : "0"),          // 2 chars
         (its->bus == i2c0 ? "0" : "1"),         // 2 chars

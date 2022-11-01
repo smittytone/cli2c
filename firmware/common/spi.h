@@ -1,7 +1,7 @@
 /*
- * Bus Host Firmware - SPI functions
+ * RP2040 Bus Host Firmware - SPI functions
  *
- * @version     2.0.0
+ * @version     1.2.0
  * @author      Tony Smith (@smittytone)
  * @copyright   2022
  * @licence     MIT
@@ -50,6 +50,6 @@ void    init_spi(SPI_State* spr);
 void    reset_spi(SPI_State* spr);
 bool    configure_spi(SPI_State* sps, uint8_t* data);
 bool    check_spi_pins(uint8_t* data);
-
+void    get_spi_state(SPI_State* sps, char* output);
 
 #endif  // _SPI_HEADER_

@@ -1,7 +1,7 @@
 /*
- * Bus Host Firmware - I2C functions
+ * RP2040 Bus Host Firmware - I2C functions
  *
- * @version     2.0.0
+ * @version     1.2.0
  * @author      Tony Smith (@smittytone)
  * @copyright   2022
  * @licence     MIT

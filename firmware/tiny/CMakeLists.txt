@@ -13,7 +13,12 @@ add_compile_definitions(
 add_compile_definitions(
     DEFAULT_SDA_PIN=6
     DEFAULT_SCL_PIN=7
-    DEFAULT_I2C_BUS=1)
+    DEFAULT_I2C_BUS=1
+    DEFAULT_SPI_BUS=0
+    DEFAULT_SPI_RX_PIN=0
+    DEFAULT_SPI_TX_PIN=3
+    DEFAULT_SPI_CS_PIN=1
+    DEFAULT_SPI_SCK_PIN=2)
 
 set(PICO_BOARD=pimoroni_tiny_2040)
 set(PICO_STDIO_USB_CONNECT_WAIT_TIMEOUT_MS=2000)
@@ -24,7 +29,10 @@ add_executable(${FW_4_NAME}
     ${FW_4_SRC_DIRECTORY}/tiny_led.c
     ${FW_4_SRC_DIRECTORY}/pins.c
     ${COMMON_CODE_DIRECTORY}/serial.c
-    ${COMMON_CODE_DIRECTORY}/led.c)
+    ${COMMON_CODE_DIRECTORY}/led.c
+    ${COMMON_CODE_DIRECTORY}/i2c.c
+    ${COMMON_CODE_DIRECTORY}/spi.c
+    ${COMMON_CODE_DIRECTORY}/gpio.c)
 
 # Compile debug segment LED sources
 if (DO_DEBUG)
