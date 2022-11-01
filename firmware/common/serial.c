@@ -361,6 +361,14 @@ void rx_loop(void) {
                                     // APPLIES TO NO/ALL BUSES
                             {
                                 uint8_t read_value = 0;
+                                uint8_t gpio_pin = (rx_ptr[1] & 0x1F);
+                                if (i2c_is_pin_in_use(&i2c_state, gpio_pin) ||
+                                    spi_is_pin_in_use(&spi_state, gpio_pin)) {
+                                    send_err();
+                                    last_error_code = GPIO_CANT_SET_PIN;
+                                    break;
+                                }
+
                                 if (!set_gpio(&gpio_state, &read_value, rx_ptr)) {
                                     send_err();
                                     last_error_code = GPIO_CANT_SET_PIN;

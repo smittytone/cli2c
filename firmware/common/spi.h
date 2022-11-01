@@ -51,5 +51,7 @@ void    reset_spi(SPI_State* spr);
 bool    configure_spi(SPI_State* sps, uint8_t* data);
 bool    check_spi_pins(uint8_t* data);
 void    get_spi_state(SPI_State* sps, char* output);
+bool    spi_is_pin_in_use(SPI_State* sps, uint8_t pin);
+
 
 #endif  // _SPI_HEADER_

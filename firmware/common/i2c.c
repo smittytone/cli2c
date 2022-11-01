@@ -233,3 +233,17 @@ void get_i2c_state(I2C_State* its, char* output) {
         its->frequency,                         // 2 chars
         its->address);                          // 2-4 chars
 }
+
+
+/**
+ * @brief Check pin usage.
+ *
+ * @param its: The I2C state record.
+ * @param pin: An arbitrary GPIO pin that we're checking.
+ * 
+ * @retval `true` if the pin is in use by the bus, or `false`.
+ */
+bool i2c_is_pin_in_use(I2C_State* its, uint8_t pin) {
+
+    return (pin == its->sda_pin || pin == its->scl_pin);
+}

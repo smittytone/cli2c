@@ -124,3 +124,20 @@ void get_spi_state(SPI_State* sps, char* output) {
         sps->sck_pin,                           // 2-3 chars
         sps->baudrate);                         // 2-4 chars
 }
+
+
+/**
+ * @brief Check pin usage.
+ *
+ * @param sps: The SPI state record.
+ * @param pin: An arbitrary GPIO pin that we're checking.
+ * 
+ * @retval `true` if the pin is in use by the bus, or `false`.
+ */
+bool spi_is_pin_in_use(SPI_State* sps, uint8_t pin) {
+
+    return (pin == sps->rx_pin || 
+            pin == sps->tx_pin ||
+            pin == sps->cs_pin ||
+            pin == sps->sck_pin);
+}

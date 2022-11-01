@@ -57,6 +57,7 @@ bool    start_i2c(I2C_State* its, uint8_t* data);
 bool    stop_i2c(I2C_State* its);
 
 void    get_i2c_state(I2C_State* its, char* output);
+bool    i2c_is_pin_in_use(I2C_State* its, uint8_t pin);
 
 
 #endif  // _I2C_HEADER_
