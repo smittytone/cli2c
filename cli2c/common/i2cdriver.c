@@ -1,7 +1,7 @@
 /*
  * Generic macOS I2C driver
  *
- * Version 1.1.1
+ * Version 1.2.0
  * Copyright © 2022, Tony Smith (@smittytone)
  * Licence: MIT
  *
@@ -78,7 +78,7 @@ static int openSerialPort(const char *device_file) {
     speed_t speed = (speed_t)115200;
 #ifndef BUILD_FOR_LINUX
     if (ioctl(fd, IOSSIOSPEED, &speed) == -1) {
-        print_error("Could not set port speed to 115200bps - %s (%d)", strerror(errno), errno);
+        print_error("Could not set port speed to %ibps - %s (%d)", speed, strerror(errno), errno);
         goto error;
     }
 #else
@@ -259,14 +259,36 @@ void i2c_connect(I2CDriver *sd, const char* portname) {
  * @retval The op was ACK'd (1) or not (0).
  */
 static bool i2c_ack(I2CDriver *sd) {
-
+    
+    // FROM 1.2.0 -- Get error from host
     uint8_t read_buffer[1] = {0};
     if (readFromSerialPort(sd->port, read_buffer, 1) != 1) {
         // print_error("Last action not ACK’d by device");
         return false;
     }
     
-    return ((read_buffer[0] & ACK) == ACK);
+    bool rv = ((read_buffer[0] & ACK) == ACK);
+    if (!rv) {
+        uint8_t err_buffer[64] = {0};
+        send_command(sd, '$');
+        size_t result = readFromSerialPort(sd->port, err_buffer, 0);
+        
+        if (result > 0) {
+#ifdef DEBUG
+            fprintf(stderr, "Received raw error string: %s\n", err_buffer);
+#endif
+            // Read back an error record. Extract the fields and print it
+            int err_code = 0;
+            //char err_msg[64] = {0};
+            
+            sscanf((char*)err_buffer, "%i",
+                &err_code);
+            
+            fprintf(stderr, "Host reported error: %i\n", err_code);
+        }
+    }
+    
+    return rv;
 }
 
 
@@ -277,7 +299,8 @@ static bool i2c_ack(I2CDriver *sd) {
  * @param do_print: Should we output the results?
  */
 static void i2c_get_info(I2CDriver *sd, bool do_print) {
-
+    
+    // FROM 1.2.0 -- Use the new command mode and request I2C info separately
     uint8_t read_buffer[HOST_INFO_BUFFER_MAX_B] = {0};
     send_command(sd, '?');
     size_t result = readFromSerialPort(sd->port, read_buffer, 0);
@@ -287,11 +310,12 @@ static void i2c_get_info(I2CDriver *sd, bool do_print) {
     }
 
 #ifdef DEBUG
-    fprintf(stderr, "Received raw info string: %s\n", read_buffer);
+    fprintf(stderr, "Received raw host info string: %s\n", read_buffer);
 #endif
 
     // Data string is, for example,
-    // "1.1.100.110.1.1.0.200.A1B23C4D5E6F0A1B.QTPY-RP2040"
+    // FROM 1.0.0: "1.1.100.110.1.1.0.200.A1B23C4D5E6F0A1B.QTPY-RP2040"
+    // FROM 1.2.0: "1.2.0.41.1.DF6050A04B310F39.PIMORONI-TINY"
     int is_ready = 0;
     int has_started = 0;
     int frequency = 100;
@@ -300,6 +324,7 @@ static void i2c_get_info(I2CDriver *sd, bool do_print) {
     int minor = 0;
     int patch = 0;
     int build = 0;
+    int mode = 0;
     int bus = 0;
     int sda_pin = -1;
     int scl_pin = -1;
@@ -308,21 +333,40 @@ static void i2c_get_info(I2CDriver *sd, bool do_print) {
     char pid[17] = {0};
 
     // Extract the data
-    sscanf((char*)read_buffer, "%i.%i.%i.%i.%i.%i.%i.%i.%i.%i.%i.%s",
+    sscanf((char*)read_buffer, "%i.%i.%i.%i.%i.%s",
+        &major,
+        &minor,
+        &patch,
+        &build,
+        &mode,
+        string_data
+    );
+
+    memset(read_buffer, 0x00, HOST_INFO_BUFFER_MAX_B - 1);
+    send_command(sd, 'q');
+    result = readFromSerialPort(sd->port, read_buffer, 0);
+    if (result == -1) {
+        print_error("Could not read information from device");
+        return;
+    }
+
+#ifdef DEBUG
+    fprintf(stderr, "Received raw I2C info string: %s\n", read_buffer);
+#endif
+    
+    // Extract the data
+    // String format
+    // FROM 1.2.0: "1.1.100.110"
+    sscanf((char*)read_buffer, "%i.%i.%i.%i.%i.%i.%i",
         &is_ready,
         &has_started,
         &bus,
         &sda_pin,
         &scl_pin,
         &frequency,
-        &address,
-        &major,
-        &minor,
-        &patch,
-        &build,
-        string_data
+        &address
     );
-
+    
     // Store certain values in the I2C driver record
     // NOTE This involves separately extracting the substrings
     //      from the read `string_data` as sscanf() doesn't
@@ -332,9 +376,16 @@ static void i2c_get_info(I2CDriver *sd, bool do_print) {
     sd->speed = frequency;
 
     if (do_print) {
-        fprintf(stderr, "   I2C host device: %s\n", model);
-        fprintf(stderr, "  I2C host version: %i.%i.%i (%i)\n", major, minor, patch, build);
-        fprintf(stderr, "       I2C host ID: %s\n", pid);
+        // Host data
+        fprintf(stderr, "   Bus host device: %s\n", model);
+        fprintf(stderr, "  Bus host version: %i.%i.%i (%i)\n", major, minor, patch, build);
+        fprintf(stderr, "       Bus host ID: %s\n", pid);
+        
+        // Display the bus mode
+        char* modes[5] = { "NONE", "I2C", "SPI", "UART", "1-WIRE"};
+        fprintf(stderr, "     Bus host mode: %s\n", modes[mode]);
+        
+        // I2C data
         fprintf(stderr, "     Using I2C bus: %s\n", bus == 0 ? "i2c0" : "i2c1");
         fprintf(stderr, " I2C bus frequency: %ikHz\n", frequency);
         fprintf(stderr, " Pins used for I2C: GP%i (SDA), GP%i (SCL)\n", sda_pin, scl_pin);
@@ -347,7 +398,6 @@ static void i2c_get_info(I2CDriver *sd, bool do_print) {
         } else {
             fprintf(stderr, "Target I2C address: 0x%02X\n", address > 1);
         }
-
     }
 }
 
@@ -475,7 +525,9 @@ static bool i2c_set_speed(I2CDriver *sd, long speed) {
 static bool i2c_set_bus(I2CDriver *sd, uint8_t bus_id, uint8_t sda_pin, uint8_t scl_pin) {
     
     if (bus_id < 0 || bus_id > 1) return false;
-    uint8_t set_bus_data[4] = {'c', (bus_id & 0x01), sda_pin, scl_pin};
+    
+    // FROM 1.2.0 -- Update to use the new I2C mode selection key
+    uint8_t set_bus_data[6] = {'#', 'i', 'c', (bus_id & 0x01), sda_pin, scl_pin};
     writeToSerialPort(sd->port, set_bus_data, sizeof(set_bus_data));
     return i2c_ack(sd);
 }
@@ -507,7 +559,8 @@ static bool i2c_reset(I2CDriver *sd) {
 bool i2c_start(I2CDriver *sd, uint8_t address, uint8_t op) {
 
     // This is a two-byte command: command + (address | op)
-    uint8_t start_data[2] = {'s', ((address << 1) | op)};
+    // FROM 1.2.0 -- Update to use the new I2C mode selection key
+    uint8_t start_data[4] = {'#', 'i', 's', ((address << 1) | op)};
     writeToSerialPort(sd->port, start_data, sizeof(start_data));
     return i2c_ack(sd);
 }
@@ -600,7 +653,8 @@ void i2c_read(I2CDriver *sd, uint8_t bytes[], size_t byte_count) {
  */
 static bool gpio_set_pin(I2CDriver *sd, uint8_t pin) {
     
-    uint8_t set_pin_data[2] = {'g', pin};
+    // FROM 1.2.0 -- Update to use the new I2C mode selection key
+    uint8_t set_pin_data[4] = {'#', 'i', 'g', pin};
     writeToSerialPort(sd->port, set_pin_data, sizeof(set_pin_data));
     return i2c_ack(sd);
 }
@@ -616,7 +670,8 @@ static bool gpio_set_pin(I2CDriver *sd, uint8_t pin) {
  */
 static uint8_t gpio_get_pin(I2CDriver *sd, uint8_t pin) {
     
-    uint8_t set_pin_data[2] = {'g', pin};
+    // FROM 1.2.0 -- Update to use the new I2C mode selection key
+    uint8_t set_pin_data[4] = {'#', 'i', 'g', pin};
     writeToSerialPort(sd->port, set_pin_data, sizeof(set_pin_data));
     uint8_t pin_read = 0;
     i2c_read(sd, &pin_read, 1);
@@ -628,7 +683,8 @@ static uint8_t gpio_get_pin(I2CDriver *sd, uint8_t pin) {
 
 static bool board_set_led(I2CDriver *sd, bool is_on) {
     
-    uint8_t set_led_data[2] = {'*', (is_on ? 1 : 0)};
+    // FROM 1.2.0 -- Update to use the new I2C mode selection key
+    uint8_t set_led_data[4] = {'#', 'i', '*', (is_on ? 1 : 0)};
     writeToSerialPort(sd->port, set_led_data, sizeof(set_led_data));
     return i2c_ack(sd);
 }
@@ -641,8 +697,11 @@ static bool board_set_led(I2CDriver *sd, bool is_on) {
  * @param c:  A command character.
  */
 static void send_command(I2CDriver* sd, char c) {
-
-    writeToSerialPort(sd->port, (uint8_t*)&c, 1);
+    
+    // FROM 1.2.0 -- Update to use the new I2C mode selection key
+    char data[3] = "#i";
+    data[2] = c;
+    writeToSerialPort(sd->port, (uint8_t*)data, 3);
 }
 
 
@@ -906,9 +965,11 @@ int process_commands(I2CDriver *sd, int argc, char *argv[], uint32_t delta) {
                             size_t num_bytes = strtol(token, NULL, 0);
                             uint8_t bytes[8192];
 
-                            i2c_start(sd, address, 1);
-                            i2c_read(sd, bytes, num_bytes);
-                            i2c_stop(sd);
+                            bool ackd = i2c_start(sd, address, 1);
+                            if (ackd) {
+                                i2c_read(sd, bytes, num_bytes);
+                                i2c_stop(sd);
+                            }
                             break;
                         } else {
                             print_error("No I2C address given");
@@ -951,8 +1012,8 @@ int process_commands(I2CDriver *sd, int argc, char *argv[], uint32_t delta) {
                                 endptr++;
                             }
 
-                            i2c_start(sd, (uint8_t)address, 0);
-                            i2c_write(sd, bytes, num_bytes);
+                            bool ackd = i2c_start(sd, (uint8_t)address, 0);
+                            if (ackd) i2c_write(sd, bytes, num_bytes);
                             break;
                         } else {
                             print_error("No I2C address given");

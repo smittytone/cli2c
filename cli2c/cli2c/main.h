@@ -1,7 +1,7 @@
 /*
  * Generic macOS I2C driver
  *
- * Version 1.1.1
+ * Version 1.2.0
  * Copyright © 2022, Tony Smith (@smittytone)
  * Licence: MIT
  *

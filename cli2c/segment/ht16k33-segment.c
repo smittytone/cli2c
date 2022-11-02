@@ -1,7 +1,7 @@
 /*
  * HT16K33 4-digit, 7-segment driver
  *
- * Version 1.1.1
+ * Version 1.2.0
  * Copyright © 2022, Tony Smith (@smittytone)
  * Licence: MIT
  *
@@ -12,7 +12,7 @@
 /*
  * STATIC PROTOYPYES
  */
-static uint32_t bcd(uint32_t base);
+static uint32_t HT16K33_bcd(uint32_t base);
 static void     HT16K33_sleep_ms(int ms);
 static void     HT16K33_write_cmd(uint8_t cmd);
 
@@ -212,7 +212,7 @@ void HT16K33_show_value(int value, bool decimal) {
     if (is_neg) value *= -1;
 
     // Convert the value to BCD...
-    uint16_t bcd_val = bcd(value);
+    uint16_t bcd_val = HT16K33_bcd(value);
 
     if (is_neg) {
         HT16K33_set_glyph(0x40, 0, false);
@@ -254,7 +254,7 @@ void HT16K33_set_colon(void) {
  *
  * @retval The BCD form of the value.
  */
-static uint32_t bcd(uint32_t base) {
+static uint32_t HT16K33_bcd(uint32_t base) {
 
     if (base > 9999) base = 9999;
     for (uint32_t i = 0 ; i < 16 ; ++i) {
@@ -297,7 +297,9 @@ static void HT16K33_sleep_ms(int ms) {
 static void HT16K33_write_cmd(uint8_t cmd) {
 
     // NOTE Already connected at this stage
-    i2c_start(host_i2c, i2c_address, 0);
-    i2c_write(host_i2c, &cmd, 1);
-    i2c_stop(host_i2c);
+    bool ackd = i2c_start(host_i2c, i2c_address, 0);
+    if (ackd) {
+        ackd = i2c_write(host_i2c, &cmd, 1);
+        ackd = i2c_stop(host_i2c);
+    }
 }

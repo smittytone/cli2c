@@ -1,7 +1,7 @@
 /*
  * Generic macOS I2C driver
  *
- * Version 1.1.1
+ * Version 1.2.0
  * Copyright © 2022, Tony Smith (@smittytone)
  * Licence: MIT
  *
@@ -52,6 +52,13 @@
 
 #define ACK                             0x0F
 #define ERR                             0xF0
+
+// FROM 1.2.0
+#define MODE_NONE                       0
+#define MODE_I2C                        1
+#define MODE_SPI                        2
+#define MODE_UART                       3
+#define MODE_ONE_WIRE                   4
 
 
 /*

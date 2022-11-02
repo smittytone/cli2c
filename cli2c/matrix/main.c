@@ -1,7 +1,7 @@
 /*
  * I2C driver for an HT16K33 8x8 Matrix Display
  *
- * Version 1.1.1
+ * Version 1.2.0
  * Copyright © 2022, Tony Smith (@smittytone)
  * Licence: MIT
  *
@@ -14,6 +14,7 @@
  */
 static int  matrix_commands(I2CDriver* sd, int argc, char* argv[], int delta);
 static void show_help(void);
+static void show_version(void);
 
 
 /*
@@ -42,6 +43,13 @@ int main(int argc, char* argv[]) {
                 strcasecmp(argv[i], "-h") == 0 ||
                 strcasecmp(argv[i], "--help") == 0) {
                 show_help();
+                return EXIT_OK;
+            }
+            
+            if (strcasecmp(argv[i], "v") == 0 ||
+                strcasecmp(argv[i], "--version") == 0 ||
+                strcasecmp(argv[i], "-v") == 0) {
+                show_version();
                 return EXIT_OK;
             }
         }
@@ -380,4 +388,14 @@ static void show_help() {
     fprintf(stderr, "                         delay be between column shifts in milliseconds. Default: 250ms.\n");
     fprintf(stderr, "  w                      Wipe (clear) the display.\n");
     fprintf(stderr, "  h                      Help information.\n\n");
+}
+
+
+/**
+ * @brief Show app version.
+ */
+static void show_version() {
+    
+    fprintf(stderr, "matrix %s\n", APP_VERSION);
+    fprintf(stderr, "Copyright © 2022, Tony Smith.\n");
 }

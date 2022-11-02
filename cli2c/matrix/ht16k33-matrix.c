@@ -1,7 +1,7 @@
 /*
  * HT16K33 8x8 matrix driver
  *
- * Version 1.1.1
+ * Version 1.2.0
  * Copyright © 2022, Tony Smith (@smittytone)
  * Licence: MIT
  *
@@ -246,6 +246,12 @@ void HT16K33_plot(uint8_t x, uint8_t y, bool is_set) {
 }
 
 
+/**
+ *  @brief Set an alphanumeric character on the display.
+ *
+ *  @param ascii:      The character's Ascii code.
+ *  @param is_centred: Whether to centre the character on the display.
+ */
 void HT16K33_set_char(uint8_t ascii, bool is_centred) {
 
     uint8_t delta = 0;
@@ -260,6 +266,13 @@ void HT16K33_set_char(uint8_t ascii, bool is_centred) {
 }
 
 
+/**
+ *  @brief Set an user-defined character on the display.
+ *
+ *  @param bytes: A pointer to an array of 8 bytes defining the glyph.
+ *                Each byte is a column of image pixels, one bix per pixel,
+ *                with bit zero at the bottom.
+ */
 void HT16K33_set_glyph(uint8_t* bytes) {
 
     for (uint8_t i = 0 ; i < 8 ; ++i) {
@@ -390,7 +403,9 @@ static void HT16K33_sleep_ms(int ms) {
 static void HT16K33_write_cmd(uint8_t cmd) {
 
     // NOTE Already connected at this stage
-    i2c_start(host_i2c, i2c_address, 0);
-    i2c_write(host_i2c, &cmd, 1);
-    i2c_stop(host_i2c);
+    bool ackd = i2c_start(host_i2c, i2c_address, 0);
+    if (ackd) {
+        ackd = i2c_write(host_i2c, &cmd, 1);
+        ackd = i2c_stop(host_i2c);
+    }
 }

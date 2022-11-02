@@ -1,7 +1,7 @@
 /*
  * Generic macOS I2C driver
  *
- * Version 1.1.1
+ * Version 1.2.0
  * Copyright © 2022, Tony Smith (@smittytone)
  * Licence: MIT
  *
@@ -97,6 +97,6 @@ static void show_help() {
  */
 static void show_version() {
     
-    fprintf(stderr, "cli2c 1.1.1\n");
+    fprintf(stderr, "cli2c %s\n", APP_VERSION);
     fprintf(stderr, "Copyright © 2022, Tony Smith.\n");
 }
