@@ -62,8 +62,8 @@ pico_sdk_init()
 
 # Include the apps' source code
 # Comment out any that you don't require (speeds build time)
-#add_subdirectory(${FW_1_SRC_DIRECTORY})
-add_subdirectory(${FW_2_SRC_DIRECTORY})
-add_subdirectory(${FW_3_SRC_DIRECTORY})
-add_subdirectory(${FW_4_SRC_DIRECTORY})
-#add_subdirectory(${FW_5_SRC_DIRECTORY})
+add_subdirectory(${FW_1_SRC_DIRECTORY}) # QTPy
+add_subdirectory(${FW_2_SRC_DIRECTORY}) # Pico
+add_subdirectory(${FW_3_SRC_DIRECTORY}) # ProMicro
+add_subdirectory(${FW_4_SRC_DIRECTORY}) # Tiny
+add_subdirectory(${FW_5_SRC_DIRECTORY}) # Trinkey

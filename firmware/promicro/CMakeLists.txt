@@ -12,7 +12,7 @@ add_compile_definitions(
     NEO_BUILD=1
     HW_MODEL="SF-PRO-MICRO")
 
-# Set the device's I2C pins
+# I2C
 # These are for the board pins 5 (GPIO 2) and 6 (GPIO 3)
 # You can set these to other I2C pins but make sure
 # you select pins on I2C1
@@ -29,6 +29,7 @@ else()
         DEFAULT_I2C_BUS=1)
 endif()
 
+# SPI
 add_compile_definitions(
     DEFAULT_SPI_BUS=1
     DEFAULT_SPI_RX_PIN=20

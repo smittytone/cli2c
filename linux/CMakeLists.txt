@@ -26,9 +26,11 @@ include_directories(
 # Name the project
 project(${PROJECT_NAME}
         LANGUAGES C
-        VERSION 1.1.0
+        VERSION 1.2.0
         DESCRIPTION "Command line I2C access"
         HOMEPAGE_URL https://smittytone.net/cli2c)
+
+add_compile_definitions(APP_VERSION="1.2.0")
 
 # Include app source code file(s)
 add_executable(cli2c

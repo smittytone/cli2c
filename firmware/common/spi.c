@@ -24,6 +24,9 @@ extern uint8_t SPI_PIN_QUADS_BUS_1[];
  */
 void init_spi(SPI_State* sps) {
 
+    // Is SPI available? It isn't on some boards
+    if (sps->baudrate == 0) return;
+    
     // Initialise SPI via SDK
     spi_init(sps->bus, sps->baudrate * 1000);
 
@@ -141,3 +144,4 @@ bool spi_is_pin_in_use(SPI_State* sps, uint8_t pin) {
             pin == sps->cs_pin ||
             pin == sps->sck_pin);
 }
+

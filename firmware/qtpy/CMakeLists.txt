@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.18)
 
 # Uncomment the following line to use the STEMMA
-#set(USE_STEMMA 1)
+set(USE_STEMMA 1)
 
 # Make project data accessible to compiler
 # IMPORTANT `HW_MODEL` must be no more than 24 characters
@@ -12,22 +12,30 @@ add_compile_definitions(
     NEO_BUILD=1
     HW_MODEL="ADA-QTPY-RP2040")
 
-# Set the device's I2C pins
+# I2C
 # These are for the board pins A2 (SCL) and A3 (SDA)
 # NOT SDA and SCL. This is to ensure comptatibility with
 # the STEMMA port -- both A2,A3,STEMMA all used i2c1.
 if (USE_STEMMA)
     add_compile_definitions(
-        DEFAULT_SDA_PIN=26
-        DEFAULT_SCL_PIN=27
+        DEFAULT_SDA_PIN=22
+        DEFAULT_SCL_PIN=23
         DEFAULT_I2C_BUS=1)
     unset(USE_STEMMA)
 else()
     add_compile_definitions(
-        DEFAULT_SDA_PIN=22
-        DEFAULT_SCL_PIN=23
-        DEFAULT_I2C_BUS=1)
+        DEFAULT_SDA_PIN=28
+        DEFAULT_SCL_PIN=29
+        DEFAULT_I2C_BUS=0)
 endif()
+
+# SPI
+add_compile_definitions(
+    DEFAULT_SPI_BUS=1
+    DEFAULT_SPI_RX_PIN=4
+    DEFAULT_SPI_TX_PIN=7
+    DEFAULT_SPI_CS_PIN=5
+    DEFAULT_SPI_SCK_PIN=6)
 
 # NeoPixel
 add_compile_definitions(
@@ -43,7 +51,10 @@ add_executable(${FW_1_NAME}
     ${FW_1_SRC_DIRECTORY}/main.c
     ${FW_1_SRC_DIRECTORY}/pins.c
     ${COMMON_CODE_DIRECTORY}/serial.c
-    ${COMMON_CODE_DIRECTORY}/led.c)
+    ${COMMON_CODE_DIRECTORY}/led.c
+    ${COMMON_CODE_DIRECTORY}/i2c.c
+    ${COMMON_CODE_DIRECTORY}/spi.c
+    ${COMMON_CODE_DIRECTORY}/gpio.c)
 
 # Compile debug segment LED sources
 if (DO_DEBUG)

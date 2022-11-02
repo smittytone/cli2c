@@ -9,7 +9,7 @@ add_compile_definitions(
     LED_BUILD=1
     HW_MODEL="RP-PI-PICO")
 
-# Set the device's I2C pins
+# Set the device's I2C, SPI pins
 # These are for the board pins 4 (GPIO 2) and 5 (GPIO 3)
 # You can set these to other I2C pins but make sure
 # you select pins on I2C1

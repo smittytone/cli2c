@@ -192,7 +192,7 @@ bool start_i2c(I2C_State* its, uint8_t* data) {
 /**
  * @brief Stop an I2C transaction.
  *
- * @param its:  The I2C state record.
+ * @param its: The I2C state record.
  *
  * @retval Whether the op succeeded (`true`) or failed (`false`).
  */

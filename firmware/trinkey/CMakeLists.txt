@@ -1,8 +1,5 @@
 cmake_minimum_required(VERSION 3.18)
 
-# Uncomment the following line to use the STEMMA
-set(USE_STEMMA 1)
-
 # Make project data accessible to compiler
 # IMPORTANT `HW_MODEL` must be no more than 24 characters
 add_compile_definitions(
@@ -12,17 +9,22 @@ add_compile_definitions(
     NEO_BUILD=1
     HW_MODEL="ADA-TRINKEY-2040")
 
-# Set the device's I2C pins
+# I2C
 # These are for the board pins 5 (GPIO 2) and 6 (GPIO 3)
 # You can set these to other I2C pins but make sure
 # you select pins on I2C1
-if (USE_STEMMA)
-    add_compile_definitions(
-        DEFAULT_SDA_PIN=16
-        DEFAULT_SCL_PIN=17
-        DEFAULT_I2C_BUS=0)
-    unset(USE_STEMMA)
-endif()
+add_compile_definitions(
+    DEFAULT_SDA_PIN=16
+    DEFAULT_SCL_PIN=17
+    DEFAULT_I2C_BUS=0)
+
+# SPI
+add_compile_definitions(
+    DEFAULT_SPI_BUS=99
+    DEFAULT_SPI_RX_PIN=99
+    DEFAULT_SPI_TX_PIN=99
+    DEFAULT_SPI_CS_PIN=99
+    DEFAULT_SPI_SCK_PIN=99)
 
 # NeoPixel
 add_compile_definitions(
@@ -35,7 +37,10 @@ add_executable(${FW_5_NAME}
     ${FW_5_SRC_DIRECTORY}/main.c
     ${FW_5_SRC_DIRECTORY}/pins.c
     ${COMMON_CODE_DIRECTORY}/serial.c
-    ${COMMON_CODE_DIRECTORY}/led.c)
+    ${COMMON_CODE_DIRECTORY}/led.c    
+    ${COMMON_CODE_DIRECTORY}/i2c.c
+    ${COMMON_CODE_DIRECTORY}/spi.c
+    ${COMMON_CODE_DIRECTORY}/gpio.c)
 
 # Set the stack size
 target_compile_definitions(${FW_5_NAME} PRIVATE PICO_STACK_SIZE=4096)

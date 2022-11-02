@@ -9,12 +9,18 @@
  */
 #include <stdint.h>
 
-uint8_t PIN_PAIRS_BUS_0[] = {   4, 5,
-                                24, 25,
-                                28, 29,
-                                255, 255};
+uint8_t I2C_PIN_PAIRS_BUS_0[] = {   4, 5,
+                                    24, 25,
+                                    28, 29,
+                                    255, 255};
 
-uint8_t PIN_PAIRS_BUS_1[] = {   6, 3,
-                                22, 23,
-                                26, 27,
-                                255, 255};
+uint8_t I2C_PIN_PAIRS_BUS_1[] = {   6, 3,
+                                    22, 23,
+                                    26, 27,
+                                    255, 255};
+
+uint8_t SPI_PIN_QUADS_BUS_0[] = {   4,   7,   5,   6,
+                                    255, 255, 255, 255};
+
+uint8_t SPI_PIN_QUADS_BUS_1[] = {   28,  27,  29,  26,
+                                    255, 255, 255, 255};

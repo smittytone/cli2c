@@ -27,6 +27,7 @@ enum HOST_ERRORS {
     SPI_NOT_STARTED             = 40,
     SPI_COULD_NOT_WRITE         = 41,
     SPI_COULD_NOT_READ          = 42,
+    SPI_UNAVAILABLE_ON_BOARD    = 43,
     GPIO_CANT_SET_PIN           = 60,
 };
 
@@ -37,5 +38,6 @@ static const char* HOST_ERROR_STRINGS[] = {
     "Unknown mode (I2C, SPI, etc.)",
     "Unknown command"
 };
+
 
 #endif  // _ERRORS_HEADER_
