@@ -46,9 +46,7 @@
 #define EXIT_OK                         0
 #define EXIT_ERR                        1
 
-#define HOST_INFO_BUFFER_MAX_B          129
 #define CONNECTED_DEVICES_MAX_B         120
-#define SCAN_BUFFER_MAX_B               512
 
 #define ACK                             0x0F
 #define ERR                             0xF0
@@ -59,6 +57,14 @@
 #define MODE_SPI                        2
 #define MODE_UART                       3
 #define MODE_ONE_WIRE                   4
+
+#define HOST_RX_OK_MESSAGE_B            4
+#define HOST_RX_ACK_OR_ERR_B            1
+#define HOST_RX_HOST_INFO_B             64
+#define HOST_RX_SCAN_RESULTS_B          512
+#define HOST_RX_ERR_CODE_B              5
+
+#define INTRA_COMMAND_PAUSE_MS          0.010
 
 
 /*

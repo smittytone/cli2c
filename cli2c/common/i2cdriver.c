@@ -25,6 +25,8 @@ static bool     i2c_reset(I2CDriver *sd);
 static void     i2c_get_info(I2CDriver *sd, bool do_print);
 static bool     gpio_set_pin(I2CDriver *sd, uint8_t pin);
 static uint8_t  gpio_get_pin(I2CDriver *sd, uint8_t pin);
+// FROM 1.2.0
+static void     get_and_show_last_error(I2CDriver *sd);
 
 
 #pragma mark - Globals
@@ -36,7 +38,7 @@ static struct termios original_settings;
 #pragma mark - Serial Port Control Functions
 
 /**
- * @brief Open a Mac serial port.
+ * @brief Open a Mac/Linux serial port.
  *`
  * @param device_file: The target port file, eg. `/dev/cu.usb-modem-10100`
  *
@@ -237,7 +239,7 @@ void i2c_connect(I2CDriver *sd, const char* portname) {
     // Perform a basic communications check
     // FROM 1.1.1 -- use ! in place of z (internal change)
     send_command(sd, '!');
-    uint8_t rx[4] = {0};
+    uint8_t rx[HOST_RX_OK_MESSAGE_B] = {0};
     size_t result = readFromSerialPort(sd->port, rx, 4);
     if (result == -1 || ((rx[0] != 'O') && (rx[1] != 'K'))) {
         print_error("Could not read from device");
@@ -261,34 +263,15 @@ void i2c_connect(I2CDriver *sd, const char* portname) {
 static bool i2c_ack(I2CDriver *sd) {
     
     // FROM 1.2.0 -- Get error from host
-    uint8_t read_buffer[1] = {0};
+    uint8_t read_buffer[HOST_RX_ACK_OR_ERR_B] = {0};
     if (readFromSerialPort(sd->port, read_buffer, 1) != 1) {
-        // print_error("Last action not ACK’d by device");
+        get_and_show_last_error(sd);
         return false;
     }
     
-    bool rv = ((read_buffer[0] & ACK) == ACK);
-    if (!rv) {
-        uint8_t err_buffer[64] = {0};
-        send_command(sd, '$');
-        size_t result = readFromSerialPort(sd->port, err_buffer, 0);
-        
-        if (result > 0) {
-#ifdef DEBUG
-            fprintf(stderr, "Received raw error string: %s\n", err_buffer);
-#endif
-            // Read back an error record. Extract the fields and print it
-            int err_code = 0;
-            //char err_msg[64] = {0};
-            
-            sscanf((char*)err_buffer, "%i",
-                &err_code);
-            
-            fprintf(stderr, "Host reported error: %i\n", err_code);
-        }
-    }
-    
-    return rv;
+    bool is_ackd = ((read_buffer[0] & ACK) == ACK);
+    if (!is_ackd) get_and_show_last_error(sd);
+    return is_ackd;
 }
 
 
@@ -301,11 +284,12 @@ static bool i2c_ack(I2CDriver *sd) {
 static void i2c_get_info(I2CDriver *sd, bool do_print) {
     
     // FROM 1.2.0 -- Use the new command mode and request I2C info separately
-    uint8_t read_buffer[HOST_INFO_BUFFER_MAX_B] = {0};
+    // First, request the host info
+    uint8_t read_buffer[HOST_RX_HOST_INFO_B] = {0};
     send_command(sd, '?');
     size_t result = readFromSerialPort(sd->port, read_buffer, 0);
     if (result == -1) {
-        print_error("Could not read information from device");
+        print_error("Could not read host information from device");
         return;
     }
 
@@ -313,26 +297,25 @@ static void i2c_get_info(I2CDriver *sd, bool do_print) {
     fprintf(stderr, "Received raw host info string: %s\n", read_buffer);
 #endif
 
-    // Data string is, for example,
-    // FROM 1.0.0: "1.1.100.110.1.1.0.200.A1B23C4D5E6F0A1B.QTPY-RP2040"
-    // FROM 1.2.0: "1.2.0.41.1.DF6050A04B310F39.PIMORONI-TINY"
-    int is_ready = 0;
-    int has_started = 0;
-    int frequency = 100;
-    int address = 0xFF;
+    // String format:
+    // "1.2.0.41.1.DF6050A04B310F39.PIMORONI-TINY"          (from 1.2.0)
+    //  | | | |  | |                |______________ Model name
+    //  | | | |  | |_______________________________ RP2040 ID
+    //  | | | |  |_________________________________ Bus mode
+    //  | | | |____________________________________ Firmware build
+    //  | | |______________________________________ Firmware version patch
+    //  | |________________________________________ Firmware version minor
+    //  |__________________________________________ Firmware version major
     int major = 0;
     int minor = 0;
     int patch = 0;
     int build = 0;
     int mode = 0;
-    int bus = 0;
-    int sda_pin = -1;
-    int scl_pin = -1;
     char string_data[67] = {0};
     char model[25] = {0};
     char pid[17] = {0};
 
-    // Extract the data
+    // Extract the data from the received string
     sscanf((char*)read_buffer, "%i.%i.%i.%i.%i.%s",
         &major,
         &minor,
@@ -341,12 +324,13 @@ static void i2c_get_info(I2CDriver *sd, bool do_print) {
         &mode,
         string_data
     );
-
-    memset(read_buffer, 0x00, HOST_INFO_BUFFER_MAX_B - 1);
+    
+    // Clear the receive buffer and request the I2C info
+    memset(read_buffer, 0x00, HOST_RX_HOST_INFO_B - 1);
     send_command(sd, 'q');
     result = readFromSerialPort(sd->port, read_buffer, 0);
     if (result == -1) {
-        print_error("Could not read information from device");
+        print_error("Could not read I2C information from device");
         return;
     }
 
@@ -354,9 +338,24 @@ static void i2c_get_info(I2CDriver *sd, bool do_print) {
     fprintf(stderr, "Received raw I2C info string: %s\n", read_buffer);
 #endif
     
+    int is_ready = 0;
+    int has_started = 0;
+    int frequency = 100;
+    int address = 0xFF;
+    int bus = 0;
+    int sda_pin = -1;
+    int scl_pin = -1;
+    
     // Extract the data
-    // String format
-    // FROM 1.2.0: "1.1.100.110"
+    // String format:
+    // "1.1.1.22.23.100.255" (from 1.2.0)
+    //  | | |  |  |  |  |_____ Address
+    //  | | |  |  |  |________ Bus frequency in kHz
+    //  | | |  |  |___________ SCL pin
+    //  | | |  |______________ SDA pin
+    //  | | |_________________ Bus ID (0 or 1)
+    //  | |___________________ Transcation begun (1 = true; 0 = false)
+    //  |_____________________ Bus initialised (1 = true; 0 = false)
     sscanf((char*)read_buffer, "%i.%i.%i.%i.%i.%i.%i",
         &is_ready,
         &has_started,
@@ -409,17 +408,19 @@ static void i2c_get_info(I2CDriver *sd, bool do_print) {
  */
 void i2c_scan(I2CDriver *sd) {
 
-    char scan_buffer[SCAN_BUFFER_MAX_B] = {0};
+    char scan_buffer[HOST_RX_SCAN_RESULTS_B] = {0};
     uint8_t device_list[CONNECTED_DEVICES_MAX_B] = {0};
     uint32_t device_count = 0;
 
+    // Request scan from bus host
     send_command(sd, 'd');
     size_t result = readFromSerialPort(sd->port, (uint8_t*)scan_buffer, 0);
     if (result == -1) {
         print_error("Could not read from device");
         return;
     }
-
+    
+    // If we receive Z(ero), there are no connected devices
     if (scan_buffer[0] != 'Z') {
         // Extract device address hex strings and generate
         // integer values. For example:
@@ -435,20 +436,22 @@ void i2c_scan(I2CDriver *sd) {
             uint8_t value[2] = {0};
             uint32_t count = 0;
 
+            // Get two hex chars and store in 'value'; break on a .
             while(1) {
                 uint8_t token = scan_buffer[i + count];
-                if (token == 0x2E) break;
+                if (token == '.') break;
                 value[count] = token;
                 count++;
             }
-
+            
+            // Convert hex char pair to an integer and store
             device_list[device_count] = (uint8_t)strtol((char *)value, NULL, 16);
             device_count++;
         }
     }
 
     // Output the device list as a table (even with no devices)
-
+    
     fprintf(stderr, "   0 1 2 3 4 5 6 7 8 9 A B C D E F");
 
     for (int i = 0 ; i < 0x80 ; i++) {
@@ -699,11 +702,29 @@ static bool board_set_led(I2CDriver *sd, bool is_on) {
 static void send_command(I2CDriver* sd, char c) {
     
     // FROM 1.2.0 -- Update to use the new I2C mode selection key
-    char data[3] = "#i";
-    data[2] = c;
-    writeToSerialPort(sd->port, (uint8_t*)data, 3);
+    char cmd_data[3] = "#i";
+    cmd_data[2] = c;
+    writeToSerialPort(sd->port, (uint8_t*)cmd_data, sizeof(cmd_data));
 }
 
+
+static void get_and_show_last_error(I2CDriver *sd) {
+    
+    uint8_t err_buffer[HOST_RX_ERR_CODE_B] = {0};
+    send_command(sd, '$');
+    
+    // Read back an error record. Extract the fields and print it
+    size_t result = readFromSerialPort(sd->port, err_buffer, 0);
+    if (result > 0) {
+        
+#ifdef DEBUG
+        fprintf(stderr, "Received raw error string: %s\n", err_buffer);
+#endif
+        int err_code = 0;
+        sscanf((char*)err_buffer, "%i", &err_code);
+        fprintf(stderr, "Host reported error: %i\n", err_code);
+    }
+}
 
 #pragma mark - User Feedback Functions
 
@@ -730,6 +751,7 @@ void show_commands(void) {
     fprintf(stderr, "  f {frequency}                    Set the I2C bus frequency in multiples of 100kHz.\n");
     fprintf(stderr, "                                   Only 1 and 4 are supported.\n");
     fprintf(stderr, "  w {address} {bytes}              Write bytes out to I2C.\n");
+    fprintf(stderr, "  w {address} {bytes}              Bytes should be comma-separated hex pairs.\n");
     fprintf(stderr, "  r {address} {count}              Read count bytes in from I2C.\n");
     fprintf(stderr, "                                   Issues a STOP after all the bytes have been read.\n");
     fprintf(stderr, "  p                                Manually issue an I2C STOP.\n");
@@ -756,8 +778,8 @@ int process_commands(I2CDriver *sd, int argc, char *argv[], uint32_t delta) {
 
     // Set a 10ms period for intra-command delay period
     struct timespec pause;
-    pause.tv_sec = 0.010;
-    pause.tv_nsec = 0.010 * 1000000;
+    pause.tv_sec = INTRA_COMMAND_PAUSE_MS;
+    pause.tv_nsec = INTRA_COMMAND_PAUSE_MS * 1000000;
 
     // Process args one by one
     for (int i = delta ; i < argc ; i++) {
@@ -969,6 +991,8 @@ int process_commands(I2CDriver *sd, int argc, char *argv[], uint32_t delta) {
                             if (ackd) {
                                 i2c_read(sd, bytes, num_bytes);
                                 i2c_stop(sd);
+                            } else {
+                                get_and_show_last_error(sd);
                             }
                             break;
                         } else {
