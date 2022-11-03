@@ -21,16 +21,16 @@ static void     HT16K33_write_cmd(uint8_t cmd);
  * GLOBALS
  */
 // The hex character set
-const char CHARSET[19] = "\x3F\x06\x5B\x4F\x66\x6D\x7D\x07\x7F\x6F\x5F\x7C\x58\x5E\x7B\x71\x40\x63";
+static const char CHARSET[19] = "\x3F\x06\x5B\x4F\x66\x6D\x7D\x07\x7F\x6F\x5F\x7C\x58\x5E\x7B\x71\x40\x63";
 
 // Map display digits to bytes in the buffer
-const uint8_t POS[4] = {1, 3, 7, 9};
-uint8_t display_buffer[17] = {0};
-bool is_flipped = false;
+static const uint8_t POS[4] = {1, 3, 7, 9};
+static uint8_t display_buffer[17] = {0};
+static bool is_flipped = false;
 
 // The I2C bus
-I2CDriver* host_i2c;
-int i2c_address = HT16K33_I2C_ADDR;
+static I2CDriver* host_i2c;
+static int i2c_address = HT16K33_I2C_ADDR;
 
 
 /**

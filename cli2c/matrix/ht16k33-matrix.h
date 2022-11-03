@@ -41,6 +41,8 @@
 #define     HT16K33_180_DEG                 2
 #define     HT16K33_270_DEG                 3
 
+#define     HT16K33_MAX_BRIGHT              15
+
 
 /*
  * PROTOTYPES

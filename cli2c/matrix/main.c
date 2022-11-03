@@ -22,6 +22,7 @@ static void show_version(void);
  */
 // Hold an I2C data structure
 I2CDriver i2c;
+bool use_ht16k33 = true;
 
 
 /**
@@ -39,15 +40,13 @@ int main(int argc, char* argv[]) {
     } else {
         // Check for a help request
         for (int i = 0 ; i < argc ; ++i) {
-            if (strcasecmp(argv[i], "h") == 0 ||
-                strcasecmp(argv[i], "-h") == 0 ||
+            if (strcasecmp(argv[i], "-h") == 0 ||
                 strcasecmp(argv[i], "--help") == 0) {
                 show_help();
                 return EXIT_OK;
             }
             
-            if (strcasecmp(argv[i], "v") == 0 ||
-                strcasecmp(argv[i], "--version") == 0 ||
+            if (strcasecmp(argv[i], "--version") == 0 ||
                 strcasecmp(argv[i], "-v") == 0) {
                 show_version();
                 return EXIT_OK;
@@ -88,7 +87,12 @@ int main(int argc, char* argv[]) {
                 }
 
                 // Set up the display driver
-                HT16K33_init(&i2c, i2c_address, HT16K33_0_DEG);
+                if (i2c_address > 0x70) {
+                    HT16K33_init(&i2c, i2c_address, HT16K33_0_DEG);
+                } else {
+                    LTP305_init(&i2c, i2c_address);
+                    use_ht16k33 = false;
+                }
 
                 // Process the commands one by one
                 int result =  matrix_commands(&i2c, argc, argv, delta);
@@ -142,7 +146,7 @@ static int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                     }
 
                     // Apply the command
-                    HT16K33_power(is_on);
+                    if (use_ht16k33) HT16K33_power(is_on);
                 }
                 break;
                 
@@ -156,13 +160,24 @@ static int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                         if (command[0] >= '0' && command[0] <= '9') {
                             long brightness = strtol(command, NULL, 0);
 
-                            if (brightness < 0 || brightness > 15) {
-                                print_error("Brightness value out of range (0-15)");
-                                return EXIT_ERR;
+                            if (use_ht16k33) {
+                                if (brightness < 0 || brightness > HT16K33_MAX_BRIGHT) {
+                                    print_error("Brightness value out of range (0-%i)", IS31FL3730_MAX_BRIGHT);
+                                    return EXIT_ERR;
+                                }
+                                
+                                // Apply the command
+                                HT16K33_set_brightness(brightness);
+                            } else {
+                                if (brightness < 0 || brightness > IS31FL3730_MAX_BRIGHT) {
+                                    print_error("Brightness value out of range (0-%i)", IS31FL3730_MAX_BRIGHT);
+                                    return EXIT_ERR;
+                                }
+                                
+                                // Apply the command
+                                LTP305_set_brightness((int)brightness);
                             }
-
-                            // Apply the command
-                            HT16K33_set_brightness(brightness);
+                            
                             break;
                         }
                     }
@@ -178,10 +193,16 @@ static int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                     // Get the required argument
                     if (i < argc - 1) {
                         command = argv[++i];
-                        if (strlen(command) == 1) {
-                            char achar = command[0];
+                        if (strlen(command) < 3 && strlen(command) > 0) {
+                            char lchar = command[0];
+                            char rchar = strlen(command) == 2 ? command[1] : 32;
                             
-                            if (achar < 32 || achar > 127) {
+                            if (lchar < 32 || lchar > 127) {
+                                print_error("Character out of range (Ascii 32-127)");
+                                return EXIT_ERR;
+                            }
+                            
+                            if (rchar < 32 || rchar > 127) {
                                 print_error("Character out of range (Ascii 32-127)");
                                 return EXIT_ERR;
                             }
@@ -198,7 +219,13 @@ static int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                             }
 
                             // Perform the action
-                            HT16K33_set_char(achar, do_centre);
+                            if (use_ht16k33) {
+                                HT16K33_set_char(lchar, do_centre);
+                            } else {
+                                LTP305_set_char(LEFT, lchar);
+                                LTP305_set_char(RIGHT, rchar);
+                            }
+                            
                             do_draw = true;
                             break;
                         }
@@ -257,11 +284,6 @@ static int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                                 if (command[0] >= '0' && command[0] <= '9') {
                                     y = strtol(command, NULL, 0);
 
-                                    if (x < 0 || x > 7 || y < 0 || y > 7) {
-                                        print_error("Co-ordinate out of range (0-7)");
-                                        return EXIT_ERR;
-                                    }
-
                                     // Get an optional argument
                                     long ink = 1;
                                     if (i < argc - 1) {
@@ -275,7 +297,21 @@ static int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                                     }
 
                                     // Perform the action
-                                    HT16K33_plot((uint8_t)x, (uint8_t)y, ink == 1);
+                                    if (use_ht16k33) {
+                                        if (x < 0 || x > 7 || y < 0 || y > 7) {
+                                            print_error("Co-ordinate out of range (0-7)");
+                                            return EXIT_ERR;
+                                        }
+
+                                        HT16K33_plot((uint8_t)x, (uint8_t)y, ink == 1);
+                                    } else {
+                                        if (x < 0 || x > 4 || y < 0 || y > 6) {
+                                            print_error("Co-ordinate out of range (0-7)");
+                                            return EXIT_ERR;
+                                        }
+
+                                        LTP305_plot(LEFT, (uint8_t)x, (uint8_t)y, ink == 1);
+                                    }
                                     do_draw = true;
                                     break;
                                 }
@@ -304,8 +340,10 @@ static int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                     }
                     
                     // Perform the action
-                    HT16K33_set_angle((uint8_t)angle);
-                    HT16K33_rotate((uint8_t)angle);
+                    if (use_ht16k33) {
+                        HT16K33_set_angle((uint8_t)angle);
+                        HT16K33_rotate((uint8_t)angle);
+                    }
                 }
                 break;
 
@@ -341,14 +379,22 @@ static int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
             case 'W':
             case 'w':   // WIPE (CLEAR) THE DISPLAY
                         // No parameters
-                HT16K33_clear_buffer();
+                if (use_ht16k33) {
+                    HT16K33_clear_buffer();
+                } else {
+                    LTP305_clear_buffers();
+                }
                 do_draw = true;
                 break;
             
             case 'Z':
             case 'z':   // DRAW THE DISPLAY IMMEDIATELY
                         // No parameters
-                HT16K33_draw(false);
+                if (use_ht16k33) {
+                    HT16K33_draw(false);
+                } else {
+                    LTP305_draw();
+                }
                 do_draw = false;
                 break;
 
@@ -359,7 +405,14 @@ static int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
         }
     }
 
-    if (do_draw) HT16K33_draw(true);
+    if (do_draw) {
+        if (use_ht16k33) {
+            HT16K33_draw(true);
+        } else {
+            LTP305_draw();
+        }
+    }
+    
     return EXIT_OK;
 }
 
@@ -372,7 +425,7 @@ static void show_help() {
     fprintf(stderr, "Usage:\n");
     fprintf(stderr, "  {device} is a mandatory device path, eg. /dev/cu.usbmodem-010101.\n");
     fprintf(stderr, "  [address] is an optional display I2C address. Default: 0x70.\n");
-    fprintf(stderr, "  [commands] are optional HT16K33 matrix commands:\n\n");
+    fprintf(stderr, "  [commands] are optional matrix commands:\n\n");
     fprintf(stderr, "Commands:\n");
     fprintf(stderr, "  a [on|off]             Activate/deactivate the display. Default: on.\n");
     fprintf(stderr, "  b {0-15}               Set the display brightness from low (0) to high (15).\n");

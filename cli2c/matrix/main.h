@@ -16,6 +16,7 @@
 #include "i2cdriver.h"
 #include "utils.h"
 #include "ht16k33-matrix.h"
+#include "ltp305-matrix.h"
 
 
 #endif      // _MAIN_H_

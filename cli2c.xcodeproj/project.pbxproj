@@ -10,6 +10,7 @@
 		3B68B69828F955AD009C80A2 /* utils.c in Sources */ = {isa = PBXBuildFile; fileRef = 3B68B69728F955AD009C80A2 /* utils.c */; };
 		3B68B69928F9579B009C80A2 /* utils.c in Sources */ = {isa = PBXBuildFile; fileRef = 3B68B69728F955AD009C80A2 /* utils.c */; };
 		3B68B69A28F9579C009C80A2 /* utils.c in Sources */ = {isa = PBXBuildFile; fileRef = 3B68B69728F955AD009C80A2 /* utils.c */; };
+		3B6C1BD82913DF9A000D8A9D /* ltp305-matrix.c in Sources */ = {isa = PBXBuildFile; fileRef = 3B6C1BD72913DF9A000D8A9D /* ltp305-matrix.c */; };
 		3B8566F528ED7DBA009AB974 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 3B8566E828ED7D92009AB974 /* main.c */; };
 		3B8566F628ED7E34009AB974 /* i2cdriver.c in Sources */ = {isa = PBXBuildFile; fileRef = 5A559F5F28E1CAEF00D51DF5 /* i2cdriver.c */; };
 		3B8566F928ED7F00009AB974 /* ht16k33-segment.c in Sources */ = {isa = PBXBuildFile; fileRef = 3B8566F728ED7E81009AB974 /* ht16k33-segment.c */; };
@@ -53,6 +54,8 @@
 /* Begin PBXFileReference section */
 		3B68B69628F955AD009C80A2 /* utils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = utils.h; path = cli2c/common/utils.h; sourceTree = SOURCE_ROOT; };
 		3B68B69728F955AD009C80A2 /* utils.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = utils.c; path = cli2c/common/utils.c; sourceTree = SOURCE_ROOT; };
+		3B6C1BD62913DF9A000D8A9D /* ltp305-matrix.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = "ltp305-matrix.h"; path = "cli2c/matrix/ltp305-matrix.h"; sourceTree = SOURCE_ROOT; };
+		3B6C1BD72913DF9A000D8A9D /* ltp305-matrix.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; name = "ltp305-matrix.c"; path = "cli2c/matrix/ltp305-matrix.c"; sourceTree = SOURCE_ROOT; };
 		3B8566E728ED7D92009AB974 /* main.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = main.h; path = cli2c/segment/main.h; sourceTree = SOURCE_ROOT; };
 		3B8566E828ED7D92009AB974 /* main.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = main.c; path = cli2c/segment/main.c; sourceTree = SOURCE_ROOT; };
 		3B8566E928ED7D92009AB974 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = Info.plist; path = cli2c/segment/Info.plist; sourceTree = SOURCE_ROOT; };
@@ -162,6 +165,8 @@
 				5A559F6528E1E3BC00D51DF5 /* main.c */,
 				5A559F6028E1CAEF00D51DF5 /* ht16k33-matrix.h */,
 				5A559F5E28E1CAEF00D51DF5 /* ht16k33-matrix.c */,
+				3B6C1BD62913DF9A000D8A9D /* ltp305-matrix.h */,
+				3B6C1BD72913DF9A000D8A9D /* ltp305-matrix.c */,
 				5A559F6628E1E3BC00D51DF5 /* Info.plist */,
 			);
 			name = matrix;
@@ -289,6 +294,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				5A559F7428E1E45800D51DF5 /* main.c in Sources */,
+				3B6C1BD82913DF9A000D8A9D /* ltp305-matrix.c in Sources */,
 				3B68B69928F9579B009C80A2 /* utils.c in Sources */,
 				5A559F7328E1E40300D51DF5 /* i2cdriver.c in Sources */,
 				5A559F7228E1E3FD00D51DF5 /* ht16k33-matrix.c in Sources */,

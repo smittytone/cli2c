@@ -120,12 +120,12 @@ const char CHARSET[128][6] = {
 };
 
 // Display buffer
-uint8_t display_buffer[8];
-uint8_t display_angle = HT16K33_0_DEG;
+static uint8_t display_buffer[8];
+static uint8_t display_angle = HT16K33_0_DEG;
 
 // The I2C bus
-I2CDriver* host_i2c;
-int i2c_address = HT16K33_I2C_ADDR;
+static I2CDriver* host_i2c;
+static int i2c_address = HT16K33_I2C_ADDR;
 
 
 /**
