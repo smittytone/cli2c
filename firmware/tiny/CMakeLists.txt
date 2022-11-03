@@ -35,7 +35,7 @@ add_executable(${FW_4_NAME}
     ${COMMON_CODE_DIRECTORY}/gpio.c)
 
 # Compile debug segment LED sources
-if (DO_DEBUG)
+if (DO_DEBUG_WITH_LED)
     target_sources(${FW_4_NAME} PRIVATE segment.c)
 endif()
 

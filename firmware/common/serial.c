@@ -21,7 +21,6 @@ static uint32_t rx(uint8_t *buffer);
 // FROM 1.2.0
 static uint8_t  get_mode(char mode_key);
 static void     send_host_status(uint8_t mode);
-static void     set_last_error(uint error_code, char* error_string);
 
 
 /**
@@ -73,12 +72,10 @@ void rx_loop(void) {
     uint64_t last = time_us_64();
 
     // FROM 1.2.0
-    // Last error string
-    char last_error[ERROR_BUFFER_LENGTH_B] = {0};
     uint last_error_code = GEN_NO_ERROR;
-    set_last_error(last_error_code, last_error);
 
-#ifdef DO_DEBUG
+
+#ifdef DO_DEBUG_WITH_LED
     // Set up a parallel segment display to assist
     // with debugging
     init_i2c(i2c_state.frequency);
@@ -246,11 +243,13 @@ void rx_loop(void) {
                             break;
 
                         // FROM 1.2.0
-                        case '$':   // RETURN LAST ERROR
-                            //set_last_error(last_error_code, last_error);
-                            sprintf(last_error, "%i\r\n", last_error_code);
-                            tx(last_error, strlen(last_error));
-                            break;
+                        case '$':   // RETURN LAST ERROR CODE
+                            {
+                                char err_data[8] = {0};
+                                sprintf(err_data, "%i\r\n", last_error_code);
+                                tx(err_data, strlen(err_data));
+                                break;
+                            }
 
                         /*
                          * MULTI-BUS COMMANDS
@@ -542,7 +541,7 @@ static void send_ack(void) {
     putchar(ACK);
 #endif
 
-#ifdef DO_DEBUG
+#ifdef DO_DEBUG_WITH_LED
     // Write the sent char on the segment's second two digits
     HT16K33_set_number(0x00, 2, false);
     HT16K33_set_number(0x01, 3, false);
@@ -561,7 +560,7 @@ static void send_err(void) {
     putchar(ERR);
 #endif
 
-#ifdef DO_DEBUG
+#ifdef DO_DEBUG_WITH_LED
     // Write the sent char on the segment's second two digits
     HT16K33_set_number(0x0F, 2, false);
     HT16K33_set_number(0x0F, 3, false);
@@ -586,7 +585,7 @@ static uint32_t rx(uint8_t* buffer) {
         if (c == PICO_ERROR_TIMEOUT) break;
         buffer[data_count++] = (uint8_t)c;
 
-#ifdef DO_DEBUG
+#ifdef DO_DEBUG_WITH_LED
         // Write the received char on the segment's first two digits
         HT16K33_set_number((uint8_t)((c & 0xF0) >> 4), 0, false);
         HT16K33_set_number((uint8_t)(c & 0x0F), 1, false);
@@ -611,7 +610,7 @@ void tx(uint8_t* buffer, uint32_t byte_count) {
     for (uint32_t i = 0 ; i < byte_count ; ++i) {
         putchar((buffer[i]));
 
-#ifdef DO_DEBUG
+#ifdef DO_DEBUG_WITH_LED
         // Write the sent char on the segment's second two digits
         HT16K33_set_number(((buffer[i] & 0xF0) >> 4), 2, false);
         HT16K33_set_number((buffer[i] & 0x0F), 3, false);
@@ -686,15 +685,3 @@ static uint8_t get_mode(char mode_key) {
     return MODE_NONE;
 }
 
-
-/**
- * @brief Clear the last error string and write in a new error.
- *
- * @param error_code:   The error ID.
- * @param error_string: The last error string.  
- */
-static void set_last_error(uint error_code, char* error_string) {
-
-    //memset(error_string, 0x00, ERROR_BUFFER_LENGTH_B);
-    sprintf(error_string, "%i\r\n", error_code);
-}

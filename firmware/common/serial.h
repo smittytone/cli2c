@@ -31,7 +31,7 @@
 #include "spi.h"
 #include "gpio.h"
 #include "errors.h"
-#ifdef DO_DEBUG
+#ifdef DO_DEBUG_WITH_LED
 #include "segment.h"
 #endif
 

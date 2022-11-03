@@ -53,7 +53,7 @@
       </BuildableProductRunnable>
       <EnvironmentVariables>
          <EnvironmentVariable
-            key = "DO_DEBUG"
+            key = "DO_DEBUG_WITH_LED"
             value = "1"
             isEnabled = "YES">
          </EnvironmentVariable>
