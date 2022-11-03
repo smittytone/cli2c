@@ -31,7 +31,7 @@
 typedef struct {
     bool        is_ready;
     bool        is_started;
-    bool        is_read_op;
+    //bool        is_read_op;
     uint32_t    read_byte_count;
     uint32_t    write_byte_count;
     i2c_inst_t* bus;

@@ -12,8 +12,8 @@
 /*
  * STATIC PROTOTYPES
  */
-static void LTP305_write_cmd(uint8_t cmd, uint8_t value);
-static void LTP305_write_buffers(void);
+static void     LTP305_write_cmd(uint8_t cmd, uint8_t value);
+static void     LTP305_write_buffers(void);
 static uint32_t LTP305_bcd(uint32_t base);
 
 
@@ -31,6 +31,9 @@ static int brightness  = IS31FL3730_DEFAULT_BRIGHT;
 extern const char CHARSET[128][6];
 
 
+/*
+ * FUNCTIONS
+ */
 void LTP305_init(I2CDriver *sd, int address) {
 
     if (address != -1) i2c_address = address;

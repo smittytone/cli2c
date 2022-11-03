@@ -174,18 +174,15 @@ bool check_i2c_pins(uint8_t* data) {
  */
 bool start_i2c(I2C_State* its, uint8_t* data) {
 
-    if (its->is_ready && !its->is_started) {
-        // Received data is in the form ['s', (address << 1) | op];
-        its->address = (data[1] & 0xFE) >> 1;
-        its->is_read_op = ((data[1] & 0x01) == 1);
-        its->is_started = true;
+    if (!its->is_ready) return false;
 
-        // Acknowledge
-        return true;
-    }
+    // Received data is in the form ['s', (address << 1) | op];
+    its->address = (data[1] & 0xFE) >> 1;
+    //its->is_read_op = ((data[1] & 0x01) == 1);
+    its->is_started = true;
 
-    // Issue error
-    return false;
+    // Acknowledge
+    return true;
 }
 
 
@@ -205,7 +202,7 @@ bool stop_i2c(I2C_State* its) {
 
         // Reset state
         its->is_started = false;
-        its->is_read_op = false;
+        //its->is_read_op = false;
 
         // Acknowledge
         return true;
@@ -240,7 +237,7 @@ void get_i2c_state(I2C_State* its, char* output) {
  *
  * @param its: The I2C state record.
  * @param pin: An arbitrary GPIO pin that we're checking.
- * 
+ *
  * @retval `true` if the pin is in use by the bus, or `false`.
  */
 bool i2c_is_pin_in_use(I2C_State* its, uint8_t pin) {

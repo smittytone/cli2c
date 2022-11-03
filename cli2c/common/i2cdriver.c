@@ -149,6 +149,7 @@ static size_t readFromSerialPort(int fd, uint8_t* buffer, size_t byte_count) {
             number_read = read(fd, buffer + count, 1);
             if (number_read != -1) {
                 count += number_read;
+                continue;
             }
 
             clock_gettime(CLOCK_MONOTONIC_RAW, &now);
@@ -189,7 +190,7 @@ static void writeToSerialPort(int fd, const uint8_t* buffer, size_t byte_count) 
 #ifdef DEBUG
     // Output the read data for debugging
     fprintf(stderr, "WRITE %u: ", (int)byte_count);
-    for (int i = 0 ; i < byte_count ; ++i) {
+    for (uint i = 0 ; i < byte_count ; ++i) {
         fprintf(stderr, "%02X ", 0xFF & buffer[i]);
     }
     fprintf(stderr, "\n");
@@ -410,7 +411,7 @@ void i2c_scan(I2CDriver *sd) {
 
     char scan_buffer[HOST_RX_SCAN_RESULTS_B] = {0};
     uint8_t device_list[CONNECTED_DEVICES_MAX_B] = {0};
-    uint32_t device_count = 0;
+    uint device_count = 0;
 
     // Request scan from bus host
     send_command(sd, 'd');
@@ -431,10 +432,10 @@ void i2c_scan(I2CDriver *sd) {
         fprintf(stderr, "Buffer: %lu bytes, %lu items\n", strlen(scan_buffer), strlen(scan_buffer) / 3);
 #endif
 
-        for (uint32_t i = 0 ; i < strlen(scan_buffer) ; i += 3) {
+        for (size_t i = 0 ; i < strlen(scan_buffer) ; i += 3) {
 
             uint8_t value[2] = {0};
-            uint32_t count = 0;
+            uint count = 0;
 
             // Get two hex chars and store in 'value'; break on a .
             while(1) {
@@ -454,7 +455,7 @@ void i2c_scan(I2CDriver *sd) {
     
     fprintf(stderr, "   0 1 2 3 4 5 6 7 8 9 A B C D E F");
 
-    for (int i = 0 ; i < 0x80 ; i++) {
+    for (uint i = 0 ; i < 0x80 ; i++) {
         if (i % 16 == 0) fprintf(stderr, "\n%02x ", i);
         if (i < 8 || i > 0x77) {
             fprintf(stderr, "  ");
@@ -462,7 +463,7 @@ void i2c_scan(I2CDriver *sd) {
             bool found = false;
 
             if (device_count > 0) {
-                for (int j = 0 ; j < 120 ; j++) {
+                for (uint j = 0 ; j < 120 ; j++) {
                     if (device_list[j] == i) {
                         fprintf(stderr, "@ ");
                         found = true;
@@ -774,7 +775,7 @@ void show_commands(void) {
  *
  * @retval The driver exit code, 0 on success, 1 on failure.
  */
-int process_commands(I2CDriver *sd, int argc, char *argv[], uint32_t delta) {
+int process_commands(I2CDriver *sd, int argc, char *argv[], int delta) {
 
     // Set a 10ms period for intra-command delay period
     struct timespec pause;

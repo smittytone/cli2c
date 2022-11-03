@@ -87,7 +87,7 @@ int main(int argc, char* argv[]) {
                 }
 
                 // Set up the display driver
-                if (i2c_address > 0x70) {
+                if (i2c_address > 0x6F) {
                     HT16K33_init(&i2c, i2c_address, HT16K33_0_DEG);
                 } else {
                     LTP305_init(&i2c, i2c_address);

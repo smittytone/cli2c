@@ -216,7 +216,7 @@ void HT16K33_draw(bool and_stop) {
 
     // Span the 8 bytes of the graphics buffer
     // across the 16 bytes of the LED's buffer
-    for (uint8_t i = 0 ; i < 8 ; ++i) {
+    for (int i = 0 ; i < 8 ; ++i) {
         uint8_t a = display_buffer[i];
         tx_buffer[i * 2 + 1] = (a >> 1) + ((a << 7) & 0xFF);
     }
@@ -290,7 +290,7 @@ void HT16K33_set_glyph(uint8_t* bytes) {
 void HT16K33_print(const char *text, uint32_t delay_ms) {
 
     // Get the length of the text: the number of columns it encompasses
-    uint64_t length = 0;
+    int length = 0;
     for (size_t i = 0 ; i < strlen(text) ; ++i) {
         uint8_t asc_val = text[i] - 32;
         length += (asc_val == 0 ? 2: strlen(CHARSET[asc_val]));
@@ -299,10 +299,9 @@ void HT16K33_print(const char *text, uint32_t delay_ms) {
 
     // Make the output buffer to match the required number of columns
     uint8_t src_buffer[length];
-    for (uint64_t i = 0 ; i < length ; ++i) src_buffer[i] = 0x00;
 
     // Write each character's glyph columns into the output buffer
-    uint64_t col = 0;
+    int col = 0;
     for (size_t i = 0 ; i < strlen(text) ; ++i) {
         uint8_t asc_val = text[i] - 32;
         if (asc_val == 0) {
@@ -310,9 +309,9 @@ void HT16K33_print(const char *text, uint32_t delay_ms) {
             col += 2;
         } else {
             // Get the character glyph and write it to the buffer
-            uint8_t glyph_len = strlen(CHARSET[asc_val]);
+            size_t glyph_len = strlen(CHARSET[asc_val]);
 
-            for (uint64_t j = 0 ; j < glyph_len ; ++j) {
+            for (int j = 0 ; j < glyph_len ; ++j) {
                 src_buffer[col] = CHARSET[asc_val][j];
                 ++col;
             }
@@ -323,10 +322,10 @@ void HT16K33_print(const char *text, uint32_t delay_ms) {
 
     // Finally, animate the line by repeatedly sending 8 columns
     // of the output buffer to the matrix
-    uint64_t cursor = 0;
+    int cursor = 0;
     while (1) {
-        uint64_t a = cursor;
-        for (uint8_t i = 0 ; i < 8 ; ++i) {
+        int a = cursor;
+        for (int i = 0 ; i < 8 ; ++i) {
             display_buffer[i] = src_buffer[a];
             a += 1;
         }

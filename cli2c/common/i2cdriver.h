@@ -97,7 +97,7 @@ void            i2c_read(I2CDriver *sd, uint8_t bytes[], size_t nn);
 void            show_commands(void);
 
 // Command Parsing and Processing
-int             process_commands(I2CDriver *sd, int argc, char *argv[], uint32_t delta);
+int             process_commands(I2CDriver *sd, int argc, char *argv[], int delta);
 
 
 #endif  // I2C_DRIVER_H
