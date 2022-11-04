@@ -278,9 +278,10 @@ Thanks are also due to Hermann Stamm-Wilbrandt ([@Hermann-SW](https://github.com
 ## Release Notes
 
 * 1.2.0 *Unreleased*
-    * Add host error record.
+    * Support Pimoroni LTP-305 breakouts in `matrix`.
     * Document GPIO usage.
     * Refactor code to support future expansion.
+    * Add host error record.
     * Deprecate old methods.
 * 1.1.1 *27 October 2022*
     * Internal changes.

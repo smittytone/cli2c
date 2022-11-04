@@ -40,7 +40,8 @@
  * CONSTANTS
  */
 #define SERIAL_READ_TIMEOUT_US                  10
-#define RX_LOOP_DELAY_MS                        50
+#define RX_LOOP_DELAY_MS                        10
+#define UART_LOOP_DELAY_MS                    5
 #define HEARTBEAT_PERIOD_US                     2000000
 #define HEARTBEAT_FLASH_US                      100000
 
@@ -49,8 +50,8 @@
 
 #define HW_MODEL_NAME_SIZE_MAX                  24
 
-#ifndef DEBUG_SEG_ADDR
 // Just in case the user comments out the CMakeLists.txt define
+#ifndef DEBUG_SEG_ADDR
 #define DEBUG_SEG_ADDR                          0x70
 #endif
 

@@ -218,6 +218,7 @@ void rx_loop(void) {
                      */
                     case '?':   // GET STATUS
                         if (client_is_old) {
+                            // DEPRECATE IN 2.0.0
                             send_status(&i2c_state);
                         } else {
                             send_host_status(current_mode);
@@ -591,7 +592,7 @@ static uint32_t rx(uint8_t* buffer) {
         HT16K33_set_number((uint8_t)(c & 0x0F), 1, false);
         HT16K33_draw();
 #else
-        sleep_ms(10);
+        sleep_ms(UART_LOOP_DELAY_MS);
 #endif
     }
 
@@ -616,7 +617,7 @@ void tx(uint8_t* buffer, uint32_t byte_count) {
         HT16K33_set_number((buffer[i] & 0x0F), 3, false);
         HT16K33_draw();
 #else
-        sleep_ms(10);
+        sleep_ms(UART_LOOP_DELAY_MS);
 #endif
     }
 

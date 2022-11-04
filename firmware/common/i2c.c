@@ -174,9 +174,12 @@ bool check_i2c_pins(uint8_t* data) {
  */
 bool start_i2c(I2C_State* its, uint8_t* data) {
 
+    // Make sure the I2C bus is initialised
     if (!its->is_ready) return false;
 
+    // Set the I2C address for subsequent actions
     // Received data is in the form ['s', (address << 1) | op];
+    // TODO Remove the shift, R/W bit
     its->address = (data[1] & 0xFE) >> 1;
     //its->is_read_op = ((data[1] & 0x01) == 1);
     its->is_started = true;
