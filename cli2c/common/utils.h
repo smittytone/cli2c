@@ -25,6 +25,8 @@ void    print_error(char* format_string, ...);
 void    print_output(bool is_err, char* format_string, va_list args);
 void    ctrl_c_handler(int dummy);
 void    lower(char* s);
+// FROM 1.2.0
+bool    check_i2c_address(long address);
 
 
 #endif  // _UTILS_H

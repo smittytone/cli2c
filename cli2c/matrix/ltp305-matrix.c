@@ -12,9 +12,8 @@
 /*
  * STATIC PROTOTYPES
  */
-static void     LTP305_write_cmd(uint8_t cmd, uint8_t value);
+static void     LTP305_write_register(uint8_t reg, uint8_t value, bool do_stop);
 static void     LTP305_write_buffers(void);
-static uint32_t LTP305_bcd(uint32_t base);
 
 
 /*
@@ -31,8 +30,11 @@ static int brightness  = IS31FL3730_DEFAULT_BRIGHT;
 extern const char CHARSET[128][6];
 
 
-/*
- * FUNCTIONS
+/**
+ * @brief Set up the data the driver needs.
+ *
+ * @param sd:       Pointer to the main I2C driver data structure.
+ * @param address:  A non-standard HT16K33 address, or -1.
  */
 void LTP305_init(I2CDriver *sd, int address) {
 
@@ -41,14 +43,22 @@ void LTP305_init(I2CDriver *sd, int address) {
 }
 
 
+/**
+ * @brief Set the display brightness.
+ *
+ * @param brightness: The display brightness (1-127).
+ */
 void LTP305_set_brightness(int new_brightess) {
     
     brightness = new_brightess;
-    LTP305_write_cmd(IS31FL3730_PWM_REG, brightness);
-    LTP305_write_cmd(IS31FL3730_UPDATE_COL_REG, 0x01);
+    LTP305_write_register(IS31FL3730_PWM_REG, brightness, false);
+    LTP305_write_register(IS31FL3730_UPDATE_COL_REG, 0x01, true);
 }
 
 
+/**
+ * @brief Zero the display's two buffers.
+ */
 void LTP305_clear_buffers() {
 
     memset(&left_buffer[1],  0x00, 8);
@@ -56,89 +66,131 @@ void LTP305_clear_buffers() {
 }
 
 
-void LTP305_set_glyph(uint8_t led, uint8_t* glyph) {
+/**
+ * @brief Set a user-defined character on the display.
+ *
+ * @param row:   The row at which the glyph will be drawn.
+ * @param glyph: Pointer to an array of bytes, one per column.
+ *               A row's bit 0 is the bottom.
+ * @param width: The number of rows in the glypp (1-10).
+ */
+void LTP305_set_glyph(uint8_t row, uint8_t* glyph, size_t width) {
 
-    switch(led) {
-        case LEFT:
-            for (uint i = 0 ; i < 5 ; ++i) {
-                uint8_t d = 0;
-                for (uint j = 0 ; j < 7 ; ++j) {
-                    d |= (glyph[j] & (1 << i)) << (5 - i);
-                }  
-                left_buffer[i + 1] = d;
+    assert(width < 11);
+    assert(row < 10);
+    
+    for (size_t x = 0 ; x < width ; ++x) {
+        uint8_t c = glyph[x];
+        uint8_t b = 0;
+        if (x + row < 5) {
+            for (size_t y = 0 ; y < 8 ; ++y) {
+                b |= (((c & (1 << y)) >> y) << (7 - y));
             }
-            break;
-        case RIGHT:
-            for (uint i = 0 ; i < 7 ; ++i) {
-                uint8_t d = 0;
-                for (uint j = 0 ; j < 5 ; ++j) {
-                    d |= (glyph[i] & (1 << (5 - j)));
-                }
-                right_buffer[i + 1] = d;
+            left_buffer[x + 1 + row] = b;
+        } else {
+            for (size_t y = 0 ; y < 8 ; ++y) {
+                b = (c & (1 << (7 - y)));
+                right_buffer[y + 1] |= ((b > 0 ? 1 : 0) << (x - 5));
             }
+        }
     }
 }
 
 
+/**
+ * @brief Set an Ascii character on the display.
+ *
+ * @param led:   The LED (0 or 1) on which the character will be drawn.
+ * @param ascii: The character's Ascii value (32-127).
+ */
 void LTP305_set_char(uint8_t led, uint8_t ascii) {
-
+    
+    assert(ascii > 31 && ascii < 128);
+    assert(led == LEFT || led == RIGHT);
+    
+    size_t d = 0;
+    size_t cols = strlen(CHARSET[ascii - 32]);
+    if (cols < 5) d = (5 - cols) >> 1;
+    
     switch(led) {
         case LEFT:
-            for (uint i = 0 ; i < 8 ; ++i) {
-                uint8_t a = CHARSET[ascii - 32][i];
-                if (a == 0) break;
+            //    y 6543210
+            //     01111111 x 0
+            //     01111111 x 1
+            //     01111111 x 2
+            //     01111111 x 3
+            //     01111111 x 4
+            if (cols % 2 == 0) d +=1;
+            for (size_t x = 0 ; x < 8 ; ++x) {
+                if (x == cols) break;
+                uint8_t c = CHARSET[ascii - 32][x];
                 uint8_t b = 0;
-                for (uint j = 0 ; j < 8 ; ++j) {
-                    b |= (((a & (1 << j)) >> j) << (7 - j));
+                for (size_t y = 0 ; y < 8 ; ++y) {
+                    b |= (((c & (1 << y)) >> y) << (7 - y));
                 }
-                left_buffer[i + 1] = b;
+                left_buffer[x + 1 + d] = b;
             }
             break;
         case RIGHT:
-            for (uint i = 0 ; i < 7 ; ++i) {
-                uint8_t a = CHARSET[ascii - 32][i];
-                if (a == 0) break;
-                for (uint j = 0 ; j < 7 ; ++j) {
-                    uint8_t b = (a & (1 << (7 - j)));
-                    right_buffer[j + 1] |= ((b > 0 ? 1 : 0) << i);
+            //       x  43210
+            //       00011111 y 0
+            //       00011111 y 1
+            //       00011111 y 2
+            //       00011111 y 3
+            //       00011111 y 4
+            //       00011111 y 5
+            //       10011111 y 6 (bit 8 = decimal point)
+            for (size_t x = 0 ; x < 8 ; ++x) {
+                if (x == cols) break;
+                uint8_t c = CHARSET[ascii - 32][x];
+                for (size_t y = 0 ; y < 8 ; ++y) {
+                    uint8_t b = (c & (1 << (7 - y)));
+                    right_buffer[y + 1] |= ((b > 0 ? 1 : 0) << (x + d));
                 }
             }
     }
 }
 
 
-void LTP305_plot(uint8_t led, uint8_t x, uint8_t y, bool ink) {
+/**
+ * @brief Plot a point on the display. The two LEDs are treated
+ *        as a single 10 x 7 array.
+ *
+ * @param x:   The X co-ordinate.
+ * @param y:   The Y co-orindate.
+ * @param ink: Whether to set (`true`) or clear (`false`) the pixel.
+ */
+void LTP305_plot(uint8_t x, uint8_t y, bool ink) {
 
-    assert (x < 5);
+    assert (x < 10);
     assert (y < 7);
 
-    switch(led) {
-        case LEFT:
-            {
-                uint8_t byte = left_buffer[x + 1];
-                if (ink) {
-                    byte |= (1 << y);
-                } else {
-                    byte &= ~(1 << y);
-                }
-                left_buffer[x + 1] = byte;
-                break;
-            }
-        case RIGHT:
-            {
-                uint8_t byte = left_buffer[y + 1];
-                x = 5 - x;
-                if (ink) {
-                    byte |= (1 << x);
-                } else {
-                    byte &= ~(1 << x);
-                }
-                right_buffer[y + 1] = byte;
-            }
+    if (x < 5) {
+        uint8_t byte = left_buffer[x + 1];
+        if (ink) {
+            byte |= (1 << y);
+        } else {
+            byte &= ~(1 << y);
+        }
+        left_buffer[x + 1] = byte;
+    } else {
+        uint8_t byte = right_buffer[y + 1];
+        x -= 5;
+        if (ink) {
+            byte |= (1 << x);
+        } else {
+            byte &= ~(1 << x);
+        }
+        right_buffer[y + 1] = byte;
     }
 }
 
 
+/**
+ * @brief Plot an LED's decimal point.
+ *
+ * @param led: The LED (0 or 1).
+ */
 void LTP305_set_point(uint8_t led) {
 
     switch(led) {
@@ -151,6 +203,9 @@ void LTP305_set_point(uint8_t led) {
 }
 
 
+/**
+ * @brief Clear the display and update it.
+ */
 void LTP305_clear() {
 
     LTP305_clear_buffers();
@@ -158,53 +213,44 @@ void LTP305_clear() {
 }
 
 
+/**
+ * @brief Update the display.
+ */
 void LTP305_draw() {
     
     LTP305_write_buffers();
-    LTP305_write_cmd(IS31FL3730_CONFIG_REG, 0x18);
-    LTP305_write_cmd(IS31FL3730_LIGHT_EFFECT_REG, 0x0E);
-    LTP305_write_cmd(IS31FL3730_PWM_REG, brightness);
-    LTP305_write_cmd(IS31FL3730_UPDATE_COL_REG, 0x01);
+    LTP305_write_register(IS31FL3730_CONFIG_REG, 0x18, false);
+    LTP305_write_register(IS31FL3730_LIGHT_EFFECT_REG, 0x0E, false);
+    LTP305_write_register(IS31FL3730_PWM_REG, brightness, false);
+    LTP305_write_register(IS31FL3730_UPDATE_COL_REG, 0x01, true);
 }
 
 
-static void LTP305_write_cmd(uint8_t cmd, uint8_t value) {
+/**
+ * @brief Write a value to a display register.
+ *
+ * @param reg:     The display register.
+ * @param value:   The value to write.
+ * @param do_stop: Issue a STOP if `true`.
+ */
+static void LTP305_write_register(uint8_t reg, uint8_t value, bool do_stop) {
 
     // NOTE Already connected at this stage
-    uint8_t data[2] = {cmd, value};
+    uint8_t data[2] = {reg, value};
     i2c_start(host_i2c, i2c_address, 0);
     i2c_write(host_i2c, data, 2);
-    i2c_stop(host_i2c);
+    if (do_stop) i2c_stop(host_i2c);
 }
 
 
+/**
+ * @brief Write the two LED buffers to the display.
+ */
 static void LTP305_write_buffers() {
 
     i2c_start(host_i2c, i2c_address, 0);
     i2c_write(host_i2c, left_buffer, 9);
     i2c_write(host_i2c, right_buffer, 9);
-    i2c_stop(host_i2c);
 }
 
 
-/**
- * @brief Convert a 16-bit value (0-9999) to BCD notation.
- *
- * @param base: The value to convert.
- *
- * @retval The BCD form of the value.
- */
-static uint32_t LTP305_bcd(uint32_t base) {
-
-    if (base > 9999) base = 9999;
-    for (uint32_t i = 0 ; i < 16 ; ++i) {
-        base = base << 1;
-        if (i == 15) break;
-        if ((base & 0x000F0000) > 0x0004FFFF) base += 0x00030000;
-        if ((base & 0x00F00000) > 0x004FFFFF) base += 0x00300000;
-        if ((base & 0x0F000000) > 0x04FFFFFF) base += 0x03000000;
-        if ((base & 0xF0000000) > 0x4FFFFFFF) base += 0x30000000;
-    }
-
-    return (base >> 16) & 0xFFFF;
-}

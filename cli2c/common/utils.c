@@ -84,3 +84,14 @@ void lower(char* s) {
         if (s[j] >= 'A' && s[j] <= 'Z') s[j] += 32;
     }
 }
+
+
+/**
+ * @brief Verify an I2C address is in range.
+ *
+ * @param address: The address.
+ */
+bool check_i2c_address(long address) {
+    
+    return (address > 0x07 && address < 0x78);
+}

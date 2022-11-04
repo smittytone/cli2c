@@ -74,6 +74,9 @@ typedef struct {
     bool            connected;          // Set to true when connected
     int             port;               // OS file descriptor for host
     unsigned int    speed;              // I2C line speed (in kHz)
+    // FROM 1.2.0
+    bool            started;            // Transaction in process
+    unsigned int    address;            // Transaction's I2C address
 } I2CDriver;
 
 

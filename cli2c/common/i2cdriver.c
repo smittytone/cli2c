@@ -263,13 +263,14 @@ void i2c_connect(I2CDriver *sd, const char* portname) {
  */
 static bool i2c_ack(I2CDriver *sd) {
     
-    // FROM 1.2.0 -- Get error from host
     uint8_t read_buffer[HOST_RX_ACK_OR_ERR_B] = {0};
+    // Expect a single byte ACK or ERR
     if (readFromSerialPort(sd->port, read_buffer, 1) != 1) {
         get_and_show_last_error(sd);
         return false;
     }
     
+    // FROM 1.2.0 -- Get the error if there was one
     bool is_ackd = ((read_buffer[0] & ACK) == ACK);
     if (!is_ackd) get_and_show_last_error(sd);
     return is_ackd;
@@ -285,7 +286,7 @@ static bool i2c_ack(I2CDriver *sd) {
 static void i2c_get_info(I2CDriver *sd, bool do_print) {
     
     // FROM 1.2.0 -- Use the new command mode and request I2C info separately
-    // First, request the host info
+    // First, request the Bus Host info
     uint8_t read_buffer[HOST_RX_HOST_INFO_B] = {0};
     send_command(sd, '?');
     size_t result = readFromSerialPort(sd->port, read_buffer, 0);
@@ -417,7 +418,7 @@ void i2c_scan(I2CDriver *sd) {
     send_command(sd, 'd');
     size_t result = readFromSerialPort(sd->port, (uint8_t*)scan_buffer, 0);
     if (result == -1) {
-        print_error("Could not read from device");
+        print_error("Could not read scan data from device");
         return;
     }
     
@@ -528,8 +529,6 @@ static bool i2c_set_speed(I2CDriver *sd, long speed) {
  */
 static bool i2c_set_bus(I2CDriver *sd, uint8_t bus_id, uint8_t sda_pin, uint8_t scl_pin) {
     
-    if (bus_id < 0 || bus_id > 1) return false;
-    
     // FROM 1.2.0 -- Update to use the new I2C mode selection key
     uint8_t set_bus_data[6] = {'#', 'i', 'c', (bus_id & 0x01), sda_pin, scl_pin};
     writeToSerialPort(sd->port, set_bus_data, sizeof(set_bus_data));
@@ -564,9 +563,12 @@ bool i2c_start(I2CDriver *sd, uint8_t address, uint8_t op) {
 
     // This is a two-byte command: command + (address | op)
     // FROM 1.2.0 -- Update to use the new I2C mode selection key
+    // TODO -- Just send the address
     uint8_t start_data[4] = {'#', 'i', 's', ((address << 1) | op)};
     writeToSerialPort(sd->port, start_data, sizeof(start_data));
-    return i2c_ack(sd);
+    bool ackd = i2c_ack(sd);
+    if (ackd) sd->started = true;
+    return ackd;
 }
 
 
@@ -578,6 +580,8 @@ bool i2c_start(I2CDriver *sd, uint8_t address, uint8_t op) {
 bool i2c_stop(I2CDriver *sd) {
 
     send_command(sd, 'p');
+    sd->started = false;
+    sd->address = 0xFF;
     return i2c_ack(sd);
 }
 
@@ -754,13 +758,14 @@ void show_commands(void) {
     fprintf(stderr, "  w {address} {bytes}              Write bytes out to I2C.\n");
     fprintf(stderr, "  w {address} {bytes}              Bytes should be comma-separated hex pairs.\n");
     fprintf(stderr, "  r {address} {count}              Read count bytes in from I2C.\n");
-    fprintf(stderr, "                                   Issues a STOP after all the bytes have been read.\n");
-    fprintf(stderr, "  p                                Manually issue an I2C STOP.\n");
+    fprintf(stderr, "                                   Completes the I2C transaction when the bytes have been read.\n");
+    fprintf(stderr, "  p                                Complete the I2C transaction.\n");
     fprintf(stderr, "  x                                Reset the I2C bus.\n");
     fprintf(stderr, "  s                                Scan for devices on the I2C bus.\n");
     fprintf(stderr, "  i                                Get I2C bus host device information.\n");
     fprintf(stderr, "  l {on|off}                       Turn the I2C bus host LED on or off.\n");
-    fprintf(stderr, "  h                                Show help and quit.\n");
+    fprintf(stderr, "  -h/--help                        Show help and quit.\n");
+    fprintf(stderr, "  -v/--verison                     Show version infp and quit.\n");
 }
 
 
@@ -803,7 +808,7 @@ int process_commands(I2CDriver *sd, int argc, char *argv[], int delta) {
 
         switch (command[0]) {
             case 'C':
-            case 'c':   // CHOOSE I2C BUS AND (FROM 1.1.0) PINS
+            case 'c':   // CHOOSE I2C BUS AND (FROM 1.1.0) SET PINS
                 {
                     if (i < argc - 1) {
                         char* token = argv[++i];
@@ -826,16 +831,20 @@ int process_commands(I2CDriver *sd, int argc, char *argv[], int delta) {
                                 }
                                 
                                 if (bus_id != 1 && bus_id != 0) {
-                                    print_warning("Incorrect I2C bus ID selected. Should be 0 or 1");
-                                    bus_id = 0;
+                                    print_error("Incorrect I2C bus ID selected. Should be 0 or 1");
+                                    return EXIT_ERR;
                                 }
                                 
 #if DEBUG
                                 printf("BUS %li, SDA %li, SCL %li\n", bus_id, sda_pin, scl_pin);
 #endif
                                 
-                                bool result = i2c_set_bus(sd, (uint8_t)bus_id, (uint8_t)sda_pin, (uint8_t)scl_pin);
-                                if (!result) print_warning("I2C bus config un-ACK’d");
+                                bool set_ackd = i2c_set_bus(sd, (uint8_t)bus_id, (uint8_t)sda_pin, (uint8_t)scl_pin);
+                                if (!set_ackd) {
+                                    print_error("I2C bus config not set");
+                                    get_and_show_last_error(sd);
+                                    return EXIT_ERR;
+                                }
                                 break;
                             }
                         }
@@ -853,8 +862,7 @@ int process_commands(I2CDriver *sd, int argc, char *argv[], int delta) {
                         long speed = strtol(token, NULL, 0);
 
                         if (speed == 1 || speed == 4) {
-                            bool result = i2c_set_speed(sd, speed);
-                            if (!result) print_warning("Frequency set un-ACK’d");
+                            i2c_set_speed(sd, speed);
                         } else {
                             print_warning("Incorrect I2C frequency selected. Should be 1(00kHz) or 4(00kHz)");
                         }
@@ -873,8 +881,10 @@ int process_commands(I2CDriver *sd, int argc, char *argv[], int delta) {
                         char* token = argv[++i];
                         long pin_number = strtol(token, NULL, 0);
                         
+                        // Check general pin number range
+                        // TODO Board may still reject pin if it lacks them
                         if (pin_number < 0 || pin_number > 31) {
-                            print_error("Pin out of range (0-31");
+                            print_error("Pin out of range (0-31)");
                             return EXIT_ERR;
                         }
                         
@@ -890,15 +900,15 @@ int process_commands(I2CDriver *sd, int argc, char *argv[], int delta) {
                             if (want_high || want_low) pin_state = want_high || !want_low;
                             
                             // Pin direction is optional
-                            bool pin_direction = true;
+                            bool pin_direction_out = true;
                             if (i < argc - 1) {
                                 token = argv[++i];
                                 if (token[0] == '0' || token[0] == '1') {
-                                    pin_direction = (token[0] == '1');
+                                    pin_direction_out = (token[0] == '1');
                                 } else if (token[0] == 'i' || token[0] == 'o') {
                                     bool dir_in  = (strcasecmp(token, "in") == 0);
                                     bool dir_out = (strcasecmp(token, "out") == 0);
-                                    if (dir_in || dir_out) pin_direction = dir_out || !dir_in;
+                                    if (dir_in || dir_out) pin_direction_out = dir_out || !dir_in;
                                 } else {
                                     i -= 1;
                                 }
@@ -914,7 +924,7 @@ int process_commands(I2CDriver *sd, int argc, char *argv[], int delta) {
                             uint8_t send_byte = (uint8_t)pin_number;
                             send_byte &= 0x1F;
                             if (pin_state) send_byte |= 0x80;
-                            if (pin_direction) send_byte |= 0x40;
+                            if (pin_direction_out) send_byte |= 0x40;
                             if (do_read) send_byte |= 0x20;
                             
                             if (do_read) {
@@ -951,7 +961,7 @@ int process_commands(I2CDriver *sd, int argc, char *argv[], int delta) {
             case 'L':
             case 'l':   // SET THE BOARD LED
                 {
-                    // Get the address if we can
+                    // Get the action if we can
                     if (i < argc - 1) {
                         char* token = argv[++i];
                         bool is_on = (strcasecmp(token, "on") == 0);
@@ -970,7 +980,8 @@ int process_commands(I2CDriver *sd, int argc, char *argv[], int delta) {
                 }
         
             case 'P':
-            case 'p':   // ISSUE AN I2C STOP
+            case 'p':   // COMPLETE THE CURRENT
+                        // I2C TRANSACTION
                 i2c_stop(sd);
                 break;
 
@@ -981,23 +992,32 @@ int process_commands(I2CDriver *sd, int argc, char *argv[], int delta) {
                     if (i < argc - 1) {
                         char* token = argv[++i];
                         long address = strtol(token, NULL, 0);
-
-                        // Get the number of bytes if we can
-                        if (i < argc - 1) {
-                            token = argv[++i];
-                            size_t num_bytes = strtol(token, NULL, 0);
-                            uint8_t bytes[8192];
-
-                            bool ackd = i2c_start(sd, address, 1);
-                            if (ackd) {
-                                i2c_read(sd, bytes, num_bytes);
-                                i2c_stop(sd);
+                        
+                        if (check_i2c_address(address)) {
+                            // Get the number of bytes if we can
+                            if (i < argc - 1) {
+                                token = argv[++i];
+                                size_t num_bytes = strtol(token, NULL, 0);
+                                uint8_t bytes[8192];
+                                
+                                bool start_ackd = true;
+                                if (!sd->started || address != sd->address) start_ackd = i2c_start(sd, address, 1);
+                                if (start_ackd) {
+                                    // Tell the Bus Host to read the bytes
+                                    i2c_read(sd, bytes, num_bytes);
+                                    
+                                    // Tell the Bus Host to issue an I2C STOP
+                                    i2c_stop(sd);
+                                } else {
+                                    // The Bus Host couldn't start the transaction
+                                    get_and_show_last_error(sd);
+                                }
+                                break;
                             } else {
-                                get_and_show_last_error(sd);
+                                print_error("No I2C address given");
                             }
-                            break;
                         } else {
-                            print_error("No I2C address given");
+                            print_error("I2C address out of range (0x08-0x77)");
                         }
                     } else {
                         print_error("No I2C address given");
@@ -1019,29 +1039,40 @@ int process_commands(I2CDriver *sd, int argc, char *argv[], int delta) {
                         char* token = argv[++i];
                         long address = strtol(token, NULL, 0);
 
-                        // Get the bytes to write if we can
-                        if (i < argc - 1) {
-                            token = argv[++i];
-                            size_t num_bytes = 0;
-                            uint8_t bytes[8192];
-                            char* endptr = token;
+                        if (check_i2c_address(address)) {
+                            // Get the bytes to write if we can
+                            if (i < argc - 1) {
+                                token = argv[++i];
+                                size_t num_bytes = 0;
+                                uint8_t bytes[8192];
+                                char* endptr = token;
 
-                            while (num_bytes < sizeof(bytes)) {
-                                bytes[num_bytes++] = (uint8_t)strtol(endptr, &endptr, 0);
-                                if (*endptr == '\0') break;
-                                if (*endptr != ',') {
-                                    print_error("Invalid bytes: %s\n", token);
-                                    return EXIT_ERR;
+                                while (num_bytes < sizeof(bytes)) {
+                                    bytes[num_bytes++] = (uint8_t)strtol(endptr, &endptr, 0);
+                                    if (*endptr == '\0') break;
+                                    if (*endptr != ',') {
+                                        print_error("Invalid bytes: %s\n", token);
+                                        return EXIT_ERR;
+                                    }
+
+                                    endptr++;
                                 }
-
-                                endptr++;
+                                
+                                bool start_ackd = true;
+                                if (!sd->started || address != sd->address) start_ackd = i2c_start(sd, address, 1);
+                                if (start_ackd) {
+                                    // Tell the Bus Host to write out the bytes
+                                    i2c_write(sd, bytes, num_bytes);
+                                } else {
+                                    // The Bus Host couldn't start the transaction
+                                    get_and_show_last_error(sd);
+                                }
+                                break;
+                            } else {
+                                print_error("No I2C address given");
                             }
-
-                            bool ackd = i2c_start(sd, (uint8_t)address, 0);
-                            if (ackd) i2c_write(sd, bytes, num_bytes);
-                            break;
                         } else {
-                            print_error("No I2C address given");
+                            print_error("I2C address out of range (0x08-0x77)");
                         }
                     } else {
                         print_error("No I2C address given");
@@ -1056,9 +1087,9 @@ int process_commands(I2CDriver *sd, int argc, char *argv[], int delta) {
                 break;
                 
             case 'Z':
-            case 'z':   // INITIALISE BUS
-                // Initialize the I2C host's I2C bus
+            case 'z':   // INITIALISE THE BUS HOST'S I2C BUS
                 if (!(i2c_init(sd))) {
+                    // Fatal error
                     print_error("Could not initialise I2C");
                     flush_and_close_port(sd->port);
                     return EXIT_ERR;

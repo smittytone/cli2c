@@ -55,6 +55,7 @@ int main(int argc, char *argv[]) {
 
         // Connect... with the device path
         i2c.port = -1;
+        i2c.started = false;
         i2c_connect(&i2c, argv[1]);
 
         if (i2c.connected) {

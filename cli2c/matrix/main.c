@@ -243,8 +243,8 @@ static int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                     if (i < argc - 1) {
                         command = argv[++i];
                         if (command[0] == '0' && command[1] == 'x') {
-                            uint8_t bytes[8] = {0};
-                            char *endptr = command;
+                            uint8_t bytes[10] = {0};
+                            char* endptr = command;
                             size_t length = 0;
 
                             while (length < sizeof(bytes)) {
@@ -257,9 +257,16 @@ static int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
 
                                 endptr++;
                             }
-
+                            
+                            printf("COLS: %zu\n", length);
+                            
                             // Perform the action
-                            HT16K33_set_glyph(bytes);
+                            // Perform the action
+                            if (use_ht16k33) {
+                                HT16K33_set_glyph(bytes);
+                            } else {
+                                LTP305_set_glyph(0, bytes, length);
+                            }
                             do_draw = true;
                             break;
                         }
@@ -271,7 +278,7 @@ static int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
             
             case 'P':
             case 'p':   // PLOT A POINT
-                        // 3 parameters: 0-7, 0-7, 1|0
+                        // 3 parameters: x, y, 1|0
                 {
                     // Get two required arguments
                     long x = -1, y = -1;
@@ -299,18 +306,18 @@ static int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                                     // Perform the action
                                     if (use_ht16k33) {
                                         if (x < 0 || x > 7 || y < 0 || y > 7) {
-                                            print_error("Co-ordinate out of range (0-7)");
+                                            print_error("Co-ordinate out of range");
                                             return EXIT_ERR;
                                         }
 
                                         HT16K33_plot((uint8_t)x, (uint8_t)y, ink == 1);
                                     } else {
-                                        if (x < 0 || x > 4 || y < 0 || y > 6) {
-                                            print_error("Co-ordinate out of range (0-7)");
+                                        if (x < 0 || x > 9 || y < 0 || y > 6) {
+                                            print_error("Co-ordinate out of range");
                                             return EXIT_ERR;
                                         }
 
-                                        LTP305_plot(LEFT, (uint8_t)x, (uint8_t)y, ink == 1);
+                                        LTP305_plot((uint8_t)x, (uint8_t)y, ink == 1);
                                     }
                                     do_draw = true;
                                     break;
