@@ -26,7 +26,7 @@ void init_spi(SPI_State* sps) {
 
     // Is SPI available? It isn't on some boards
     if (sps->baudrate == 0) return;
-    
+
     // Initialise SPI via SDK
     spi_init(sps->bus, sps->baudrate * 1000);
 
@@ -85,6 +85,16 @@ bool configure_spi(SPI_State* sps, uint8_t* data) {
 }
 
 
+/**
+ * @brief Check that supplied pins are valid for the
+ *        board we're using.
+ *
+ * @param data: The received data. Byte 0 is the bus ID,
+ *              byte 2 the RX pin, byte 3 the TX pin,
+ *              byte 4 the CS pin, byte 5 the SCK pin.
+ *
+ * @retval Whether the pins are good (`true`) or not (`false`).
+ */
 bool check_spi_pins(uint8_t* data) {
 
     // Get the bus ID
@@ -134,14 +144,13 @@ void get_spi_state(SPI_State* sps, char* output) {
  *
  * @param sps: The SPI state record.
  * @param pin: An arbitrary GPIO pin that we're checking.
- * 
+ *
  * @retval `true` if the pin is in use by the bus, or `false`.
  */
 bool spi_is_pin_in_use(SPI_State* sps, uint8_t pin) {
 
-    return (pin == sps->rx_pin || 
+    return (pin == sps->rx_pin ||
             pin == sps->tx_pin ||
             pin == sps->cs_pin ||
             pin == sps->sck_pin);
 }
-

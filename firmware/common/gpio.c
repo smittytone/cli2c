@@ -16,7 +16,7 @@
  * @param gps:        The GPIO state record.
  * @param read_value: Pointer to a byte into which to read the pin value, if read.
  * @param data:       The command data.
- * 
+ *
  * @retval Whether the operation was successful (`true`) or not (`false`).
  */
 bool set_gpio(GPIO_State* gps, uint8_t* read_value, uint8_t* data) {
@@ -26,8 +26,8 @@ bool set_gpio(GPIO_State* gps, uint8_t* read_value, uint8_t* data) {
     bool is_dir_out  = ((data[1] & 0x40) > 0);
     bool is_read     = ((data[1] & 0x20) > 0);
 
-    // TODO
-    // Make sure the pin's not in use for active I2C and/or active SPI
+    // NOTE Function will not have been called if a bus is using the pin,
+    //      but the check should really be here
 
     // Register pin usage, state and initialise if necessary
     if (gps->state_map[gpio_pin] == 0x00) {

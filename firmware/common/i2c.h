@@ -31,6 +31,7 @@
 typedef struct {
     bool        is_ready;
     bool        is_started;
+    //FROM 1.2.0 -- removed:
     //bool        is_read_op;
     uint32_t    read_byte_count;
     uint32_t    write_byte_count;

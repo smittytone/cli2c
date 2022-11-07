@@ -65,7 +65,7 @@ void rx_loop(void) {
     // FROM 1.2.0
     // Default current mode to I2C, for backwards compatibility
     // NOTE Call the function so the LED colour is correctly set
-    uint8_t current_mode = MODE_I2C; //get_mode('i');
+    uint8_t current_mode = get_mode('I');
     void* bus_states[2] = {&i2c_state, &spi_state};
 
     // Heartbeat variables
@@ -308,7 +308,7 @@ void rx_loop(void) {
                         // FROM 2.0.0
                         case 'q':   // GET BUS INFO
                                     // APPLIES TO I2C, SPI
-                            {   
+                            {
                                 char status_buffer[129] = {0};
                                 switch(current_mode) {
                                     case MODE_I2C:
@@ -329,7 +329,7 @@ void rx_loop(void) {
                                 }
                                 break;
                             }
-                             
+
                         /*
                          * I2C-SPECIFIC COMMANDS
                          */
@@ -378,6 +378,9 @@ void rx_loop(void) {
                             {
                                 uint8_t read_value = 0;
                                 uint8_t gpio_pin = (rx_ptr[1] & 0x1F);
+
+                                // FROM 1.2.0
+                                // Make sure the pin's not in use by the bus
                                 if (i2c_is_pin_in_use(&i2c_state, gpio_pin) ||
                                     spi_is_pin_in_use(&spi_state, gpio_pin)) {
                                     last_error_code = GPIO_CANT_SET_PIN;
@@ -436,7 +439,7 @@ void rx_loop(void) {
  * @brief Send host device information.
  *
  * @param itr: A pointer to the current I2C transaction record.
- * 
+ *
  * @deprecated This function will be removed in a future release.
  */
 static void send_status(I2C_State* itr) {
@@ -685,4 +688,3 @@ static uint8_t get_mode(char mode_key) {
     // Error condition
     return MODE_NONE;
 }
-

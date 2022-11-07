@@ -40,8 +40,8 @@
  * CONSTANTS
  */
 #define SERIAL_READ_TIMEOUT_US                  10
-#define RX_LOOP_DELAY_MS                        10
-#define UART_LOOP_DELAY_MS                    5
+#define RX_LOOP_DELAY_MS                        5
+#define UART_LOOP_DELAY_MS                      1
 #define HEARTBEAT_PERIOD_US                     2000000
 #define HEARTBEAT_FLASH_US                      100000
 
