@@ -237,7 +237,7 @@ static void LTP305_write_register(uint8_t reg, uint8_t value, bool do_stop) {
 
     // NOTE Already connected at this stage
     uint8_t data[2] = {reg, value};
-    i2c_start(host_i2c, i2c_address, 0);
+    i2c_start(host_i2c, i2c_address);
     i2c_write(host_i2c, data, 2);
     if (do_stop) i2c_stop(host_i2c);
 }
@@ -248,7 +248,7 @@ static void LTP305_write_register(uint8_t reg, uint8_t value, bool do_stop) {
  */
 static void LTP305_write_buffers() {
 
-    i2c_start(host_i2c, i2c_address, 0);
+    i2c_start(host_i2c, i2c_address);
     i2c_write(host_i2c, left_buffer, 9);
     i2c_write(host_i2c, right_buffer, 9);
 }

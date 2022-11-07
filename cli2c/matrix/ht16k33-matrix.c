@@ -13,7 +13,7 @@
  * STATIC PROTOTYPES
  */
 static void HT16K33_sleep_ms(int ms);
-static void HT16K33_write_cmd(uint8_t cmd);
+static void HT16K33_write_cmd(uint8_t cmd, bool do_stop);
 
 
 /*
@@ -21,7 +21,7 @@ static void HT16K33_write_cmd(uint8_t cmd);
  */
 // The Ascii character set
 const char CHARSET[128][6] = {
-    "\x00\x00\x00",              // space - Ascii 32
+    "\x00",                      // space - Ascii 32
     "\xfa\x00",                  // !
     "\xc0\x00\xc0\x00",          // "
     "\x24\x7e\x24\x7e\x24\x00",  // #
@@ -153,11 +153,11 @@ void HT16K33_init(I2CDriver *sd, int address, uint8_t angle) {
 void HT16K33_power(bool is_on) {
 
     if (is_on) {
-        HT16K33_write_cmd(HT16K33_CMD_POWER_ON);
-        HT16K33_write_cmd(HT16K33_CMD_DISPLAY_ON);
+        HT16K33_write_cmd(HT16K33_CMD_POWER_ON, false);
+        HT16K33_write_cmd(HT16K33_CMD_DISPLAY_ON, true);
     } else {
-        HT16K33_write_cmd(HT16K33_CMD_DISPLAY_OFF);
-        HT16K33_write_cmd(HT16K33_CMD_POWER_OFF);
+        HT16K33_write_cmd(HT16K33_CMD_DISPLAY_OFF, false);
+        HT16K33_write_cmd(HT16K33_CMD_POWER_OFF, true);
     }
 }
 
@@ -170,9 +170,7 @@ void HT16K33_power(bool is_on) {
  */
 void HT16K33_set_angle(uint8_t angle) {
 
-    if (angle < 4) {
-        display_angle = angle;
-    }
+    if (angle < 4) display_angle = angle;
 }
 
 
@@ -184,7 +182,7 @@ void HT16K33_set_angle(uint8_t angle) {
 void HT16K33_set_brightness(uint8_t brightness) {
 
     if (brightness > 15) brightness = 15;
-    HT16K33_write_cmd(HT16K33_CMD_BRIGHTNESS | brightness);
+    HT16K33_write_cmd((HT16K33_CMD_BRIGHTNESS | brightness), true);
 }
 
 
@@ -195,16 +193,14 @@ void HT16K33_set_brightness(uint8_t brightness) {
  */
 void HT16K33_clear_buffer(void) {
 
-    for (uint8_t i = 0 ; i < 8 ; ++i) {
-        display_buffer[i] = 0;
-    }
+    memset(display_buffer, 0x00, 8);
 }
 
 
 /**
  * @brief Write the display buffer out to the LED.
  */
-void HT16K33_draw(bool and_stop) {
+void HT16K33_draw(bool do_stop) {
 
     // Set up the buffer holding the data to be
     // transmitted to the LED
@@ -216,15 +212,15 @@ void HT16K33_draw(bool and_stop) {
 
     // Span the 8 bytes of the graphics buffer
     // across the 16 bytes of the LED's buffer
-    for (int i = 0 ; i < 8 ; ++i) {
+    for (size_t i = 0 ; i < 8 ; ++i) {
         uint8_t a = display_buffer[i];
         tx_buffer[i * 2 + 1] = (a >> 1) + ((a << 7) & 0xFF);
     }
 
     // Display the buffer and flash the LED
-    i2c_start(host_i2c, i2c_address, 0);
+    i2c_start(host_i2c, i2c_address);
     i2c_write(host_i2c, tx_buffer, 17);
-    if (and_stop) i2c_stop(host_i2c);
+    if (do_stop) i2c_stop(host_i2c);
 }
 
 
@@ -259,7 +255,7 @@ void HT16K33_set_char(uint8_t ascii, bool is_centred) {
         delta = (8 - strlen(CHARSET[ascii - 32])) >> 1;
     }
 
-    for (uint8_t i = 0 ; i < 8 ; ++i) {
+    for (size_t i = 0 ; i < 8 ; ++i) {
         if (CHARSET[ascii - 32][i] == 0) break;
         display_buffer[i + delta] = CHARSET[ascii - 32][i];
     }
@@ -275,9 +271,7 @@ void HT16K33_set_char(uint8_t ascii, bool is_centred) {
  */
 void HT16K33_set_glyph(uint8_t* bytes) {
 
-    for (uint8_t i = 0 ; i < 8 ; ++i) {
-        display_buffer[i] = bytes[i];
-    }
+   memcpy(display_buffer, bytes, 8);
 }
 
 
@@ -293,7 +287,7 @@ void HT16K33_print(const char *text, uint32_t delay_ms) {
     int length = 0;
     for (size_t i = 0 ; i < strlen(text) ; ++i) {
         uint8_t asc_val = text[i] - 32;
-        length += (asc_val == 0 ? 2: strlen(CHARSET[asc_val]));
+        length += (asc_val == 0 ? 2 : strlen(CHARSET[asc_val]));
         if (asc_val > 0) length++;
     }
 
@@ -306,17 +300,18 @@ void HT16K33_print(const char *text, uint32_t delay_ms) {
         uint8_t asc_val = text[i] - 32;
         if (asc_val == 0) {
             // It's a space, so just add two blank columns
-            col += 2;
+            src_buffer[col++] = 0x00;
+            src_buffer[col++] = 0x00;
         } else {
             // Get the character glyph and write it to the buffer
             size_t glyph_len = strlen(CHARSET[asc_val]);
-
-            for (int j = 0 ; j < glyph_len ; ++j) {
+            for (size_t j = 0 ; j < glyph_len ; ++j) {
                 src_buffer[col] = CHARSET[asc_val][j];
                 ++col;
             }
 
-            ++col;
+            // Space between lines
+            src_buffer[col++] = 0x00;
         }
     }
 
@@ -325,7 +320,7 @@ void HT16K33_print(const char *text, uint32_t delay_ms) {
     int cursor = 0;
     while (1) {
         int a = cursor;
-        for (int i = 0 ; i < 8 ; ++i) {
+        for (size_t i = 0 ; i < 8 ; ++i) {
             display_buffer[i] = src_buffer[a];
             a += 1;
         }
@@ -334,7 +329,7 @@ void HT16K33_print(const char *text, uint32_t delay_ms) {
         HT16K33_draw(cursor > length - 8);
         if (cursor > length - 8) break;
 
-        //HT16K33_sleep_ms(display_angle == 0 ? delay_ms : (delay_ms * 2 / 3));
+        HT16K33_sleep_ms(display_angle == 0 ? delay_ms : (delay_ms * 2 / 3));
     };
 }
 
@@ -350,7 +345,7 @@ void HT16K33_rotate(uint8_t angle) {
     uint8_t a = 0;
     uint8_t line_value = 0;
 
-    for (int32_t y = 0 ; y < 8 ; ++y) {
+    for (size_t y = 0 ; y < 8 ; ++y) {
         line_value = display_buffer[y];
         for (int32_t x = 7 ; x > -1 ; x--) {
             a = line_value & (1 << x);
@@ -378,19 +373,13 @@ void HT16K33_rotate(uint8_t angle) {
  */
 static void HT16K33_sleep_ms(int ms) {
     
-    /*
-    struct timespec ts;
-    int res;
-
-    ts.tv_sec = ms / 1000;
-    ts.tv_nsec = (ms % 1000) * 1000000;
-
-    do {
-        res = nanosleep(&ts, &ts);
-    } while (res && errno == EINTR);
-    */
     
-    usleep(ms * 1000);
+    struct timespec ts;
+    ts.tv_sec = 0;
+    ts.tv_nsec = (ms % 1000) * 1000000;
+    nanosleep(&ts, NULL);
+    
+    //usleep(ms * 1000);
 }
 
 
@@ -399,12 +388,12 @@ static void HT16K33_sleep_ms(int ms) {
  *
  * @param cmd: The single-byte command.
  */
-static void HT16K33_write_cmd(uint8_t cmd) {
+static void HT16K33_write_cmd(uint8_t cmd, bool do_stop) {
 
     // NOTE Already connected at this stage
-    bool ackd = i2c_start(host_i2c, i2c_address, 0);
+    bool ackd = i2c_start(host_i2c, i2c_address);
     if (ackd) {
         ackd = i2c_write(host_i2c, &cmd, 1);
-        ackd = i2c_stop(host_i2c);
+        if (do_stop) ackd = i2c_stop(host_i2c);
     }
 }

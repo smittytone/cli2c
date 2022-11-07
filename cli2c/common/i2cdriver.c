@@ -77,7 +77,7 @@ static int openSerialPort(const char *device_file) {
     }
 
     // Set the port speed
-    speed_t speed = (speed_t)115200;
+    speed_t speed = (speed_t)1000000;
 #ifndef BUILD_FOR_LINUX
     if (ioctl(fd, IOSSIOSPEED, &speed) == -1) {
         print_error("Could not set port speed to %ibps - %s (%d)", speed, strerror(errno), errno);
@@ -226,16 +226,18 @@ void flush_and_close_port(int fd) {
  *        Always check the I2CDriver record that the `connected` field is `true`.
  *
  * @param fd:       The port’s OS file descriptor.
- * @param portname: The device path as a string.
  */
-void i2c_connect(I2CDriver *sd, const char* portname) {
+void i2c_connect(I2CDriver *sd) {
 
     // Mark that we're not connected
     sd->connected = false;
 
     // Open and get the serial port or bail
-    sd->port = openSerialPort(portname);
-    if (sd->port == -1) return;
+    sd->port = openSerialPort(sd->portname);
+    if (sd->port == -1) {
+        print_error("Could not connect to device %s\n", sd->portname);
+        return;
+    }
 
     // Perform a basic communications check
     // FROM 1.1.1 -- use ! in place of z (internal change)
@@ -243,8 +245,8 @@ void i2c_connect(I2CDriver *sd, const char* portname) {
     uint8_t rx[HOST_RX_OK_MESSAGE_B] = {0};
     size_t result = readFromSerialPort(sd->port, rx, 4);
     if (result == -1 || ((rx[0] != 'O') && (rx[1] != 'K'))) {
-        print_error("Could not read from device");
-        return;
+        print_error("Could not connect to device %s\n", sd->portname);
+        return ;
     }
 
     // Got this far? We're good to go
@@ -409,7 +411,7 @@ static void i2c_get_info(I2CDriver *sd, bool do_print) {
  * @param sd: Pointer to an I2CDriver structure.
  */
 void i2c_scan(I2CDriver *sd) {
-
+    
     char scan_buffer[HOST_RX_SCAN_RESULTS_B] = {0};
     uint8_t device_list[CONNECTED_DEVICES_MAX_B] = {0};
     uint device_count = 0;
@@ -555,16 +557,15 @@ static bool i2c_reset(I2CDriver *sd) {
  *
  * @param sd:      Pointer to an I2CDriver structure.
  * @param address: The target device's I2C address.
- * @param op:      Read (0) or write (1) I2C operation.
  *
  * @retval Whether the command was ACK'd (`true`) or not (`false`).
  */
-bool i2c_start(I2CDriver *sd, uint8_t address, uint8_t op) {
-
+bool i2c_start(I2CDriver *sd, uint8_t address) {
+    
     // This is a two-byte command: command + (address | op)
     // FROM 1.2.0 -- Update to use the new I2C mode selection key
-    // TODO -- Just send the address
-    uint8_t start_data[4] = {'#', 'i', 's', ((address << 1) | op)};
+    sd->address = address;
+    uint8_t start_data[4] = {'#', 'i', 's', (sd->address << 1)};
     writeToSerialPort(sd->port, start_data, sizeof(start_data));
     bool ackd = i2c_ack(sd);
     if (ackd) sd->started = true;
@@ -578,7 +579,7 @@ bool i2c_start(I2CDriver *sd, uint8_t address, uint8_t op) {
  * @param sd: Pointer to an I2CDriver structure.
  */
 bool i2c_stop(I2CDriver *sd) {
-
+    
     send_command(sd, 'p');
     sd->started = false;
     sd->address = 0xFF;
@@ -612,7 +613,7 @@ size_t i2c_write(I2CDriver *sd, const uint8_t bytes[], size_t byte_count) {
 
         // Write out the block -- use ACK as byte count
         writeToSerialPort(sd->port, write_cmd, 1 + length);
-        ack = i2c_ack(sd);
+        //ack = i2c_ack(sd);
         count += length;
     }
 
@@ -823,8 +824,8 @@ int process_commands(I2CDriver *sd, int argc, char *argv[], int delta) {
                                 long scl_pin = strtol(token, NULL, 0);
                                 
                                 // Make sure we have broadly valid pin numbers
-                                if (sda_pin < 0 || sda_pin > 32 ||
-                                    scl_pin < 0 || scl_pin > 32 ||
+                                if (sda_pin < 0 || sda_pin > RP2040_TOP_GPIO_PIN ||
+                                    scl_pin < 0 || scl_pin > RP2040_TOP_GPIO_PIN ||
                                     sda_pin == scl_pin) {
                                     print_error("Unsupported pin value(s) specified");
                                     return EXIT_ERR;
@@ -883,8 +884,8 @@ int process_commands(I2CDriver *sd, int argc, char *argv[], int delta) {
                         
                         // Check general pin number range
                         // TODO Board may still reject pin if it lacks them
-                        if (pin_number < 0 || pin_number > 31) {
-                            print_error("Pin out of range (0-31)");
+                        if (pin_number < 0 || pin_number > RP2040_TOP_GPIO_PIN) {
+                            print_error("Pin out of range (0-%i), RP2040_TOP_GPIO_PIN");
                             return EXIT_ERR;
                         }
                         
@@ -916,7 +917,7 @@ int process_commands(I2CDriver *sd, int argc, char *argv[], int delta) {
 
                             // Encode the TX data:
                             // Bit 7 6 5 4 3 2 1 0
-                            //     | | | |_______|________ Pin number 0-31
+                            //     | | | |_______|________ Pin number 0-RP2040_TOP_GPIO_PIN
                             //     | | |__________________ Read flag (1 = read op)
                             //     | |____________________ Direction bit (1 = out, 0 = in)
                             //     |______________________ State bit (1 = HIGH, 0 = LOW)
@@ -1001,7 +1002,7 @@ int process_commands(I2CDriver *sd, int argc, char *argv[], int delta) {
                                 uint8_t bytes[8192];
                                 
                                 bool start_ackd = true;
-                                if (!sd->started || address != sd->address) start_ackd = i2c_start(sd, address, 1);
+                                if (!sd->started || address != sd->address) start_ackd = i2c_start(sd, address);
                                 if (start_ackd) {
                                     // Tell the Bus Host to read the bytes
                                     i2c_read(sd, bytes, num_bytes);
@@ -1059,7 +1060,7 @@ int process_commands(I2CDriver *sd, int argc, char *argv[], int delta) {
                                 }
                                 
                                 bool start_ackd = true;
-                                if (!sd->started || address != sd->address) start_ackd = i2c_start(sd, address, 1);
+                                if (!sd->started || address != sd->address) start_ackd = i2c_start(sd, address);
                                 if (start_ackd) {
                                     // Tell the Bus Host to write out the bytes
                                     i2c_write(sd, bytes, num_bytes);

@@ -54,9 +54,10 @@ int main(int argc, char* argv[]) {
         }
 
         // Connect... with the device path
-        i2c.port = -1;
         int i2c_address = HT16K33_I2C_ADDR;
-        i2c_connect(&i2c, argv[1]);
+        i2c.port = -1;
+        i2c.portname = argv[1];
+        i2c_connect(&i2c);
 
         if (i2c.connected) {
             // Initialize the I2C host's I2C bus
@@ -258,8 +259,6 @@ static int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                                 endptr++;
                             }
                             
-                            printf("COLS: %zu\n", length);
-                            
                             // Perform the action
                             // Perform the action
                             if (use_ht16k33) {
@@ -302,7 +301,7 @@ static int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                                             i -= 1;
                                         }
                                     }
-
+                                    
                                     // Perform the action
                                     if (use_ht16k33) {
                                         if (x < 0 || x > 7 || y < 0 || y > 7) {
@@ -364,18 +363,19 @@ static int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                         char *scroll_string = argv[++i];
 
                         // Get an optional argument
-                        uint32_t scroll_delay_ms = 100;
+                        long scroll_delay_ms = 10;
                         if (i < argc - 1) {
                             command = argv[++i];
                             if (command[0] >= '0' && command[0] <= '9') {
-                                scroll_delay_ms = (uint32_t)strtol(command, NULL, 0);
+                                scroll_delay_ms = strtol(command, NULL, 0);
+                                printf("Speed: %lu\n", scroll_delay_ms);
                             } else {
                                 i -= 1;
                             }
                         }
 
                         // Perform the action
-                        HT16K33_print(scroll_string, scroll_delay_ms);
+                        HT16K33_print(scroll_string, (uint32_t)scroll_delay_ms);
                         break;
                     }
 

@@ -66,6 +66,8 @@
 
 #define INTRA_COMMAND_PAUSE_MS          0.010
 
+#define RP2040_TOP_GPIO_PIN             29
+
 
 /*
  * STRUCTURES
@@ -77,6 +79,7 @@ typedef struct {
     // FROM 1.2.0
     bool            started;            // Transaction in process
     unsigned int    address;            // Transaction's I2C address
+    char*           portname;           // Port's path, eg. /dev/cu.usbmodem101
 } I2CDriver;
 
 
@@ -87,10 +90,10 @@ typedef struct {
 void            flush_and_close_port(int fd);
 
 // I2C Driver Functions
-void            i2c_connect(I2CDriver *sd, const char* portname);
+void            i2c_connect(I2CDriver *sd);
 bool            i2c_init(I2CDriver *sd);
 
-bool            i2c_start(I2CDriver *sd, uint8_t address, uint8_t op);
+bool            i2c_start(I2CDriver *sd, uint8_t address);
 bool            i2c_stop(I2CDriver *sd);
 
 size_t          i2c_write(I2CDriver *sd, const uint8_t bytes[], size_t nn);

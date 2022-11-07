@@ -14,7 +14,7 @@
  */
 static uint32_t HT16K33_bcd(uint32_t base);
 static void     HT16K33_sleep_ms(int ms);
-static void     HT16K33_write_cmd(uint8_t cmd);
+static void     HT16K33_write_cmd(uint8_t cmd, bool do_stop);
 
 
 /*
@@ -64,11 +64,11 @@ void HT16K33_flip(void) {
 void HT16K33_power(bool is_on) {
 
     if (is_on) {
-        HT16K33_write_cmd(HT16K33_CMD_POWER_ON);
-        HT16K33_write_cmd(HT16K33_CMD_DISPLAY_ON);
+        HT16K33_write_cmd(HT16K33_CMD_POWER_ON, false);
+        HT16K33_write_cmd(HT16K33_CMD_DISPLAY_ON, true);
     } else {
-        HT16K33_write_cmd(HT16K33_CMD_DISPLAY_OFF);
-        HT16K33_write_cmd(HT16K33_CMD_POWER_OFF);
+        HT16K33_write_cmd(HT16K33_CMD_DISPLAY_OFF, false);
+        HT16K33_write_cmd(HT16K33_CMD_POWER_OFF, true);
     }
 }
 
@@ -81,7 +81,7 @@ void HT16K33_power(bool is_on) {
 void HT16K33_set_brightness(uint8_t brightness) {
 
     if (brightness > 15) brightness = 15;
-    HT16K33_write_cmd(HT16K33_CMD_BRIGHTNESS | brightness);
+    HT16K33_write_cmd((HT16K33_CMD_BRIGHTNESS | brightness), true);
 }
 
 
@@ -99,7 +99,7 @@ void HT16K33_clear_buffer(void) {
 /**
  * @brief Write the display buffer out to the LED.
  */
-void HT16K33_draw(void) {
+void HT16K33_draw(bool do_stop) {
 
     // Check for an overturned LED
     if (is_flipped) {
@@ -113,7 +113,7 @@ void HT16K33_draw(void) {
         display_buffer[POS[2]] = a;
 
         // Rotate each digit
-        for (uint32_t i = 0 ; i < 4 ; ++i) {
+        for (size_t i = 0 ; i < 4 ; ++i) {
             a = display_buffer[POS[i]];
             uint8_t b = (a & 0x07) << 3;
             uint8_t c = (a & 0x38) >> 3;
@@ -122,10 +122,10 @@ void HT16K33_draw(void) {
         }
     }
 
-    // Display the buffer and flash the LED
-    i2c_start(host_i2c, i2c_address, 0);
+    // Display the buffer
+    i2c_start(host_i2c, i2c_address);
     i2c_write(host_i2c, display_buffer, 17);
-    i2c_stop(host_i2c);
+    if (do_stop) i2c_stop(host_i2c);
 }
 
 
@@ -294,12 +294,12 @@ static void HT16K33_sleep_ms(int ms) {
  *
  * @param cmd: The single-byte command.
  */
-static void HT16K33_write_cmd(uint8_t cmd) {
+static void HT16K33_write_cmd(uint8_t cmd, bool do_stop) {
 
     // NOTE Already connected at this stage
-    bool ackd = i2c_start(host_i2c, i2c_address, 0);
+    bool ackd = i2c_start(host_i2c, i2c_address);
     if (ackd) {
         ackd = i2c_write(host_i2c, &cmd, 1);
-        ackd = i2c_stop(host_i2c);
+        if (do_stop) ackd = i2c_stop(host_i2c);
     }
 }
