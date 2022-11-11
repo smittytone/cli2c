@@ -613,7 +613,8 @@ size_t i2c_write(I2CDriver *sd, const uint8_t bytes[], size_t byte_count) {
 
         // Write out the block -- use ACK as byte count
         writeToSerialPort(sd->port, write_cmd, 1 + length);
-        //ack = i2c_ack(sd);
+        ack = i2c_ack(sd);
+        if (!ack) break;
         count += length;
     }
 
@@ -764,6 +765,7 @@ void show_commands(void) {
     fprintf(stderr, "  x                                Reset the I2C bus.\n");
     fprintf(stderr, "  s                                Scan for devices on the I2C bus.\n");
     fprintf(stderr, "  i                                Get I2C bus host device information.\n");
+    fprintf(stderr, "  g {number} [hi|lo] [in|out]      Control a GPIO pin.\n");
     fprintf(stderr, "  l {on|off}                       Turn the I2C bus host LED on or off.\n");
     fprintf(stderr, "  -h/--help                        Show help and quit.\n");
     fprintf(stderr, "  -v/--verison                     Show version infp and quit.\n");
