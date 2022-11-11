@@ -6,6 +6,8 @@ It requires a [Raspberry Pi Pico](https://www.raspberrypi.com/documentation/micr
 
 There’s more information [in this blog post](https://blog.smittytone.net/2022/10/18/how-to-talk-to-i2c-sensors-displays-from-a-mac/).
 
+**IMPORTANT** Version 1.2.0 of the apps require version 1.2.0 of the host firmware; they will not work with older versions of the firmware. Firmware 1.2.0 will work with older versions of the apps, but these versions are deprecated and support for them will be removed in a future version of the firmware.
+
 ## Build the Client Apps
 
 #### macOS
@@ -114,6 +116,7 @@ cli2c {device_port} [command] ... [command]
 | `x` |  | Reset the I2C bus |
 | `s` |  |  Display devices on the I2C bus. **Note** This will initialise the bus if it is not already initialised |
 | `i` |  |  Display I2C host device information |
+| `g` | {pin_number} [hi|lo] [in|out] | [Set a GPIO pin](#gpio). |
 | `l` | {`on`\|`off`} | Turn the I2C Host LED on or off |
 | `h` |  |  Display help information |
 
@@ -147,6 +150,27 @@ line in the board’s `CMakeLists.txt` file.
 
 But don’t forget that you can use the `c` command to choose an alternative I2C bus and pins.
 
+#### GPIO
+
+You can use `cli2c` to set a GPIO pin. Provide the GPIO number and its initial state (`hi` or `lo`) and its mode: whether it is an input or output (`in` or `out`).
+
+Setting a pin to an output immediately sets its state to the provided value. To change the state, just pass in the opposite value. There’s no need to specify its mode again unless you wish to change it.
+
+```
+cli2c /dev/cu.usbmodem-101 10 hi out
+cli2c /dev/cu.usbmodem-101 10 lo
+```
+
+Setting a pin to an input does nothing immediately, and the supplied state value is ignored unless it is `r`, for read. To read an input pin, pass `r` in place of a state: `cli2c` will output the pin’s current value as a two-digit hex number:
+
+```
+cli2c /dev/cu.usbmodem-101 10 lo in
+cli2c /dev/cu.usbmodem-101 10 r
+01
+```
+
+Again, you don’t need to restate the pin’s mode unless you’re changing it.
+
 ## matrix
 
 `matrix` is a specific driver for HT16K33-based 8x8 LED matrices. It embeds `cli2c` but exposes a different, display-oriented set of commands.
@@ -174,6 +198,18 @@ matrix {device} [I2C address] [commands]
 | `w` | None | Clear the screen |
 | `r` | {angle} | Rotate the display by the specified multiple of 90 degrees |
 | `h` | None | Display help information |
+
+#### Devices
+
+Version 1.2.0 also supports [Pimoroni’s LED Dot Matrix Breakout boards](https://shop.pimoroni.com/products/led-dot-matrix-breakout?variant=32274405621843). These use the I2C address range 0x61-0x63, so you can select which matrix type your commands are applied to by specifying an I2C address in this range:
+
+```
+matrix /dev/cu.usbserial-DO029IEZ 0x61 a on c TS
+```
+
+The Dot Matrix Breakouts each hold two 5 x 7 LTP-305 matrices driven by a single IS31FL3730 controller for a combined area of 10 x 7. For plots and glyphs, this is the area to work with. To draw characters with the `c` command, provide two characters instead of one, as shown in the example above. The first character will be displayed on the left matrix, the second one on the right. Supported brightness values are 0 to 64.
+
+#### Multiple Commands
 
 Multiple commands can be issued by sequencing them at the command line. For example:
 
@@ -278,10 +314,11 @@ Thanks are also due to Hermann Stamm-Wilbrandt ([@Hermann-SW](https://github.com
 ## Release Notes
 
 * 1.2.0 *Unreleased*
+    * A big data transfer speed improvement.
     * Support Pimoroni LTP-305 breakouts in `matrix`.
     * Document GPIO usage.
-    * Refactor code to support future expansion.
     * Add host error record.
+    * Refactor code to support future expansion.
     * Deprecate old methods.
 * 1.1.1 *27 October 2022*
     * Internal changes.
