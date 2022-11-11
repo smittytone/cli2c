@@ -147,7 +147,11 @@ static int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                     }
 
                     // Apply the command
-                    if (use_ht16k33) HT16K33_power(is_on);
+                    if (use_ht16k33) {
+                        HT16K33_power(is_on);
+                    } else {
+                        LTP305_power_on();
+                    }
                 }
                 break;
                 
@@ -332,7 +336,8 @@ static int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
 
             case 'R':
             case 'r':   // ROTATE DISPLAY
-                        // 1 parameter: 0-3 (x 90 degrees)
+                        // 1 parameter: 0-3 (x 90 degrees)  HT16K33
+                        // 1 parameter: 0-1 (x 180 degrees) LTP305
                 {
                     // Get an optional argument
                     long angle = 0;
@@ -349,6 +354,8 @@ static int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                     if (use_ht16k33) {
                         HT16K33_set_angle((uint8_t)angle);
                         HT16K33_rotate((uint8_t)angle);
+                    } else {
+                        LTP305_flip(angle > 0);
                     }
                 }
                 break;
@@ -375,7 +382,12 @@ static int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                         }
 
                         // Perform the action
-                        HT16K33_print(scroll_string, (uint32_t)scroll_delay_ms);
+                        if (use_ht16k33) {
+                            HT16K33_print(scroll_string, (uint32_t)scroll_delay_ms);
+                        } else {
+                            LTP305_print(scroll_string, (uint32_t)scroll_delay_ms);
+                        }
+                        
                         break;
                     }
 

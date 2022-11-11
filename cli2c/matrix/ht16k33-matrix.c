@@ -373,13 +373,18 @@ void HT16K33_rotate(uint8_t angle) {
  */
 static void HT16K33_sleep_ms(int ms) {
     
-    
-    struct timespec ts;
-    ts.tv_sec = 0;
-    ts.tv_nsec = (ms % 1000) * 1000000;
-    nanosleep(&ts, NULL);
-    
-    //usleep(ms * 1000);
+    long delta = 0;
+    struct timespec now, then;
+    clock_gettime(CLOCK_MONOTONIC_RAW, &then);
+    clock_gettime(CLOCK_MONOTONIC_RAW, &now);
+    while (now.tv_nsec - then.tv_nsec < ms * 1000000 - delta) {
+        clock_gettime(CLOCK_MONOTONIC_RAW, &now);
+        if (now.tv_nsec < then.tv_nsec) {
+            // Roll over
+            delta = LONG_MAX - then.tv_nsec;
+            then.tv_nsec = 0;
+        }
+    }
 }
 
 

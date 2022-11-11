@@ -17,13 +17,13 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
-#include <stdarg.h>
 #include <stdint.h>
 #include <unistd.h>
 #include <errno.h>
 #include <time.h>
 #include <assert.h>
 #include <inttypes.h>
+#include <limits.h>
 
 
 /*
@@ -57,11 +57,14 @@ enum {
  *PROTOTYPES
  */
 void LTP305_init(I2CDriver *sd, int address);
+void LTP305_flip(bool do_flip);
+void LTP305_power_on(void);
 void LTP305_set_brightness(int new_brightess);
 void LTP305_clear_buffers(void);
-void LTP305_set_glyph(uint8_t row, uint8_t* glyph, size_t width);
+void LTP305_set_glyph(size_t row, uint8_t* glyph, size_t width);
 void LTP305_set_char(uint8_t led, uint8_t ascii);
 void LTP305_plot(uint8_t x, uint8_t y, bool ink);
+void LTP305_print(const char *text, uint32_t delay_ms);
 void LTP305_set_point(uint8_t led);
 void LTP305_clear(void);
 void LTP305_draw(void);
