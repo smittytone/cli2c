@@ -225,9 +225,9 @@ void rx_loop(void) {
                         }
                         break;
 
-                        // FROM 1.2.0 -- remove z
                         // FROM 1.1.1 -- change command from z to !
                         case '!':   // RESPOND TO CONNECTION REQUEST
+                        case 'z':
                             tx("OK\r\n", 4);
                             break;
 
