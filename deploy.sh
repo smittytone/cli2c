@@ -44,7 +44,12 @@ else
 
     # Allow for command line usage -- ie. not in a GUI terminal
     # Command line is SHLVL 1, so script is SHLVL 2 (under the GUI we'd be a SHLVL 3)
-    if [[ $SHLVL -eq 2 ]]; then
+    # NOTE Ubuntu Terminal is SHLVL 1
+    level=$SHLVL
+    is_ubuntu=$(uname -a | grep Ubuntu)
+    [[ -n ${is_ubuntu} ]] && level=3
+
+    if [[ ${level} -eq 2 ]]; then
         # Mount the disk, but allow time for it to appear (not immediate on RPi)
         sleep 5
         rp2_disk=$(sudo fdisk -l | grep FAT16 | cut -f 1 -d ' ')
@@ -69,11 +74,11 @@ sleep 0.5
 # Copy the target file
 echo "Copying ${2} to ${1}..."
 if [[ ${platform} = Darwin ]]; then
-    cp ${2} ${pico_path}
+    cp -X ${2} ${pico_path}
 else
     sudo cp ${2} ${pico_path}
-    if [[ $SHLVL -eq 2 ]]; then
-        # We're at the command line, so unmount (RPi GUI does this automatically)
+    if [[ ${level} -eq 2 ]]; then
+        # We're at the boot command line, so unmount (RPi GUI does this automatically)
         sudo umount ${rp2_disk} && echo "Pico unmounted" && sudo rm -rf ${pico_path} && echo "Mountpoint removed"
     fi
 fi
