@@ -54,7 +54,7 @@ void LTP305_power_on(void) {
     LTP305_write_register(IS31FL3730_CONFIG_REG, 0x18, false);
     LTP305_write_register(IS31FL3730_LIGHT_EFFECT_REG, 0x0E, false);
     LTP305_write_register(IS31FL3730_PWM_REG, brightness, false);
-    LTP305_write_register(IS31FL3730_UPDATE_COL_REG, 0x01, true);
+    LTP305_write_register(IS31FL3730_UPDATE_COL_REG, 0x00, true);
 }
 
 
@@ -79,7 +79,7 @@ void LTP305_set_brightness(int new_brightess) {
     
     brightness = new_brightess;
     LTP305_write_register(IS31FL3730_PWM_REG, brightness, false);
-    LTP305_write_register(IS31FL3730_UPDATE_COL_REG, 0x01, true);
+    LTP305_write_register(IS31FL3730_UPDATE_COL_REG, 0x00, true);
 }
 
 
