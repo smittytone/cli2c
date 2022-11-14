@@ -56,7 +56,7 @@ enum {
 /*
  *PROTOTYPES
  */
-void    LTP305_init(I2CDriver *sd, int address);
+void    LTP305_init(I2CDriver* sd, int address);
 void    LTP305_flip(bool do_flip);
 void    LTP305_power_on(void);
 void    LTP305_set_brightness(int new_brightess);

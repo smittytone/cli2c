@@ -15,6 +15,7 @@
 static void     LTP305_write_register(uint8_t reg, uint8_t value, bool do_stop);
 static void     LTP305_write_buffers(void);
 static void     LTP305_sleep_ms(int ms);
+static uint8_t  LTP305_swap(uint8_t byte);
 
 
 /*
@@ -38,7 +39,7 @@ extern const char CHARSET[128][6];
  * @param sd:       Pointer to the main I2C driver data structure.
  * @param address:  A non-standard HT16K33 address, or -1.
  */
-void LTP305_init(I2CDriver *sd, int address) {
+void LTP305_init(I2CDriver* sd, int address) {
 
     if (address != -1) i2c_address = address;
     host_i2c = sd;
@@ -88,8 +89,6 @@ void LTP305_set_brightness(int new_brightess) {
 void LTP305_clear_buffers(void) {
     
     memset(main_buffer, 0x00, 10);
-   // memset(&left_buffer[1], 0x00, 8);
-    //memset(&right_buffer[1], 0x00, 8);
 }
 
 
@@ -98,7 +97,7 @@ void LTP305_clear_buffers(void) {
  *
  * @param row:   The row at which the glyph will be drawn.
  * @param glyph: Pointer to an array of bytes, one per column.
- *               A row's bit 0 is the bottom.
+ *               A row's bit 0 is the top.
  * @param width: The number of rows in the glyph (1-10).
  */
 void LTP305_set_glyph(size_t row, uint8_t* glyph, size_t width) {
@@ -136,12 +135,12 @@ void LTP305_set_char(uint8_t led, uint8_t ascii) {
         case LEFT:
             memset(main_buffer, 0x00, 5);
             for (size_t x = 0 ; x < cols ; ++x) {
-                main_buffer[x + d] = CHARSET[ascii - 32][x];
+                main_buffer[x + d] = LTP305_swap(CHARSET[ascii - 32][x] >> 1);
             }
         case RIGHT:
             memset(&main_buffer[5], 0x00, 5);
             for (size_t x = 0 ; x < cols ; ++x) {
-                main_buffer[5 + x + d] = CHARSET[ascii - 32][x];;
+                main_buffer[5 + x + d] = LTP305_swap(CHARSET[ascii - 32][x] >> 1);
             }
     }
 }
@@ -149,7 +148,7 @@ void LTP305_set_char(uint8_t led, uint8_t ascii) {
 
 /**
  * @brief Plot a point on the display. The two LEDs are treated
- *        as a single 10 x 7 array.
+ *        as a single 10 x 7 array. Origin is top left
  *
  * @param x:   The X co-ordinate.
  * @param y:   The Y co-orindate.
@@ -161,9 +160,9 @@ void LTP305_plot(uint8_t x, uint8_t y, bool ink) {
     assert (y < 7);
     
     if (ink) {
-        main_buffer[x] |= (1 << (7 - y));
+        main_buffer[x] |= (1 << y);
     } else {
-        main_buffer[x] &= ~(1 << (7 - y));
+        main_buffer[x] &= ~(1 << y);
     }
 }
 
@@ -199,7 +198,7 @@ void LTP305_print(const char *text, uint32_t delay_ms) {
             // Get the character glyph and write it to the buffer
             size_t glyph_len = strlen(CHARSET[asc_val]);
             for (size_t j = 0 ; j < glyph_len ; ++j) {
-                src_buffer[col++] = CHARSET[asc_val][j];
+                src_buffer[col++] = LTP305_swap(CHARSET[asc_val][j] >> 1);
             }
 
             // Space between lines
@@ -211,7 +210,7 @@ void LTP305_print(const char *text, uint32_t delay_ms) {
     // of the output buffer to the matrix
     uint cursor = 0;
     while (1) {
-        LTP305_set_glyph(0, &src_buffer[cursor++], 9);
+        LTP305_set_glyph(0, &src_buffer[cursor++], 10);
         if (cursor > cols - 10) break;
         LTP305_draw();
         LTP305_sleep_ms(delay_ms);
@@ -255,8 +254,8 @@ void LTP305_draw(void) {
         for (size_t x = 0 ; x < 10 ; ++x) {
             uint8_t c = main_buffer[x];
             uint8_t b = 0;
-            
             size_t dx = 9 - x;
+
             if (dx > 4) {
                 //      dx  98765
                 //   inset  43210
@@ -268,8 +267,8 @@ void LTP305_draw(void) {
                 //       00011111 y 5
                 //       10011111 y 6 (bit 8 = decimal point)
                 size_t inset = dx - 5;
-                for (size_t y = 0 ; y < 8 ; ++y) {
-                    b = (c & (1 << y) >> 1);
+                for (size_t y = 0 ; y < 7 ; ++y) {
+                    b = c & (1 << (6 - y));
                     if (b > 0) {
                         right_buffer[y + 1] |= (1 << inset);
                     } else {
@@ -284,8 +283,8 @@ void LTP305_draw(void) {
                 //       01111111 x 6
                 //       01111111 x 5
                 b = 0;
-                for (size_t y = 0 ; y < 8 ; ++y) {
-                    b |= ((c & (1 << y)) >> 1);
+                for (size_t y = 0 ; y < 7 ; ++y) {
+                    b |= ((c & (1 << y)) >> y) << (6 - y);
                 }
                 left_buffer[dx + 1] = b;
             }
@@ -304,27 +303,27 @@ void LTP305_draw(void) {
                 //       01111111 x 3
                 //       01111111 x 4
                 b = 0;
-                for (size_t y = 0 ; y < 8 ; ++y) {
-                    b |= (((c & (1 << y)) >> y) << (7 - y));
+                for (size_t y = 0 ; y < 7 ; ++y) {
+                    b |= c & (1 << y);
                 }
                 left_buffer[x + 1] = b;
             } else {
                 //       x  98765
-                //          43210
-                //       00011111 y 0
-                //       00011111 y 1
-                //       00011111 y 2
-                //       00011111 y 3
-                //       00011111 y 4
+                //   inset  43210
+                //       00011111 y 6
                 //       00011111 y 5
-                //       10011111 y 6 (bit 8 = decimal point)
-                size_t rx = x - 5;
-                for (size_t y = 0 ; y < 8 ; ++y) {
-                    b = (c & (1 << (7 - y)));
+                //       00011111 y 4
+                //       00011111 y 3
+                //       00011111 y 2
+                //       00011111 y 1
+                //       10011111 y 0 (bit 8 = decimal point)
+                size_t inset = x - 5;
+                for (size_t y = 0 ; y < 7 ; ++y) {
+                    b = ((c & (1 << y)) >> y) << (6 - y);
                     if (b > 0) {
-                        right_buffer[y + 1] |= (1 << rx);
+                        right_buffer[y + 1] |= (1 << inset);
                     } else {
-                        right_buffer[y + 1] &= ~(1 << rx);
+                        right_buffer[y + 1] &= ~(1 << inset);
                     }
                 }
             }
@@ -383,4 +382,15 @@ static void LTP305_sleep_ms(int ms) {
             then.tv_nsec = 0;
         }
     }
+}
+
+
+static uint8_t  LTP305_swap(uint8_t b) {
+
+    uint8_t o = 0;
+    for (size_t i = 0 ; i < 7 ; ++i) {
+        o |= ((b & (1 << i)) >> i) << (6 - i);
+    }
+
+    return o;
 }
