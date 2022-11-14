@@ -41,6 +41,7 @@ add_executable(cli2c
 add_executable(matrix
     ${MATRIX_CODE_DIRECTORY}/main.c
     ${MATRIX_CODE_DIRECTORY}/ht16k33-matrix.c
+    ${MATRIX_CODE_DIRECTORY}/ltp305-matrix.c
     ${COMMON_CODE_DIRECTORY}/i2cdriver.c
     ${COMMON_CODE_DIRECTORY}/utils.c)
 
