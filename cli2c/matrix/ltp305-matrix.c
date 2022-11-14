@@ -20,9 +20,9 @@ static void     LTP305_sleep_ms(int ms);
 /*
  * GLOBALS
  */
-static uint8_t left_buffer[9]  = { MATRIX_LEFT_ADDR, 0, 0, 0, 0, 0, 0, 0, 0 };
+static uint8_t left_buffer[9]  = { MATRIX_LEFT_ADDR,  0, 0, 0, 0, 0, 0, 0, 0 };
 static uint8_t right_buffer[9] = { MATRIX_RIGHT_ADDR, 0, 0, 0, 0, 0, 0, 0, 0 };
-static uint8_t buffer[10] = {0};
+static uint8_t main_buffer[10] = {0};
 
 // The I2C bus
 static I2CDriver* host_i2c;
@@ -48,7 +48,7 @@ void LTP305_init(I2CDriver *sd, int address) {
 /**
  * @brief Power on the display.
  */
-void LTP305_power_on() {
+void LTP305_power_on(void) {
     
     LTP305_write_register(IS31FL3730_CONFIG_REG, 0x18, false);
     LTP305_write_register(IS31FL3730_LIGHT_EFFECT_REG, 0x0E, false);
@@ -85,9 +85,9 @@ void LTP305_set_brightness(int new_brightess) {
 /**
  * @brief Zero the display's primary buffers.
  */
-void LTP305_clear_buffers() {
+void LTP305_clear_buffers(void) {
     
-    memset(buffer, 0x00, 10);
+    memset(main_buffer, 0x00, 10);
    // memset(&left_buffer[1], 0x00, 8);
     //memset(&right_buffer[1], 0x00, 8);
 }
@@ -111,7 +111,7 @@ void LTP305_set_glyph(size_t row, uint8_t* glyph, size_t width) {
     
     for (size_t x = 0 ; x < lwidth ; ++x) {
         uint8_t c = glyph[x];
-        buffer[x] = c;
+        main_buffer[x] = c;
     }
 }
 
@@ -134,14 +134,14 @@ void LTP305_set_char(uint8_t led, uint8_t ascii) {
     
     switch(led) {
         case LEFT:
-            memset(buffer, 0x00, 5);
+            memset(main_buffer, 0x00, 5);
             for (size_t x = 0 ; x < cols ; ++x) {
-                buffer[x + d] = CHARSET[ascii - 32][x];
+                main_buffer[x + d] = CHARSET[ascii - 32][x];
             }
         case RIGHT:
-            memset(&buffer[5], 0x00, 5);
+            memset(&main_buffer[5], 0x00, 5);
             for (size_t x = 0 ; x < cols ; ++x) {
-                buffer[5 + x + d] = CHARSET[ascii - 32][x];;
+                main_buffer[5 + x + d] = CHARSET[ascii - 32][x];;
             }
     }
 }
@@ -161,9 +161,9 @@ void LTP305_plot(uint8_t x, uint8_t y, bool ink) {
     assert (y < 7);
     
     if (ink) {
-        buffer[x] |= (1 << (7 - y));
+        main_buffer[x] |= (1 << (7 - y));
     } else {
-        buffer[x] &= ~(1 << (7 - y));
+        main_buffer[x] &= ~(1 << (7 - y));
     }
 }
 
@@ -239,7 +239,7 @@ void LTP305_set_point(uint8_t led) {
 /**
  * @brief Clear the display and update it.
  */
-void LTP305_clear() {
+void LTP305_clear(void) {
 
     LTP305_clear_buffers();
     LTP305_draw();
@@ -249,11 +249,11 @@ void LTP305_clear() {
 /**
  * @brief Update the display.
  */
-void LTP305_draw() {
+void LTP305_draw(void) {
     
     if (is_flipped) {
         for (size_t x = 0 ; x < 10 ; ++x) {
-            uint8_t c = buffer[x];
+            uint8_t c = main_buffer[x];
             uint8_t b = 0;
             
             size_t dx = 9 - x;
@@ -293,7 +293,7 @@ void LTP305_draw() {
     } else {
         // Not flipped: (0,0) at top left
         for (size_t x = 0 ; x < 10 ; ++x) {
-            uint8_t c = buffer[x];
+            uint8_t c = main_buffer[x];
             uint8_t b = 0;
             
             if (x < 5) {
@@ -356,7 +356,7 @@ static void LTP305_write_register(uint8_t reg, uint8_t value, bool do_stop) {
 /**
  * @brief Write the two LED buffers to the display.
  */
-static void LTP305_write_buffers() {
+static void LTP305_write_buffers(void) {
     
     i2c_start(host_i2c, i2c_address);
     i2c_write(host_i2c, left_buffer, 9);

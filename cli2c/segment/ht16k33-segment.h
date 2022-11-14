@@ -44,18 +44,18 @@
 /*
  * PROTOTYPES
  */
-void            HT16K33_init(I2CDriver* sd, int address);
-void            HT16K33_power(bool is_on);
-void            HT16K33_flip(void);
-void            HT16K33_draw(bool do_stop);
-void            HT16K33_clear_buffer(void);
-void            HT16K33_set_brightness(uint8_t brightness);
-void            HT16K33_set_number(uint8_t number, uint8_t digit, bool has_dot);
-void            HT16K33_set_glyph(uint8_t glyph, uint8_t digit, bool has_dot);
-void            HT16K33_set_char(char achar, uint8_t digit, bool has_dot);
-void            HT16K33_set_colon(void);
-void            HT16K33_show_value(int value, bool decimal);
-void            HT16K33_set_point(uint8_t digit);
+void    HT16K33_init(I2CDriver* sd, int address);
+void    HT16K33_power(bool is_on);
+void    HT16K33_flip(void);
+void    HT16K33_draw(bool do_stop);
+void    HT16K33_clear_buffer(void);
+void    HT16K33_set_brightness(uint8_t brightness);
+void    HT16K33_set_number(uint8_t number, uint8_t digit, bool has_dot);
+void    HT16K33_set_glyph(uint8_t glyph, uint8_t digit, bool has_dot);
+void    HT16K33_set_char(char achar, uint8_t digit, bool has_dot);
+void    HT16K33_set_colon(void);
+void    HT16K33_show_value(int value, bool decimal);
+void    HT16K33_set_point(uint8_t digit);
 
 
 #endif  // _HT16K33_SEGMENT_HEADER_
