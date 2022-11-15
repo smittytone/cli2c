@@ -119,6 +119,7 @@ static size_t readFromSerialPort(int fd, uint8_t* buffer, size_t byte_count) {
 
     size_t count = 0;
     ssize_t number_read = -1;
+    long delta = 0;
     struct timespec now, then;
     clock_gettime(CLOCK_MONOTONIC_RAW, &then);
 
@@ -137,6 +138,12 @@ static size_t readFromSerialPort(int fd, uint8_t* buffer, size_t byte_count) {
             }
             
             clock_gettime(CLOCK_MONOTONIC_RAW, &now);
+            if (now.tv_nsec < then.tv_nsec) {
+                // Roll over
+                delta = LONG_MAX - then.tv_nsec;
+                then.tv_nsec = 0;
+            }
+            
             if (now.tv_sec - then.tv_sec > 15) {
                 print_error("Read timeout: %i bytes read of %i", count, byte_count);
                 return -1;
@@ -153,6 +160,12 @@ static size_t readFromSerialPort(int fd, uint8_t* buffer, size_t byte_count) {
             }
 
             clock_gettime(CLOCK_MONOTONIC_RAW, &now);
+            if (now.tv_nsec < then.tv_nsec) {
+                // Roll over
+                delta = LONG_MAX - then.tv_nsec;
+                then.tv_nsec = 0;
+            }
+            
             if (now.tv_sec - then.tv_sec > 15) {
                 print_error("Read timeout: %i bytes read of %i", count, byte_count);
                 return -1;
@@ -609,7 +622,7 @@ size_t i2c_write(I2CDriver *sd, const uint8_t bytes[], size_t byte_count) {
         uint8_t write_cmd[65] = {(uint8_t)(PREFIX_BYTE_WRITE + length - 1)};
 
         // Write a block of bytes to the send buffer
-        memcpy(write_cmd + 1, bytes + i, length);
+        memcpy(&write_cmd[1], bytes + i, length);
 
         // Write out the block -- use ACK as byte count
         writeToSerialPort(sd->port, write_cmd, 1 + length);
@@ -756,6 +769,7 @@ void show_commands(void) {
     fprintf(stderr, "  z                                Initialise the I2C bus.\n");
     fprintf(stderr, "  c {bus ID} {SDA pin} {SCL pin}   Configure the I2C bus.\n");
     fprintf(stderr, "  f {frequency}                    Set the I2C bus frequency in multiples of 100kHz.\n");
+    fprintf(stderr, "  f {frequency}                    See the docs for your board’s defaults.\n");
     fprintf(stderr, "                                   Only 1 and 4 are supported.\n");
     fprintf(stderr, "  w {address} {bytes}              Write bytes out to I2C.\n");
     fprintf(stderr, "  w {address} {bytes}              Bytes should be comma-separated hex pairs.\n");
@@ -1065,11 +1079,12 @@ int process_commands(I2CDriver *sd, int argc, char *argv[], int delta) {
                                 if (!sd->started || address != sd->address) start_ackd = i2c_start(sd, address);
                                 if (start_ackd) {
                                     // Tell the Bus Host to write out the bytes
-                                    i2c_write(sd, bytes, num_bytes);
-                                } else {
-                                    // The Bus Host couldn't start the transaction
-                                    get_and_show_last_error(sd);
+                                    size_t bytes_sent = i2c_write(sd, bytes, num_bytes);
+                                    if (bytes_sent == num_bytes) break;
                                 }
+                                
+                                // The Bus Host couldn't start the transaction
+                                get_and_show_last_error(sd);
                                 break;
                             } else {
                                 print_error("No I2C address given");

@@ -146,8 +146,8 @@ void rx_loop(void) {
                                     send_ack();
                                 }
                             } else {
-                                send_err();
                                 last_error_code = I2C_NOT_STARTED;
+                                send_err();
                             }
                             break;
                         case MODE_SPI:
@@ -169,6 +169,7 @@ void rx_loop(void) {
                                 last_error_code = SPI_NOT_STARTED;
                                 send_err();
                             }
+                            break;
                         default:
                             last_error_code = GEN_UNKNOWN_MODE;
                             send_err();

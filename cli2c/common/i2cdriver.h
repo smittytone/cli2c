@@ -28,6 +28,7 @@
 #include <fcntl.h>
 #include <termios.h>
 #include <sys/ioctl.h>
+#include <limits.h>
 
 #ifndef BUILD_FOR_LINUX
 #include <IOKit/serial/ioss.h>
