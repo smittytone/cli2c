@@ -70,7 +70,8 @@
 #define COLOUR_MODE_UART                        0x001000
 #define COLOUR_MODE_ONE_WIRE                    0x102000
 
-#define ERROR_BUFFER_LENGTH_B                   129
+#define ERROR_BUFFER_LENGTH_B                   128
+#define RX_BUFFER_LENGTH_B                      128
 
 
 /*

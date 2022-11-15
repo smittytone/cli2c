@@ -70,9 +70,9 @@ RUNTIME START
 if __name__ == '__main__':
 
     device = None
-    i2c_address = 0x70
+    i2c_address = 0x60
     col = 0
-    cols = [0,0,0,0,0,0,0,0]
+    cols = [0,0,0,0,0,0,0,0,0,0]
 
     if len(argv) > 1:
         device = argv[1]
@@ -94,67 +94,73 @@ if __name__ == '__main__':
 
         if port:
             # Check we can connect
-            r = port.write(b'\x23\x69\x21')
+            out = b'\x23\x69\x21'
+            r = port.write(out)
             if await_ok(port) is True:
-                r = write(port, b'\x23\x69\x69')
+                r = port.write(b'\x23\x69\x69')
                 out = bytearray(4)
                 out[0] = 0x23
                 out[1] = 0x69
                 out[2] = 0x73
                 out[3] = (i2c_address << 1)
                 r = write(port, out)
-                r = write(port, b'\xC0\x21')
-                r = write(port, b'\xC0\x81')
-                r = write(port,  b'\xC0\xE2')
+                r = write(port, b'\xC1\x00\x18')
+                r = write(port, b'\xC1\x0D\x0E')
+                r = write(port, b'\xC1\x19\x40')
+                r = write(port, b'\xC1\x0C\x00')
                 
                 while True:
                     cpu = int(cpu_percent())
 
-                    if col > 7:
+                    if col > 9:
                         del cols[0]
                         cols.append(cpu)
                     else:
-                        cols[7 - col] = cpu
+                        cols[9 - col] = cpu
                     col += 1
 
-                    out = bytearray(18)
-                    out[0] = 0xD0
-                    out[1] = 0x00
-                    for i in range(0, 8):
+                    for i in range(0, 10):
+                        if i == 0 or i == 5:
+                            out = bytearray(9)
+                            if i == 0: out[0] = 0x0E
+                            if i == 5: out[0] = 0x01
+                        
                         a = cols[i];
                         b = 0
-                        if a > 87:
-                            b = 0xFF
-                        elif a > 75: 
+                        if a > 89:
                             b = 0x7F
-                        elif a > 62:
-                            b = 0x3F
-                        elif a > 49:
-                            b = 0x1F
-                        elif a > 36:
-                            b = 0x0F
-                        elif a > 25:
-                            b = 0x07
-                        elif a > 12:
-                            b = 0x03
+                        elif a > 74: 
+                            b = 0x7E
+                        elif a > 59:
+                            b = 0x7C
+                        elif a > 44:
+                            b = 0x78
+                        elif a > 29:
+                            b = 0x70
+                        elif a > 14:
+                            b = 0x60
                         elif a > 0:
-                            b = 0x01
-                        out[2 + (i * 2)] = (b >> 1) + ((b << 7) & 0xFF)
+                            b = 0x40
+                        out[1 + i] = b
 
-                    r = write(port, out)
-                    if r is False:
-                        # Not ACK'd -- get error code
-                        r = port.write(b'\x23\x69\x24')
-                        r = await_data(port, 1)
-                        if r[0] != 21:
-                            show_error(f"Code: {int(r[0])}")
-                            exit(1)
+                        if i == 4 or i == 9:
+                            r = write(port, out)
+                            if r is False:
+                                # Not ACK'd -- get error code
+                                r = port.write(b'\x23\x69\x24')
+                                r = await_data(port, 1)
+                                if r[0] != 21:
+                                    show_error(f"Code: {int(r[0])}")
+                                    exit(1)
                     
+                    out = b'\xC1\x0C\x00'
+                    r = port.write(out)
+                    await_ack(port)
                     sleep(0.5)
             else:
                 show_error("No connection to bus host")
         else:
             show_error("Could not open serial port")
     else:        
-        print("Usage: python cpu_chart_matrix.py {device} {i2C address}")
+        print("Usage: python cpu_chart_matrix_ltp305.py {device} {i2C address}")
         

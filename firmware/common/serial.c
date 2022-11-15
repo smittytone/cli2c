@@ -29,7 +29,7 @@ static void     send_host_status(uint8_t mode);
 void rx_loop(void) {
 
     // Prepare a UART RX buffer
-    uint8_t rx_buffer[128] = {0};
+    uint8_t rx_buffer[RX_BUFFER_LENGTH_B + 1] = {0};
     uint32_t read_count = 0;
     bool do_use_led = true;
 
@@ -150,26 +150,6 @@ void rx_loop(void) {
                                 send_err();
                             }
                             break;
-                        case MODE_SPI:
-                            if (spi_state.is_ready) {
-                                spi_state.write_byte_count = status_byte - WRITE_LENGTH_BASE + 1;
-                                spi_state.read_byte_count = spi_state.write_byte_count;
-                                uint8_t rx_data[spi_state.read_byte_count];
-                                bytes_sent = spi_write_read_blocking(spi_state.bus, &rx_ptr[1], rx_data, spi_state.write_byte_count);
-
-                                // Send back any read data -- or an ERR
-                                if (bytes_sent < 0) {
-                                    last_error_code = SPI_COULD_NOT_WRITE;
-                                    send_err();
-                                } else {
-                                    tx(rx_data, spi_state.read_byte_count);
-                                    break;
-                                }
-                            } else {
-                                last_error_code = SPI_NOT_STARTED;
-                                send_err();
-                            }
-                            break;
                         default:
                             last_error_code = GEN_UNKNOWN_MODE;
                             send_err();
@@ -197,14 +177,6 @@ void rx_loop(void) {
                                 send_err();
                             }
                             break;
-                        case MODE_SPI:
-                            if (spi_state.is_ready) {
-
-
-                            } else {
-                                last_error_code = SPI_NOT_STARTED;
-                                send_err();
-                            }
                         default:
                             last_error_code = GEN_UNKNOWN_MODE;
                             send_err();
@@ -247,9 +219,10 @@ void rx_loop(void) {
                         // FROM 1.2.0
                         case '$':   // RETURN LAST ERROR CODE
                             {
-                                char err_data[8] = {0};
-                                sprintf(err_data, "%i\r\n", last_error_code);
-                                tx(err_data, strlen(err_data));
+                                //char err_data[8] = {0};
+                                //sprintf(err_data, "%i\r\n", last_error_code);
+                                //tx(err_data, strlen(err_data));
+                                putchar(last_error_code);
                                 break;
                             }
 
@@ -264,8 +237,6 @@ void rx_loop(void) {
                                     case MODE_I2C:
                                         done = configure_i2c(&i2c_state, rx_ptr);
                                         break;
-                                    case MODE_SPI:
-                                        done = configure_spi(&spi_state, rx_ptr);
                                 }
                                 // Send ACK or ERR on success or failure
                                 putchar(done ? ACK : ERR);
@@ -281,14 +252,6 @@ void rx_loop(void) {
                                     if (!i2c_state.is_ready) init_i2c(&i2c_state);
                                     send_ack();
                                     break;
-                                case MODE_SPI:
-                                    if (!spi_state.is_ready) init_spi(&spi_state);
-                                    if (!spi_state.is_ready) {
-                                        last_error_code = SPI_UNAVAILABLE_ON_BOARD;
-                                        send_err();
-                                    } else {
-                                        send_ack();
-                                    }
                             }
                             break;
 
@@ -299,9 +262,6 @@ void rx_loop(void) {
                                     i2c_state.is_started = false;
                                     reset_i2c(&i2c_state);
                                     break;
-                                case MODE_SPI:
-                                    spi_state.is_started = false;
-                                    reset_spi(&spi_state);
                             }
                             send_ack();
                             break;
@@ -314,9 +274,6 @@ void rx_loop(void) {
                                 switch(current_mode) {
                                     case MODE_I2C:
                                         get_i2c_state(&i2c_state, status_buffer);
-                                        break;
-                                    case MODE_SPI:
-                                        get_spi_state(&spi_state, status_buffer);
                                         break;
                                 }
 
@@ -368,10 +325,6 @@ void rx_loop(void) {
                             break;
 
                         /*
-                         * SPI-SPECIFIC COMMANDS
-                         */
-
-                        /*
                          * GPIO COMMANDS
                          */
                         case 'g':   // SET DIGITAL OUT PIN
@@ -407,7 +360,7 @@ void rx_loop(void) {
             }
 
             // Clear the RX buffer and listen for input
-            memset(rx_buffer, 0, read_count);
+            memset(rx_buffer, 0, RX_BUFFER_LENGTH_B);
         }
 
 #ifdef SHOW_HEARTBEAT
@@ -585,7 +538,7 @@ static uint32_t rx(uint8_t* buffer) {
 
     uint32_t data_count = 0;
     int c = PICO_ERROR_TIMEOUT;
-    while (data_count < 128) {
+    while (data_count < RX_BUFFER_LENGTH_B + 1) {
         c = getchar_timeout_us(1);
         if (c == PICO_ERROR_TIMEOUT) break;
         buffer[data_count++] = (uint8_t)c;
@@ -626,7 +579,7 @@ void tx(uint8_t* buffer, uint32_t byte_count) {
     }
 
     // puts_raw((char*)buffer);
-    stdio_flush();
+    // stdio_flush();
 }
 
 

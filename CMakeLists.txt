@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.18)
 
 # Set project data
 set(PROJECT_NAME "Multi-bus Host Firmware")
-set(FW_BUILD_NUMBER "44")
+set(FW_BUILD_NUMBER "45")
 set(FW_VERSION_NUMBER "1.2.0")
 
 # Set app name(s) and version(s)
