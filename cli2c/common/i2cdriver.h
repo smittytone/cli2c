@@ -63,7 +63,7 @@
 #define HOST_RX_ACK_OR_ERR_B            1
 #define HOST_RX_HOST_INFO_B             64
 #define HOST_RX_SCAN_RESULTS_B          512
-#define HOST_RX_ERR_CODE_B              5
+#define HOST_RX_ERR_CODE_B              3
 
 #define INTRA_COMMAND_PAUSE_MS          0.010
 

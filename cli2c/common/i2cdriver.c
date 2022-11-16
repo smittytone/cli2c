@@ -730,19 +730,15 @@ static void send_command(I2CDriver* sd, char c) {
 
 static void get_and_show_last_error(I2CDriver *sd) {
     
-    uint8_t err_buffer[HOST_RX_ERR_CODE_B] = {0};
+    uint8_t err_code;
     send_command(sd, '$');
     
     // Read back an error record. Extract the fields and print it
-    size_t result = readFromSerialPort(sd->port, err_buffer, 0);
+    size_t result = readFromSerialPort(sd->port, &err_code, 1);
     if (result > 0) {
-        
-#ifdef DEBUG
-        fprintf(stderr, "Received raw error string: %s\n", err_buffer);
-#endif
-        int err_code = 0;
-        sscanf((char*)err_buffer, "%i", &err_code);
-        fprintf(stderr, "Host reported error: %i\n", err_code);
+        //int err_code = 0;
+        //sscanf((char*)err_buffer, "%i", &err_code);
+        fprintf(stderr, "Host reported error code %i\n", err_code);
     }
 }
 
