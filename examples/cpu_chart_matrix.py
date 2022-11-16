@@ -29,7 +29,7 @@ def await_data(uart, timeout=2000):
                 if "\r\n" in buffer.decode():
                     return buffer.decode()[0:-2]
                 break
-    # Error == No data received (or mis-formatted)
+    # Error -- No data received (or mis-formatted)
     return ""
 
 
@@ -156,5 +156,5 @@ if __name__ == '__main__':
         else:
             show_error("Could not open serial port")
     else:        
-        print("Usage: python cpu_chart_matrix.py {device} {i2C address}")
+        print("Usage: python cpu_chart_matrix.py /path/to/device [i2C address]")
         

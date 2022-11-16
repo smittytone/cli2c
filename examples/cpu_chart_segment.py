@@ -39,7 +39,7 @@ def await_data(uart, count=0, timeout=5000):
             if count != 0 and len(buffer) >= count:
                 print(buffer)
                 return buffer.decode()[:count]
-    # Error == No data received (or mis-formatted)
+    # Error -- No data received (or mis-formatted)
     return ""
 
 
@@ -109,7 +109,7 @@ if __name__ == '__main__':
         port = None
         try:
             import serial
-            port = serial.Serial(port=device, baudrate=500000)
+            port = serial.Serial(port=device, baudrate=1000000)
         except:
             show_error(f"An invalid device file specified: {device}")
 
@@ -164,4 +164,4 @@ if __name__ == '__main__':
         else:
             show_error("Could not open serial port")
     else:        
-        print("Usage: python cpu_chart_segment.py {device} {i2C address}")
+        print("Usage: python cpu_chart_segment.py /path/to/device [i2C address]")
