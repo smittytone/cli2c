@@ -3,28 +3,34 @@
 '''
 IMPORTS
 '''
-from os import path
+import signal
 from psutil import cpu_percent
 from sys import exit, argv
 from time import sleep, time_ns
 
 
 '''
+GLOBALS
+'''
+port = None
+
+
+'''
 FUNCTIONS
 '''
-def await_ok(uart, timeout=2000):
-    if await_data(uart, timeout) == "OK":
+def await_ok(timeout=2000):
+    if await_data(timeout) == "OK":
         return True
     # Error -- No OK received
     return False
 
 
-def await_data(uart, timeout=2000):
+def await_data(timeout=2000):
     buffer = bytes()
     now = (time_ns() // 1000000)
     while ((time_ns() // 1000000) - now) < timeout:
-        if uart.in_waiting > 0:
-            buffer += uart.read(uart.in_waiting)
+        if port.in_waiting > 0:
+            buffer += port.read(port.in_waiting)
             if len(buffer) == 4:
                 if "\r\n" in buffer.decode():
                     return buffer.decode()[0:-2]
@@ -33,21 +39,21 @@ def await_data(uart, timeout=2000):
     return ""
 
 
-def await_ack(uart, timeout=2000):
+def await_ack(timeout=2000):
     buffer = bytes()
     now = (time_ns() // 1000000)
     while ((time_ns() // 1000000) - now) < timeout:
-        if uart.in_waiting > 0:
-            r = uart.read(1)
+        if port.in_waiting > 0:
+            r = port.read(1)
             if r[0] == 0x0F:
                 return True
     # Error -- No Ack received
     return False
 
 
-def write(uart, data, timeout=2000):
-    l = uart.write(data)
-    return await_ack(uart, timeout)
+def write(data, timeout=2000):
+    l = port.write(data)
+    return await_ack(timeout)
 
 
 def show_error(message):
@@ -64,11 +70,20 @@ def str_to_int(num_str):
         return -1
 
 
+def handler(signum, frame):
+    if port:
+        # Reset the host's I2C bus
+        port.write(b'\x23\x69\x78')
+        print("\nDone")
+    exit(0)
+
 '''
 RUNTIME START
 '''
 if __name__ == '__main__':
 
+    signal.signal(signal.SIGINT, handler)
+    
     device = None
     i2c_address = 0x70
     col = 0
@@ -85,7 +100,6 @@ if __name__ == '__main__':
 
     if device:
         # Set the port or fail
-        port = None
         try:
             import serial
             port = serial.Serial(port=device, baudrate=500000)
@@ -95,17 +109,17 @@ if __name__ == '__main__':
         if port:
             # Check we can connect
             r = port.write(b'\x23\x69\x21')
-            if await_ok(port) is True:
-                r = write(port, b'\x23\x69\x69')
+            if await_ok() is True:
+                write(b'\x23\x69\x69')
                 out = bytearray(4)
                 out[0] = 0x23
                 out[1] = 0x69
                 out[2] = 0x73
                 out[3] = (i2c_address << 1)
-                r = write(port, out)
-                r = write(port, b'\xC0\x21')
-                r = write(port, b'\xC0\x81')
-                r = write(port,  b'\xC0\xE2')
+                write(out)
+                write(b'\xC0\x21')
+                write(b'\xC0\x81')
+                write( b'\xC0\xE2')
                 
                 while True:
                     cpu = int(cpu_percent())
@@ -141,12 +155,12 @@ if __name__ == '__main__':
                             b = 0x01
                         out[2 + (i * 2)] = (b >> 1) + ((b << 7) & 0xFF)
 
-                    r = write(port, out)
+                    r = write(out)
                     if r is False:
                         # Not ACK'd -- get error code
-                        r = port.write(b'\x23\x69\x24')
-                        r = await_data(port, 1)
-                        if r[0] != 21:
+                        port.write(b'\x23\x69\x24')
+                        r = await_data(1)
+                        if len(r) > 0 and r[0] != 21:
                             show_error(f"Code: {int(r[0])}")
                             exit(1)
                     
