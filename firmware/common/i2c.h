@@ -24,6 +24,11 @@
 // App Includes
 #include "serial.h"
 
+#ifdef DO_UART_DEBUG
+#include "debug.h"
+#include "hardware/uart.h"
+#endif
+
 
 /*
  * STRUCTURES

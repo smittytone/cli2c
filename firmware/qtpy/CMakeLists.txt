@@ -56,9 +56,9 @@ add_executable(${FW_1_NAME}
     ${COMMON_CODE_DIRECTORY}/spi.c
     ${COMMON_CODE_DIRECTORY}/gpio.c)
 
-# Compile debug segment LED sources
-if (DO_DEBUG_WITH_LED)
-    target_sources(${FW_1_NAME} PRIVATE segment.c)
+# Compile debug sources
+if (DO_DEBUG)
+    target_sources(${FW_1_NAME} PRIVATE ${COMMON_CODE_DIRECTORY}/debug.c)
 endif()
 
 # Link to built libraries
@@ -66,7 +66,8 @@ target_link_libraries(${FW_1_NAME} LINK_PUBLIC
     pico_stdlib
     hardware_i2c
     hardware_spi
-    hardware_pio)
+    hardware_pio
+    hardware_uart)
 
 # Compile WS2828 sources
 target_sources(${FW_1_NAME} PRIVATE ws2812.c)

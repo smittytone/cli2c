@@ -34,9 +34,9 @@ add_executable(${FW_2_NAME}
     ${COMMON_CODE_DIRECTORY}/spi.c
     ${COMMON_CODE_DIRECTORY}/gpio.c)
 
-# Compile debug segment LED sources
-if (DO_DEBUG_WITH_LED)
-    target_sources(${FW_2_NAME} PRIVATE segment.c)
+# Compile debug sources
+if (DO_DEBUG)
+    target_sources(${FW_2_NAME} PRIVATE ${COMMON_CODE_DIRECTORY}/debug.c)
 endif()
 
 # Set the stack size
@@ -46,7 +46,8 @@ target_compile_definitions(${FW_2_NAME} PRIVATE PICO_STACK_SIZE=4096)
 target_link_libraries(${FW_2_NAME} LINK_PUBLIC
     pico_stdlib
     hardware_i2c
-    hardware_spi)
+    hardware_spi
+    hardware_uart)
 
 # Enable/disable STDIO via USB and UART
 pico_enable_stdio_usb(${FW_2_NAME} 1)

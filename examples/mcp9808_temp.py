@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+'''
+IMPORTS
+'''
 import signal
 from sys import exit, argv
 from time import sleep, time_ns
@@ -9,6 +12,7 @@ from time import sleep, time_ns
 GLOBALS
 '''
 port = None
+
 
 '''
 FUNCTIONS
@@ -56,6 +60,7 @@ def write(data, timeout=2000):
 
 def show_error(message):
     print("[ERROR]", message)
+    if port: port.close()
     exit(1)
 
 
@@ -72,6 +77,7 @@ def handler(signum, frame):
     if port:
         # Reset the host's I2C bus
         port.write(b'\x23\x69\x78')
+        port.close()
         print("\nDone")
     exit(0)
 

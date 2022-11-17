@@ -23,6 +23,13 @@ static uint8_t  get_mode(char mode_key);
 static void     send_host_status(uint8_t mode);
 
 
+/*
+ * GLOBALS
+ */
+// FROM 1.2.0
+uint last_error_code = GEN_NO_ERROR;
+
+
 /**
  * @brief Listen on the USB-fed stdin for signals from the driver.
  */
@@ -71,17 +78,11 @@ void rx_loop(void) {
     // Heartbeat variables
     uint64_t last = time_us_64();
 
-    // FROM 1.2.0
-    uint last_error_code = GEN_NO_ERROR;
-
-
-#ifdef DO_DEBUG_WITH_LED
-    // Set up a parallel segment display to assist
-    // with debugging
-    init_i2c(i2c_state.frequency);
-    HT16K33_init();
-    HT16K33_clear_buffer();
-    HT16K33_draw();
+#ifdef DO_UART_DEBUG
+    uart_init(DEBUG_UART, 115200);
+    gpio_set_function(DEBUG_UART_RX_GPIO, GPIO_FUNC_UART);
+    gpio_set_function(DEBUG_UART_TX_GPIO, GPIO_FUNC_UART);
+    uart_puts(DEBUG_UART, "Logging...\r\n");
 #endif
 
     while(1) {
@@ -124,7 +125,7 @@ void rx_loop(void) {
                 rx_ptr = &rx_buffer[2];
 
                 // Note client type
-                client_is_old = false;
+                client_is_old = false;           
             }
 
             if (status_byte >= READ_LENGTH_BASE) {
@@ -136,8 +137,14 @@ void rx_loop(void) {
                         case MODE_I2C:
                             if (i2c_state.is_started) {
                                 i2c_state.write_byte_count = status_byte - WRITE_LENGTH_BASE + 1;
+#ifdef DO_UART_DEBUG
+                                debug_log("Write command received: %i byte(s)", i2c_state.write_byte_count);
+                                debug_log_bytes(&rx_ptr[1], i2c_state.write_byte_count);
+#endif  
                                 bytes_sent = i2c_write_timeout_us(i2c_state.bus, i2c_state.address, &rx_ptr[1], i2c_state.write_byte_count, false, 1000);
-
+#ifdef DO_UART_DEBUG
+                                debug_log("Wrote %i byte(s)", bytes_sent);
+#endif 
                                 // Send an ACK to say we wrote the data
                                 if (bytes_sent < 0) {
                                     last_error_code = I2C_COULD_NOT_WRITE;
@@ -160,16 +167,21 @@ void rx_loop(void) {
                             if (i2c_state.is_started) {
                                 // Read length received only
                                 i2c_state.read_byte_count = status_byte - READ_LENGTH_BASE + 1;
+#ifdef DO_UART_DEBUG
+                                debug_log("Read command received: %i byte(s)", i2c_state.read_byte_count);
+#endif 
                                 uint8_t i2x_rx_buffer[65] = {0};
                                 int bytes_read = i2c_read_timeout_us(i2c_state.bus, i2c_state.address, i2x_rx_buffer, i2c_state.read_byte_count, false, 1000);
-
+#ifdef DO_UART_DEBUG
+                                debug_log("Read %i byte(s)", bytes_read);
+                                debug_log_bytes(i2x_rx_buffer, bytes_read);
+#endif 
                                 // Return the read data
                                 if (bytes_read < 0) {
                                     last_error_code = I2C_COULD_NOT_READ;
                                     send_err();
                                 } else {
                                     tx(i2x_rx_buffer, i2c_state.read_byte_count);
-                                    //send_ack();
                                     break;
                                 }
                             } else {
@@ -184,6 +196,9 @@ void rx_loop(void) {
                 }
             } else {
                 // Maybe we received a command
+#ifdef DO_UART_DEBUG
+                debug_log("Command received: %c (%02X)", status_byte, status_byte);
+#endif 
                 char cmd = (char)status_byte;
                 switch(cmd) {
                     /*
@@ -218,13 +233,8 @@ void rx_loop(void) {
 
                         // FROM 1.2.0
                         case '$':   // RETURN LAST ERROR CODE
-                            {
-                                //char err_data[8] = {0};
-                                //sprintf(err_data, "%i\r\n", last_error_code);
-                                //tx(err_data, strlen(err_data));
-                                putchar(last_error_code);
-                                break;
-                            }
+                            putchar(last_error_code);
+                            break;
 
                         /*
                          * MULTI-BUS COMMANDS
@@ -259,8 +269,9 @@ void rx_loop(void) {
                                     // APPLIES TO I2C, SPI
                             switch(current_mode) {
                                 case MODE_I2C:
-                                    i2c_state.is_started = false;
                                     reset_i2c(&i2c_state);
+                                    i2c_state.is_started = false;
+                                    i2c_state.address = 0xFF;
                                     break;
                             }
                             send_ack();
@@ -412,7 +423,6 @@ static void send_status(I2C_State* itr) {
     );
 
     char model[HW_MODEL_NAME_SIZE_MAX + 1] = {0};
-    //strncpy(model, model, HW_MODEL_NAME_SIZE_MAX);
     strncat(model, HW_MODEL, HW_MODEL_NAME_SIZE_MAX);
 
     // Generate and return the status data string.
@@ -499,12 +509,9 @@ static void send_ack(void) {
     putchar(ACK);
 #endif
 
-#ifdef DO_DEBUG_WITH_LED
-    // Write the sent char on the segment's second two digits
-    HT16K33_set_number(0x00, 2, false);
-    HT16K33_set_number(0x01, 3, false);
-    HT16K33_draw();
-#endif
+#ifdef DO_UART_DEBUG
+    debug_log("---------- ACK -------------");
+#endif 
 }
 
 
@@ -518,12 +525,9 @@ static void send_err(void) {
     putchar(ERR);
 #endif
 
-#ifdef DO_DEBUG_WITH_LED
-    // Write the sent char on the segment's second two digits
-    HT16K33_set_number(0x0F, 2, false);
-    HT16K33_set_number(0x0F, 3, false);
-    HT16K33_draw();
-#endif
+#ifdef DO_UART_DEBUG
+    debug_log("Sending ERR -- error code: %i", last_error_code);
+#endif 
 }
 
 
@@ -542,15 +546,7 @@ static uint32_t rx(uint8_t* buffer) {
         c = getchar_timeout_us(1);
         if (c == PICO_ERROR_TIMEOUT) break;
         buffer[data_count++] = (uint8_t)c;
-
-#ifdef DO_DEBUG_WITH_LED
-        // Write the received char on the segment's first two digits
-        HT16K33_set_number((uint8_t)((c & 0xF0) >> 4), 0, false);
-        HT16K33_set_number((uint8_t)(c & 0x0F), 1, false);
-        HT16K33_draw();
-#else
         sleep_ms(UART_LOOP_DELAY_MS);
-#endif
     }
 
     return data_count;
@@ -565,18 +561,14 @@ static uint32_t rx(uint8_t* buffer) {
  */
 void tx(uint8_t* buffer, uint32_t byte_count) {
 
-    for (uint32_t i = 0 ; i < byte_count ; ++i) {
+    for (size_t i = 0 ; i < byte_count ; ++i) {
         putchar((buffer[i]));
-
-#ifdef DO_DEBUG_WITH_LED
-        // Write the sent char on the segment's second two digits
-        HT16K33_set_number(((buffer[i] & 0xF0) >> 4), 2, false);
-        HT16K33_set_number((buffer[i] & 0x0F), 3, false);
-        HT16K33_draw();
-#else
         sleep_ms(UART_LOOP_DELAY_MS);
-#endif
     }
+
+#ifdef DO_UART_DEBUG
+    debug_log("---------- SENT ----------");
+#endif
 
     // puts_raw((char*)buffer);
     // stdio_flush();

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.18)
 
 # Set project data
 set(PROJECT_NAME "Multi-bus Host Firmware")
-set(FW_BUILD_NUMBER "45")
+set(FW_BUILD_NUMBER "46")
 set(FW_VERSION_NUMBER "1.2.0")
 
 # Set app name(s) and version(s)
@@ -24,17 +24,14 @@ set(FW_5_SRC_DIRECTORY "${CMAKE_SOURCE_DIR}/firmware/trinkey")
 # Move common source code to a separate directory
 set(COMMON_CODE_DIRECTORY "${CMAKE_SOURCE_DIR}/firmware/common")
 
-# Set app-side debugging. The following defines can be set by
-# uncommenting their lines:
-#   DO_DEBUG_WITH_LED                   -- Put the firmware in debug mode. Shows info
-#                                 on a connected LED segment display.
-#   DEBUG_SEG_ADDR             -- The 7-bit I2C address of an LED segment
-#                                 display used for debugging firmware
-#                                 reads and writes.
-#                                 IGNORED if DO_DEBUG_WITH_LED is not defined.
-#   SHOW_HEARTBEAT             -- Display a heartbeat on the board LED/NeoPixel.
-#add_compile_definitions(DO_DEBUG_WITH_LED=1)
-#add_compile_definitions(DEBUG_SEG_ADDR=0x70)
+# Uncomment to enable app-side debugging.
+set(DO_DEBUG 1)
+if(DO_DEBUG)
+# DO_UART_DEBUG pus the firmware in debug mode. Outputs a log on UART 0
+add_compile_definitions(DO_UART_DEBUG=1)
+endif ()
+
+# Set the device's heartbeat LED
 add_compile_definitions(SHOW_HEARTBEAT=1)
 
 # Set env variable 'PICO_SDK_PATH' to the local Pico SDK

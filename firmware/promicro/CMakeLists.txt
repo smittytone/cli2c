@@ -53,9 +53,9 @@ add_executable(${FW_3_NAME}
     ${COMMON_CODE_DIRECTORY}/spi.c
     ${COMMON_CODE_DIRECTORY}/gpio.c)
 
-# Compile debug segment LED sources
-if (DO_DEBUG_WITH_LED)
-    target_sources(${FW_3_NAME} PRIVATE segment.c)
+# Compile debug sources
+if (DO_DEBUG)
+    target_sources(${FW_3_NAME} PRIVATE ${COMMON_CODE_DIRECTORY}/debug.c)
 endif()
 
 # Set the stack size
@@ -66,7 +66,8 @@ target_link_libraries(${FW_3_NAME} LINK_PUBLIC
     pico_stdlib
     hardware_i2c
     hardware_spi
-    hardware_pio)
+    hardware_pio
+    hardware_uart)
 
 target_sources(${FW_3_NAME} PRIVATE ${FW_1_SRC_DIRECTORY}/ws2812.c)
 pico_generate_pio_header(${FW_3_NAME} ${FW_1_SRC_DIRECTORY}/ws2812.pio)

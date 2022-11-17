@@ -50,10 +50,16 @@ target_link_libraries(${FW_5_NAME} LINK_PUBLIC
     pico_stdlib
     hardware_i2c
     hardware_spi
-    hardware_pio)
+    hardware_pio
+    hardware_uart)
 
 target_sources(${FW_5_NAME} PRIVATE ${FW_1_SRC_DIRECTORY}/ws2812.c)
 pico_generate_pio_header(${FW_5_NAME} ${FW_1_SRC_DIRECTORY}/ws2812.pio)
+
+# Compile debug sources
+if (DO_DEBUG)
+    target_sources(${FW_5_NAME} PRIVATE ${COMMON_CODE_DIRECTORY}/debug.c)
+endif()
 
 # Enable/disable STDIO via USB and UART
 pico_enable_stdio_usb(${FW_5_NAME} 1)

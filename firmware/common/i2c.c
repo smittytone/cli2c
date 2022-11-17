@@ -39,6 +39,9 @@ void init_i2c(I2C_State* its) {
 
     // Mark bus as ready for use
     its->is_ready = true;
+#ifdef DO_UART_DEBUG
+    debug_log("I2C ready");
+#endif
 }
 
 
@@ -185,6 +188,9 @@ bool start_i2c(I2C_State* its, uint8_t* data) {
     its->is_started = true;
 
     // Acknowledge
+#ifdef DO_UART_DEBUG
+    debug_log("I2C transaction started");
+#endif
     return true;
 }
 
@@ -208,6 +214,9 @@ bool stop_i2c(I2C_State* its) {
         //its->is_read_op = false;
 
         // Acknowledge
+#ifdef DO_UART_DEBUG
+        debug_log("I2C transaction stopped");
+#endif
         return true;
     }
 

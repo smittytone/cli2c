@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <memory.h>
 #include <string.h>
+#include <stdarg.h>
 // Pico SDK Includes
 #include "pico/stdlib.h"
 #include "pico/binary_info.h"
@@ -31,8 +32,9 @@
 #include "spi.h"
 #include "gpio.h"
 #include "errors.h"
-#ifdef DO_DEBUG_WITH_LED
-#include "segment.h"
+#ifdef DO_UART_DEBUG
+#include "debug.h"
+#include "hardware/uart.h"
 #endif
 
 
@@ -49,11 +51,6 @@
 #define READ_LENGTH_BASE                        0x80
 
 #define HW_MODEL_NAME_SIZE_MAX                  24
-
-// Just in case the user comments out the CMakeLists.txt define
-#ifndef DEBUG_SEG_ADDR
-#define DEBUG_SEG_ADDR                          0x70
-#endif
 
 #define ACK                                     0x0F
 #define ERR                                     0xF0

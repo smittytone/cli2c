@@ -58,6 +58,7 @@ def write(data, timeout=2000):
 
 def show_error(message):
     print("[ERROR]", message)
+    if port: port.close()
     exit(1)
 
 
@@ -74,6 +75,7 @@ def handler(signum, frame):
     if port:
         # Reset the host's I2C bus
         port.write(b'\x23\x69\x78')
+        port.close()
         print("\nDone")
     exit(0)
 
@@ -102,7 +104,7 @@ if __name__ == '__main__':
         # Set the port or fail
         try:
             import serial
-            port = serial.Serial(port=device, baudrate=500000)
+            port = serial.Serial(port=device, baudrate=1000000)
         except:
             show_error(f"An invalid device file specified: {device}")
 
@@ -160,10 +162,10 @@ if __name__ == '__main__':
                         # Not ACK'd -- get error code
                         port.write(b'\x23\x69\x24')
                         r = await_data(1)
-                        if len(r) > 0 and r[0] != 21:
+                        if len(r) > 0:
                             show_error(f"Code: {int(r[0])}")
-                            exit(1)
-                    
+                        show_error("Lost contact with Bus Host")
+
                     sleep(0.5)
             else:
                 show_error("No connection to bus host")
