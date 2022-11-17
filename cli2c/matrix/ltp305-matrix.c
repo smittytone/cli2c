@@ -30,7 +30,107 @@ static I2CDriver* host_i2c;
 static int i2c_address = IS31FL3730_I2C_ADDR;
 static int brightness  = IS31FL3730_DEFAULT_BRIGHT;
 static bool is_flipped = false;
-extern const char CHARSET[128][6];
+extern const char LTPCHARSET[128][6];
+
+// The Ascii character set
+const char LTPCHARSET[128][6] = {
+    "\x00",                      // space - Ascii 32
+    "\xfa\x00",                  // !
+    "\xc0\x00\xc0\x00",          // "
+    "\x24\x7e\x24\x7e\x24\x00",  // #
+    "\x24\xd4\x56\x48\x00",      // $
+    "\xc6\xc8\x10\x26\xc6\x00",  // %
+    "\x6c\x92\x6a\x04\x0a\x00",  // &
+    "\xc0\x00",                  // '
+    "\x7c\x82\x00",              // (
+    "\x82\x7c\x00",              // )
+    "\x10\x7c\x38\x7c\x10\x00",  // *
+    "\x10\x10\x7c\x10\x10\x00",  // +
+    "\x06\x07\x00",              // ,
+    "\x10\x10\x10\x10\x00",      // -
+    "\x06\x06\x00",              // .
+    "\x04\x08\x10\x20\x40\x00",  // /
+    "\x7c\x8a\x92\xa2\x7c\x00",  // 0 - Ascii 48
+    "\x42\xfe\x02\x00",          // 1
+    "\x46\x8a\x92\x92\x62\x00",  // 2
+    "\x44\x92\x92\x92\x6c\x00",  // 3
+    "\x18\x28\x48\xfe\x08\x00",  // 4
+    "\xf4\x92\x92\x92\x8c\x00",  // 5
+    "\x3c\x52\x92\x92\x8c\x00",  // 6
+    "\x80\x8e\x90\xa0\xc0\x00",  // 7
+    "\x6c\x92\x92\x92\x6c\x00",  // 8
+    "\x60\x92\x92\x94\x78\x00",  // 9
+    "\x36\x36\x00",              // : - Ascii 58
+    "\x36\x37\x00",              //
+    "\x10\x28\x44\x82\x00",      // <
+    "\x24\x24\x24\x24\x24\x00",  // =
+    "\x82\x44\x28\x10\x00",      // >
+    "\x60\x80\x9a\x90\x60\x00",  // ?
+    "\x7c\x82\xba\xaa\x78\x00",  // @
+    "\x7e\x90\x90\x90\x7e\x00",  // A - Ascii 65
+    "\xfe\x92\x92\x92\x6c\x00",  // B
+    "\x7c\x82\x82\x82\x44\x00",  // C
+    "\xfe\x82\x82\x82\x7c\x00",  // D
+    "\xfe\x92\x92\x92\x82\x00",  // E
+    "\xfe\x90\x90\x90\x80\x00",  // F
+    "\x7c\x82\x92\x92\x5c\x00",  // G
+    "\xfe\x10\x10\x10\xfe\x00",  // H
+    "\x82\xfe\x82\x00",          // I
+    "\x0c\x02\x02\x02\xfc\x00",  // J
+    "\xfe\x10\x28\x44\x82\x00",  // K
+    "\xfe\x02\x02\x02\x00",      // L
+    "\xfe\x40\x20\x40\xfe\x00",  // M
+    "\xfe\x40\x20\x10\xfe\x00",  // N
+    "\x7c\x82\x82\x82\x7c\x00",  // O
+    "\xfe\x90\x90\x90\x60\x00",  // P
+    "\x7c\x82\x92\x8c\x7a\x00",  // Q
+    "\xfe\x90\x90\x98\x66\x00",  // R
+    "\x64\x92\x92\x92\x4c\x00",  // S
+    "\x80\x80\xfe\x80\x80\x00",  // T
+    "\xfc\x02\x02\x02\xfc\x00",  // U
+    "\xf8\x04\x02\x04\xf8\x00",  // V
+    "\xfc\x02\x3c\x02\xfc\x00",  // W
+    "\xc6\x28\x10\x28\xc6\x00",  // X
+    "\xe0\x10\x0e\x10\xe0\x00",  // Y
+    "\x86\x8a\x92\xa2\xc2\x00",  // Z - Ascii 90
+    "\xfe\x82\x82\x00",          // [
+    "\x40\x20\x10\x08\x04\x00",  // forward slash
+    "\x82\x82\xfe\x00",          // ]
+    "\x20\x40\x80\x40\x20\x00",  // ^
+    "\x02\x02\x02\x02\x02\x00",  // _
+    "\xc0\xe0\x00",              // '
+    "\x04\x2a\x2a\x1e\x00",      // a - Ascii 97
+    "\xfe\x22\x22\x1c\x00",      // b
+    "\x1c\x22\x22\x22\x00",      // c
+    "\x1c\x22\x22\xfc\x00",      // d
+    "\x1c\x2a\x2a\x10\x00",      // e
+    "\x10\x7e\x90\x80\x00",      // f
+    "\x10\x2A\x2A\x3C\x00",      // g
+    "\xfe\x20\x20\x1e\x00",      // h
+    "\x5E\x00",                  // i
+    "\x04\x02\x12\x5C\x00",      // j
+    "\xfe\x08\x14\x22\x00",      // k
+    "\xfc\x02\x00",              // l
+    "\x3e\x20\x18\x20\x1e\x00",  // m
+    "\x3e\x20\x20 \x1e\x00",     // n
+    "\x1c\x22\x22\x1c\x00",      // o
+    "\x3E\x24\x24\x18\x00",      // p
+    "\x18\x24\x24\x3E\x00",      // q
+    "\x22\x1e\x20\x10\x00",      // r
+    "\x12\x2a\x2a\x04\x00",      // s
+    "\x20\x7c\x22\x04\x00",      // t
+    "\x3c\x02\x02\x3e\x00",      // u
+    "\x38\x04\x02\x04\x38\x00",  // v
+    "\x3c\x06\x0c\x06\x3c\x00",  // w
+    "\x22\x14\x08\x14\x22\x00",  // x
+    "\x32\x0A\x0C\x38\x00",      // y
+    "\x26\x2a\x2a\x32\x00",      // z - Ascii 122
+    "\x10\x7c\x82\x82\x00",      //
+    "\xee\x00",                  // |
+    "\x82\x82\x7c\x10\x00",      //
+    "\x40\x80\x40\x80\x00",      // ~
+    "\x60\x90\x90\x60\x00"       // Degrees sign - Ascii 127
+};
 
 
 /**
@@ -127,7 +227,7 @@ void LTP305_set_char(uint8_t led, uint8_t ascii) {
     assert(led == LEFT || led == RIGHT);
     
     size_t d = 0;
-    size_t cols = strlen(CHARSET[ascii - 32]);
+    size_t cols = strlen(LTPCHARSET[ascii - 32]);
     if (cols < 5) d = (5 - cols) >> 1;
     if (cols % 2 == 0) d +=1;
     
@@ -135,12 +235,12 @@ void LTP305_set_char(uint8_t led, uint8_t ascii) {
         case LEFT:
             memset(main_buffer, 0x00, 5);
             for (size_t x = 0 ; x < cols ; ++x) {
-                main_buffer[x + d] = LTP305_swap(CHARSET[ascii - 32][x] >> 1);
+                main_buffer[x + d] = LTP305_swap(LTPCHARSET[ascii - 32][x] >> 1);
             }
         case RIGHT:
             memset(&main_buffer[5], 0x00, 5);
             for (size_t x = 0 ; x < cols ; ++x) {
-                main_buffer[5 + x + d] = LTP305_swap(CHARSET[ascii - 32][x] >> 1);
+                main_buffer[5 + x + d] = LTP305_swap(LTPCHARSET[ascii - 32][x] >> 1);
             }
     }
 }
@@ -179,7 +279,7 @@ void LTP305_print(const char *text, uint32_t delay_ms) {
     int cols = 0;
     for (size_t i = 0 ; i < strlen(text) ; ++i) {
         uint8_t asc_val = text[i] - 32;
-        cols += (asc_val == 0 ? 2 : strlen(CHARSET[asc_val]));
+        cols += (asc_val == 0 ? 2 : strlen(LTPCHARSET[asc_val]));
         if (asc_val > 0) cols++;
     }
 
@@ -196,9 +296,9 @@ void LTP305_print(const char *text, uint32_t delay_ms) {
             src_buffer[col++] = 0x00;
         } else {
             // Get the character glyph and write it to the buffer
-            size_t glyph_len = strlen(CHARSET[asc_val]);
+            size_t glyph_len = strlen(LTPCHARSET[asc_val]);
             for (size_t j = 0 ; j < glyph_len ; ++j) {
-                src_buffer[col++] = LTP305_swap(CHARSET[asc_val][j] >> 1);
+                src_buffer[col++] = LTP305_swap(LTPCHARSET[asc_val][j] >> 1);
             }
 
             // Space between lines
