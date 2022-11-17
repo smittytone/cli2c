@@ -17,8 +17,10 @@
 #include <string.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <time.h>
 #include "hardware/uart.h"
-
+#include "pico/stdlib.h"
+#include "pico/time.h"
 
 /*
  * CONSTANTS

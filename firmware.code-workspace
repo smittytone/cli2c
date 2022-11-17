@@ -22,7 +22,9 @@
             "ranges": "c",
             "i2c.h": "c",
             "errors.h": "c",
-            "debug.h": "c"
+            "debug.h": "c",
+            "time.h": "c",
+            "uart.h": "c"
         }
     }
 }
