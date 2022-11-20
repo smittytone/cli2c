@@ -96,8 +96,6 @@ int main(int argc, char* argv[]) {
                 flush_and_close_port(i2c.port);
                 return result;
             }
-        } else {
-            print_error("Could not connect to device %s", argv[1]);
         }
     }
 
