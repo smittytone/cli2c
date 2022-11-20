@@ -247,10 +247,7 @@ void i2c_connect(I2CDriver *sd) {
 
     // Open and get the serial port or bail
     sd->port = openSerialPort(sd->portname);
-    if (sd->port == -1) {
-        print_error("Could not connect to device %s\n", sd->portname);
-        return;
-    }
+    if (sd->port == -1) return;
 
     // Perform a basic communications check
     // FROM 1.1.1 -- use ! in place of z (internal change)
@@ -258,7 +255,7 @@ void i2c_connect(I2CDriver *sd) {
     uint8_t rx[HOST_RX_OK_MESSAGE_B] = {0};
     size_t result = readFromSerialPort(sd->port, rx, 4);
     if (result == -1 || ((rx[0] != 'O') && (rx[1] != 'K'))) {
-        print_error("Could not connect to device %s\n", sd->portname);
+        print_error("Could not connect to device %s", sd->portname);
         return ;
     }
 
