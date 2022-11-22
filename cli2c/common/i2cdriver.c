@@ -15,7 +15,7 @@
 static int          openSerialPort(const char *portname);
 static size_t       readFromSerialPort(int fd, uint8_t* b, size_t s);
 static void         writeToSerialPort(int fd, const uint8_t* b, size_t s);
-static void         print_bad_command_help(char* token);
+static inline void  print_bad_command_help(char* token);
 static bool         board_set_led(I2CDriver *sd, bool is_on);
 static inline void  send_command(I2CDriver *sd, char c);
 static bool         i2c_ack(I2CDriver *sd);
@@ -550,6 +550,7 @@ size_t i2c_write(I2CDriver *sd, const uint8_t bytes[], size_t byte_count) {
         // Write out the block -- use ACK as byte count
         writeToSerialPort(sd->port, write_cmd, 1 + length);
         ack = i2c_ack(sd);
+        if (!ack) break;
         count += length;
     }
 
@@ -652,31 +653,9 @@ static inline void send_command(I2CDriver* sd, char c) {
  *
  * @param command: The bad command.
  */
-static void print_bad_command_help(char* command) {
+static inline void print_bad_command_help(char* command) {
 
     print_error("Bad command: %s\n", command);
-    show_commands();
-}
-
-
-/**
- * @brief Output help info.
- */
-void show_commands(void) {
-    fprintf(stderr, "Commands:\n");
-    fprintf(stderr, "  z                                Initialise the I2C bus.\n");
-    fprintf(stderr, "  c {bus ID} {SDA pin} {SCL pin}   Configure the I2C bus.\n");
-    fprintf(stderr, "  f {frequency}                    Set the I2C bus frequency in multiples of 100kHz.\n");
-    fprintf(stderr, "                                   Only 1 and 4 are supported.\n");
-    fprintf(stderr, "  w {address} {bytes}              Write bytes out to I2C.\n");
-    fprintf(stderr, "  r {address} {count}              Read count bytes in from I2C.\n");
-    fprintf(stderr, "                                   Issues a STOP after all the bytes have been read.\n");
-    fprintf(stderr, "  p                                Manually issue an I2C STOP.\n");
-    fprintf(stderr, "  x                                Reset the I2C bus.\n");
-    fprintf(stderr, "  s                                Scan for devices on the I2C bus.\n");
-    fprintf(stderr, "  i                                Get I2C bus host device information.\n");
-    fprintf(stderr, "  l {on|off}                       Turn the I2C bus host LED on or off.\n");
-    fprintf(stderr, "  h                                Show help and quit.\n");
 }
 
 
@@ -782,7 +761,7 @@ int process_commands(I2CDriver *sd, int argc, char *argv[], uint32_t delta) {
                     return EXIT_ERR;
                 }
             
-            case 'G':   // FROM 1.5.0
+            case 'G':   // FROM 1.1.0
             case 'g':   // SET OR GET A GPIO PIN
                 {
                     if (i < argc - 1) {

@@ -80,9 +80,6 @@ bool            i2c_stop(I2CDriver *sd);
 size_t          i2c_write(I2CDriver *sd, const uint8_t bytes[], size_t nn);
 void            i2c_read(I2CDriver *sd, uint8_t bytes[], size_t nn);
 
-// User-feedback Functions
-void            show_commands(void);
-
 // Command Parsing and Processing
 int             process_commands(I2CDriver *sd, int argc, char *argv[], uint32_t delta);
 

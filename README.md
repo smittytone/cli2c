@@ -114,6 +114,7 @@ cli2c {device_port} [command] ... [command]
 | `x` |  | Reset the I2C bus |
 | `s` |  |  Display devices on the I2C bus. **Note** This will initialise the bus if it is not already initialised |
 | `i` |  |  Display I2C host device information |
+| `g` | {pin_number} [hi|lo] [in|out] | [Set a GPIO pin](#gpio) |
 | `l` | {`on`\|`off`} | Turn the I2C Host LED on or off |
 | `h` |  |  Display help information |
 
@@ -146,6 +147,27 @@ set(USE_STEMMA 1)
 line in the board’s `CMakeLists.txt` file.
 
 But don’t forget that you can use the `c` command to choose an alternative I2C bus and pins.
+
+#### GPIO
+
+ You can use `cli2c` to set a GPIO pin. Provide the GPIO number and its initial state (`hi` or `lo`) and its mode: whether it is an input or output (`in` or `out`).
+
+ Setting a pin to an output immediately sets its state to the provided value. To change the state, just pass in the opposite value. There’s no need to specify its mode again unless you wish to change it.
+
+ ```
+ cli2c /dev/cu.usbmodem-101 10 hi out
+ cli2c /dev/cu.usbmodem-101 10 lo
+ ```
+
+ Setting a pin to an input does nothing immediately, and the supplied state value is ignored unless it is `r`, for read. To read an input pin, pass `r` in place of a state: `cli2c` will output the pin’s current value as a two-digit hex number:
+
+ ```
+ cli2c /dev/cu.usbmodem-101 10 lo in
+ cli2c /dev/cu.usbmodem-101 10 r
+ 01
+ ```
+
+ Again, you don’t need to restate the pin’s mode unless you’re changing it.
 
 ## matrix
 
@@ -278,9 +300,10 @@ Thanks are also due to Hermann Stamm-Wilbrandt ([@Hermann-SW](https://github.com
 ## Release Notes
 
 * 1.1.2 *Unreleased*
-    * Internal changes.
-    * Bug fixes.
+    * A big data transfer speed improvement.
+    * Document GPIO usage.
     * Better error messages.
+    * Internal changes and bug fixes.
 * 1.1.1 *27 October 2022*
     * Internal changes.
 * 1.1.0 *22 October 2022*
