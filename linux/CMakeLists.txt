@@ -32,7 +32,7 @@ project(${PROJECT_NAME}
         HOMEPAGE_URL https://smittytone.net/cli2c)
 
 # Set the build version
-add_compile_definitions(APP_VERSION=${VERSION_NUMBER})
+add_compile_definitions(APP_VERSION="${VERSION_NUMBER}")
 
 # Include app source code file(s)
 add_executable(cli2c
