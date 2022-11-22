@@ -6,7 +6,7 @@ IMPORTS
 import signal
 from psutil import cpu_percent
 from sys import exit, argv
-from time import sleep, time_ns
+from time import sleep, time_ns, ticks_ms
 
 
 '''
@@ -21,44 +21,44 @@ port = None
 FUNCTIONS
 '''
 def await_ok(timeout=2000):
-    if await_data(0, timeout) == "OK":
-        return True
-    # Error -- No OK received
-    return False
+    return (await_data(0, timeout) == "OK")
 
 
 def await_data(count=0, timeout=5000):
     buffer = bytes()
-    now = (time_ns() // 1000000)
-    while ((time_ns() // 1000000) - now) < timeout:
+    now = time_ns() // 1000000
+    while (time_ns() // 1000000) - now < timeout:
         if port.in_waiting > 0:
-            buffer += port.read(port.in_waiting)
-            if count == 0 and len(buffer) >= 4:
-                if "\r\n" in buffer.decode():
-                    return buffer.decode()[0:-2]
-                break
-            if count != 0 and len(buffer) >= count:
+            buffer += port.read(1)
+            if count == 0 and len(buffer) > 3:
+                if buffer.decode().endswith("\r\n"):
+                    return buffer.decode()[:-2]
+            if count > 0 and len(buffer) >= count:
                 print(buffer)
                 return buffer.decode()[:count]
     # Error -- No data received (or mis-formatted)
-    return ""
+    return buffer.decode()
 
 
 def await_ack(timeout=2000):
-    buffer = bytes()
-    now = (time_ns() // 1000000)
-    while ((time_ns() // 1000000) - now) < timeout:
+    now = time_ns() // 1000000
+    while (time_ns() // 1000000) - now < timeout:
         if port.in_waiting > 0:
             r = port.read(1)
             if r[0] == 0x0F:
                 return True
+            else:
+                print(r[0])
+                return False
     # Error -- No Ack received
+    print("No byte received")
     return False
 
 
-def write(data, timeout=2000):
+def write(data):
     l = port.write(data)
-    return await_ack(timeout)
+    print(l,"bytes written")
+    return await_ack()
 
 
 def show_error(message):
@@ -103,7 +103,7 @@ RUNTIME START
 if __name__ == '__main__':
 
     signal.signal(signal.SIGINT, handler)
-    
+
     device = None
     i2c_address = 0x70
     last_cpu = 0
@@ -122,6 +122,7 @@ if __name__ == '__main__':
         try:
             import serial
             port = serial.Serial(port=device, baudrate=1000000)
+            sleep(100)
         except:
             show_error(f"An invalid device file specified: {device}")
 
@@ -139,14 +140,14 @@ if __name__ == '__main__':
                 write(b'\xC0\x21')
                 write(b'\xC0\x81')
                 write(b'\xC0\xE4')
-                
+
                 while True:
                     cpu = int(cpu_percent() * 10.0)
                     if cpu != last_cpu:
                         last_cpu = cpu
                         out = bytearray(18)
                         out[0] = 0xD0
-                        
+
                         a = 0
                         for i in range(0, 4):
                             if i == 0:
@@ -157,7 +158,7 @@ if __name__ == '__main__':
                                 a = bcd(cpu) >> 4
                             else:
                                 a = bcd(cpu)
-                            
+
                             a &= 0x0F
                             out[2 + POS[i]] = CHARSET[a]
                             if i == 2: out[2 + POS[i]] |= 0x80
@@ -175,5 +176,5 @@ if __name__ == '__main__':
                 show_error("No connection to bus host")
         else:
             show_error("Could not open serial port")
-    else:        
+    else:
         print("Usage: python cpu_chart_segment.py /path/to/device [i2C address]")
