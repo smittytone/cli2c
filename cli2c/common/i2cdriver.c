@@ -1,7 +1,7 @@
 /*
  * Generic macOS I2C driver
  *
- * Version 1.1.1
+ * Version 1.1.2
  * Copyright © 2022, Tony Smith (@smittytone)
  * Licence: MIT
  *
@@ -12,19 +12,19 @@
 #pragma mark - Static Function Prototypes
 
 // FROM 1.1.1 -- implement internal functions as statics
-static int      openSerialPort(const char *portname);
-static size_t   readFromSerialPort(int fd, uint8_t* b, size_t s);
-static void     writeToSerialPort(int fd, const uint8_t* b, size_t s);
-static void     print_bad_command_help(char* token);
-static bool     board_set_led(I2CDriver *sd, bool is_on);
-static void     send_command(I2CDriver *sd, char c);
-static bool     i2c_ack(I2CDriver *sd);
-static bool     i2c_set_bus(I2CDriver *sd, uint8_t bus_id, uint8_t sda_pin, uint8_t scl_pin);
-static bool     i2c_set_speed(I2CDriver *sd, long speed);
-static bool     i2c_reset(I2CDriver *sd);
-static void     i2c_get_info(I2CDriver *sd, bool do_print);
-static bool     gpio_set_pin(I2CDriver *sd, uint8_t pin);
-static uint8_t  gpio_get_pin(I2CDriver *sd, uint8_t pin);
+static int          openSerialPort(const char *portname);
+static size_t       readFromSerialPort(int fd, uint8_t* b, size_t s);
+static void         writeToSerialPort(int fd, const uint8_t* b, size_t s);
+static void         print_bad_command_help(char* token);
+static bool         board_set_led(I2CDriver *sd, bool is_on);
+static inline void  send_command(I2CDriver *sd, char c);
+static bool         i2c_ack(I2CDriver *sd);
+static bool         i2c_set_bus(I2CDriver *sd, uint8_t bus_id, uint8_t sda_pin, uint8_t scl_pin);
+static bool         i2c_set_speed(I2CDriver *sd, long speed);
+static bool         i2c_reset(I2CDriver *sd);
+static void         i2c_get_info(I2CDriver *sd, bool do_print);
+static bool         gpio_set_pin(I2CDriver *sd, uint8_t pin);
+static uint8_t      gpio_get_pin(I2CDriver *sd, uint8_t pin);
 
 
 #pragma mark - Globals
@@ -235,12 +235,11 @@ void i2c_connect(I2CDriver *sd, const char* portname) {
     if (sd->port == -1) return;
 
     // Perform a basic communications check
-    // FROM 1.1.1 -- use ! in place of z (internal change)
-    send_command(sd, '!');
+    send_command(sd, 'z');
     uint8_t rx[4] = {0};
     size_t result = readFromSerialPort(sd->port, rx, 4);
     if (result == -1 || ((rx[0] != 'O') && (rx[1] != 'K'))) {
-        print_error("Could not read from device");
+        print_error("Could not connect to device %s", portname);
         return;
     }
 
@@ -261,11 +260,7 @@ void i2c_connect(I2CDriver *sd, const char* portname) {
 static bool i2c_ack(I2CDriver *sd) {
 
     uint8_t read_buffer[1] = {0};
-    if (readFromSerialPort(sd->port, read_buffer, 1) != 1) {
-        // print_error("Last action not ACK’d by device");
-        return false;
-    }
-    
+    if (readFromSerialPort(sd->port, read_buffer, 1) != 1)  return false;
     return ((read_buffer[0] & ACK) == ACK);
 }
 
@@ -282,7 +277,7 @@ static void i2c_get_info(I2CDriver *sd, bool do_print) {
     send_command(sd, '?');
     size_t result = readFromSerialPort(sd->port, read_buffer, 0);
     if (result == -1) {
-        print_error("Could not read information from device");
+        print_error("Could not read I2C information from device");
         return;
     }
 
@@ -363,13 +358,15 @@ void i2c_scan(I2CDriver *sd) {
     uint8_t device_list[CONNECTED_DEVICES_MAX_B] = {0};
     uint32_t device_count = 0;
 
+    // Request scan from bus host
     send_command(sd, 'd');
     size_t result = readFromSerialPort(sd->port, (uint8_t*)scan_buffer, 0);
     if (result == -1) {
-        print_error("Could not read from device");
+        print_error("Could not read scan data from device");
         return;
     }
 
+    // If we receive Z(ero), there are no connected devices
     if (scan_buffer[0] != 'Z') {
         // Extract device address hex strings and generate
         // integer values. For example:
@@ -384,7 +381,8 @@ void i2c_scan(I2CDriver *sd) {
 
             uint8_t value[2] = {0};
             uint32_t count = 0;
-
+            
+            // Get two hex chars and store in 'value'; break on a .
             while(1) {
                 uint8_t token = scan_buffer[i + count];
                 if (token == 0x2E) break;
@@ -640,7 +638,7 @@ static bool board_set_led(I2CDriver *sd, bool is_on) {
  * @param sd: Pointer to an I2CDriver structure.
  * @param c:  A command character.
  */
-static void send_command(I2CDriver* sd, char c) {
+static inline void send_command(I2CDriver* sd, char c) {
 
     writeToSerialPort(sd->port, (uint8_t*)&c, 1);
 }

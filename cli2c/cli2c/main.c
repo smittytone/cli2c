@@ -1,7 +1,7 @@
 /*
  * Generic macOS I2C driver
  *
- * Version 1.1.1
+ * Version 1.1.2
  * Copyright © 2022, Tony Smith (@smittytone)
  * Licence: MIT
  *
@@ -12,8 +12,8 @@
 /*
  * STATIC PROTOTYPES
  */
-static void    show_help(void);
-static void    show_version(void);
+static inline void  show_help(void);
+static inline void  show_version(void);
 
 
 /*
@@ -70,8 +70,6 @@ int main(int argc, char *argv[]) {
             int result = process_commands(&i2c, argc, argv, delta);
             flush_and_close_port(i2c.port);
             return result;
-        } else {
-            print_error("Could not connect to device %s\n", argv[1]);
         }
     }
 
@@ -82,7 +80,7 @@ int main(int argc, char *argv[]) {
 /**
  * @brief Show help.
  */
-static void show_help() {
+static inline void show_help() {
     
     fprintf(stderr, "cli2c {device} [commands]\n\n");
     fprintf(stderr, "Usage:\n");
@@ -95,8 +93,8 @@ static void show_help() {
 /**
  * @brief Show app version.
  */
-static void show_version() {
+static inline void show_version() {
     
-    fprintf(stderr, "cli2c 1.1.1\n");
+    fprintf(stderr, "cli2c %s\n", APP_VERSION);
     fprintf(stderr, "Copyright © 2022, Tony Smith.\n");
 }

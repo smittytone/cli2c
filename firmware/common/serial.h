@@ -1,7 +1,7 @@
 /*
  * I2C Host Firmware - Primary serial and command functions
  *
- * @version     1.1.1
+ * @version     1.1.2
  * @author      Tony Smith (@smittytone)
  * @copyright   2022
  * @licence     MIT
@@ -34,7 +34,7 @@
  * CONSTANTS
  */
 #define SERIAL_READ_TIMEOUT_US                  10
-#define RX_LOOP_DELAY_MS                        50
+#define RX_LOOP_DELAY_MS                        5
 #define HEARTBEAT_PERIOD_US                     2000000
 #define HEARTBEAT_FLASH_US                      100000
 
@@ -57,6 +57,10 @@
 
 #define ACK                                     0x0F
 #define ERR                                     0xF0
+
+// FROM 1.1.2
+#define UART_LOOP_DELAY_MS                      1
+#define RX_BUFFER_LENGTH_B                      128
 
 
 /*

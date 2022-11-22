@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.18)
 
 # Set project data
 set(PROJECT_NAME "cli2c for Linux")
-set(BUILD_NUMBER "10")
+set(BUILD_NUMBER "34")
 
 # Set app name(s) and version(s)
 set(CLI_CODE_DIRECTORY "${CMAKE_SOURCE_DIR}/../cli2c/cli2c")
@@ -26,7 +26,7 @@ include_directories(
 # Name the project
 project(${PROJECT_NAME}
         LANGUAGES C
-        VERSION 1.1.0
+        VERSION 1.1.2
         DESCRIPTION "Command line I2C access"
         HOMEPAGE_URL https://smittytone.net/cli2c)
 

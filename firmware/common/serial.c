@@ -1,7 +1,7 @@
 /*
  * I2C Host Firmware - Primary serial and command functions
  *
- * @version     1.1.1
+ * @version     1.1.2
  * @author      Tony Smith (@smittytone)
  * @copyright   2022
  * @licence     MIT
@@ -14,20 +14,20 @@
 /*
  * STATIC PROTOTYPES
  */
-static void     init_i2c(I2C_State* itr);
-static void     reset_i2c(I2C_State* itr);
+static void         init_i2c(I2C_State* itr);
+static void         reset_i2c(I2C_State* itr);
+// FROM 1.1.2 -- make ack and err sends inline
+static inline void  send_ack(void);
+static inline void  send_err(void);
+static void         send_scan(I2C_State* itr);
+static void         send_status(I2C_State* itr);
 
-static void     send_ack(void);
-static void     send_err(void);
-static void     send_scan(I2C_State* itr);
-static void     send_status(I2C_State* itr);
-
-static void     tx(uint8_t* buffer, uint32_t byte_count);
-static uint32_t rx(uint8_t *buffer);
+static void         tx(uint8_t* buffer, uint32_t byte_count);
+static uint32_t     rx(uint8_t *buffer);
 
 // FROM 1.1.0
-static bool     check_pins(uint8_t bus, uint8_t sda, uint8_t scl);
-static bool     pin_check(uint8_t* pins, uint8_t pin);
+static bool         check_pins(uint8_t bus, uint8_t sda, uint8_t scl);
+static bool         pin_check(uint8_t* pins, uint8_t pin);
 
 
 /*
@@ -48,6 +48,9 @@ void rx_loop(void) {
     uint8_t rx_buffer[128] = {0};
     uint32_t read_count = 0;
     bool do_use_led = true;
+    
+    // Heartbeat variables
+    uint64_t last = time_us_64();
 
     // Prepare a transaction record with default data
     I2C_State i2c_state;
@@ -62,9 +65,6 @@ void rx_loop(void) {
     // FROM 1.1.0 -- record GPIO pin state
     GPIO_State gpio_state;
     memset(gpio_state.state_map, 0, 32);
-
-    // Heartbeat variables
-    uint64_t last = time_us_64();
 
 #ifdef DO_DEBUG
     // Set up a parallel segment display to assist
@@ -87,6 +87,8 @@ void rx_loop(void) {
             //      128-191 (read 1-64 bytes), or
             //      192-255 (write 1-64 bytes)
             uint8_t status_byte = rx_buffer[0];
+            uint8_t* rx_ptr = rx_buffer;
+
             if (i2c_state.is_started && status_byte >= READ_LENGTH_BASE) {
                 // We have data or a read op
                 if (status_byte >= WRITE_LENGTH_BASE) {
@@ -276,7 +278,7 @@ void rx_loop(void) {
             }
 
             // Clear buffer and listen for input
-            memset(rx_buffer, 0, read_count);
+            memset(rx_buffer, 0, RX_BUFFER_LENGTH_B);
         }
 
 #ifdef SHOW_HEARTBEAT
@@ -300,6 +302,8 @@ void rx_loop(void) {
     // Signal an error on the host's LED
     led_set_colour(0xFF0000);
     led_flash(5);
+
+    // Fall out of the firmware at this point...
 }
 
 
@@ -424,18 +428,11 @@ static void send_status(I2C_State* itr) {
 /**
  * @brief Send a single-byte ACK.
  */
-static void send_ack(void) {
+static inline void send_ack(void) {
 #ifdef BUILD_FOR_TERMINAL_TESTING
-    printf("OK\r\n");
+    printf("ACK\r\n");
 #else
     putchar(ACK);
-#endif
-
-#ifdef DO_DEBUG
-    // Write the sent char on the segment's second two digits
-    HT16K33_set_number(0x00, 2, false);
-    HT16K33_set_number(0x01, 3, false);
-    HT16K33_draw();
 #endif
 }
 
@@ -443,18 +440,11 @@ static void send_ack(void) {
 /**
  * @brief Send a single-byte ERR.
  */
-static void send_err(void) {
+static inline void send_err(void) {
 #ifdef BUILD_FOR_TERMINAL_TESTING
     printf("ERR\r\n");
 #else
     putchar(ERR);
-#endif
-
-#ifdef DO_DEBUG
-    // Write the sent char on the segment's second two digits
-    HT16K33_set_number(0x0F, 2, false);
-    HT16K33_set_number(0x0F, 3, false);
-    HT16K33_draw();
 #endif
 }
 
@@ -470,19 +460,11 @@ static uint32_t rx(uint8_t* buffer) {
 
     uint32_t data_count = 0;
     int c = PICO_ERROR_TIMEOUT;
-    while (data_count < 128) {
+    while (data_count < RX_BUFFER_LENGTH_B + 1) {
         c = getchar_timeout_us(1);
         if (c == PICO_ERROR_TIMEOUT) break;
         buffer[data_count++] = (uint8_t)c;
-
-#ifdef DO_DEBUG
-        // Write the received char on the segment's first two digits
-        HT16K33_set_number((uint8_t)((c & 0xF0) >> 4), 0, false);
-        HT16K33_set_number((uint8_t)(c & 0x0F), 1, false);
-        HT16K33_draw();
-#else
-        sleep_ms(10);
-#endif
+        sleep_ms(UART_LOOP_DELAY_MS);
     }
 
     return data_count;
@@ -499,18 +481,10 @@ static void tx(uint8_t* buffer, uint32_t byte_count) {
 
     for (uint32_t i = 0 ; i < byte_count ; ++i) {
         putchar((buffer[i]));
-
-#ifdef DO_DEBUG
-        // Write the sent char on the segment's second two digits
-        HT16K33_set_number(((buffer[i] & 0xF0) >> 4), 2, false);
-        HT16K33_set_number((buffer[i] & 0x0F), 3, false);
-        HT16K33_draw();
-#else
-        sleep_ms(10);
-#endif
+        sleep_ms(UART_LOOP_DELAY_MS);
     }
 
-    stdio_flush();
+    // stdio_flush();
 }
 
 
@@ -535,7 +509,7 @@ static bool check_pins(uint8_t bus, uint8_t sda, uint8_t scl) {
     
     pin_pairs = bus == 0 ? &PIN_PAIRS_BUS_0[1] : &PIN_PAIRS_BUS_1[1];
     if (!pin_check(pin_pairs, scl)) return false;
-    return true;;
+    return true;
 }
 
 

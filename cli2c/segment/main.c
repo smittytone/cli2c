@@ -1,7 +1,7 @@
 /*
  * I2C driver for an HT16K33 4-digit, 7-segment display
  *
- * Version 1.1.1
+ * Version 1.1.2
  * Copyright © 2022, Tony Smith (@smittytone)
  * Licence: MIT
  *
@@ -87,8 +87,6 @@ int main(int argc, char* argv[]) {
                 flush_and_close_port(i2c.port);
                 return result;
             }
-        } else {
-            print_error("Could not connect to device %s", argv[1]);
         }
     }
 
