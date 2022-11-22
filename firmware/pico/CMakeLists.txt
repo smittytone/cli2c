@@ -24,7 +24,8 @@ add_executable(${FW_2_NAME}
     ${FW_2_SRC_DIRECTORY}/pico_led.c
     ${FW_2_SRC_DIRECTORY}/pins.c
     ${COMMON_CODE_DIRECTORY}/serial.c
-    ${COMMON_CODE_DIRECTORY}/led.c)
+    ${COMMON_CODE_DIRECTORY}/led.c
+    ${COMMON_CODE_DIRECTORY}/gpio.c)
 
 # Compile debug segment LED sources
 if (DO_DEBUG)

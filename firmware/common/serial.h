@@ -25,6 +25,7 @@
 #include "pico/unique_id.h"
 // App Includes
 #include "led.h"
+#include "gpio.h"
 #ifdef DO_DEBUG
 #include "segment.h"
 #endif
@@ -78,10 +79,6 @@ typedef struct {
     uint32_t    write_byte_count;
     i2c_inst_t* bus;
 } I2C_State;
-
-typedef struct {
-    uint8_t     state_map[32];
-} GPIO_State;
 
 
 /*

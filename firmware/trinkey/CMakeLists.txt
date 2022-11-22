@@ -35,7 +35,8 @@ add_executable(${FW_5_NAME}
     ${FW_5_SRC_DIRECTORY}/main.c
     ${FW_5_SRC_DIRECTORY}/pins.c
     ${COMMON_CODE_DIRECTORY}/serial.c
-    ${COMMON_CODE_DIRECTORY}/led.c)
+    ${COMMON_CODE_DIRECTORY}/led.c
+    ${COMMON_CODE_DIRECTORY}/gpio.c)
 
 # Set the stack size
 target_compile_definitions(${FW_5_NAME} PRIVATE PICO_STACK_SIZE=4096)

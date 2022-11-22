@@ -43,7 +43,8 @@ add_executable(${FW_1_NAME}
     ${FW_1_SRC_DIRECTORY}/main.c
     ${FW_1_SRC_DIRECTORY}/pins.c
     ${COMMON_CODE_DIRECTORY}/serial.c
-    ${COMMON_CODE_DIRECTORY}/led.c)
+    ${COMMON_CODE_DIRECTORY}/led.c
+    ${COMMON_CODE_DIRECTORY}/gpio.c)
 
 # Compile debug segment LED sources
 if (DO_DEBUG)

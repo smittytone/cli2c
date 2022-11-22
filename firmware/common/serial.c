@@ -194,43 +194,6 @@ void rx_loop(void) {
                         send_scan(&i2c_state);
                         break;
 
-                    // FROM 1.1.0                    
-                    case 'g':   // SET DIGITAL OUT PIN
-                        {
-                            uint8_t gpio_pin = (rx_buffer[1] & 0x1F);
-                            bool pin_state  = ((rx_buffer[1] & 0x80) > 0);
-                            bool is_dir_out = ((rx_buffer[1] & 0x40) > 0);
-                            bool is_read    = ((rx_buffer[1] & 0x20) > 0);
-                            
-                            // Make sure the pin's not in use for I2C
-                            if (gpio_pin == i2c_state.sda_pin || gpio_pin == i2c_state.scl_pin) {
-                                send_err();
-                                break;
-                            }
-
-                            // Register pin usage, state
-                            if (gpio_state.state_map[gpio_pin] == 0x00) {
-                                gpio_init(gpio_pin);
-                                gpio_set_dir(gpio_pin, (is_dir_out ? GPIO_OUT : GPIO_IN));
-                                gpio_state.state_map[gpio_pin] |= (1 << GPIO_PIN_DIRN_BIT);
-                                gpio_state.state_map[gpio_pin] |= (1 << GPIO_PIN_STATE_BIT);
-                            }
-
-                            if (is_read) {
-                                // Pin is DIGITAL_IN, so get and return the state
-                                uint8_t pin_value = gpio_get(gpio_pin) ? 0x80 : 0x00;
-                                putchar(pin_value | gpio_pin);
-                            } else if (is_dir_out) {
-                                // Pin is DIGITAL_OUT, so just set the state
-                                gpio_put(gpio_pin, pin_state);
-                                send_ack();
-                            } else {
-                                // Pin is DIGITAL_IN, but we're just setting it
-                                send_ack();
-                            }
-                            break;
-                        }
-                        
                     case 'i':   // INITIALISE THE I2C BUS
                         // No need it initialise if we already have
                         if (!i2c_state.is_ready) init_i2c(&i2c_state);
@@ -272,6 +235,32 @@ void rx_loop(void) {
                         send_ack();
                         break;
 
+                    /*
+                     * GPIO COMMANDS
+                     */
+                    
+                    // FROM 1.1.0                    
+                    case 'g':   // SET DIGITAL OUT PIN
+                        {
+                            uint8_t read_value = 0;
+                            uint8_t gpio_pin = (rx_ptr[1] & 0x1F);
+
+                            // Make sure the pin's not in use for I2C
+                            if (gpio_pin == i2c_state.sda_pin || gpio_pin == i2c_state.scl_pin) {
+                                send_err();
+                                break;
+                            }
+
+                            if (!set_gpio(&gpio_state, &read_value, rx_ptr)) {
+                                send_err();
+                                break;
+                            }
+
+                            bool is_read = ((rx_ptr[1] & 0x20) > 0);
+                            putchar(is_read ? read_value : ACK);
+                        }
+                        break;
+                        
                     default:    // UNKNOWN COMMAND -- FAIL
                         send_err();
                 }
