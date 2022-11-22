@@ -178,9 +178,11 @@ if __name__ == '__main__':
                             if write(out) is False:
                                 # Not ACK'd -- get error code
                                 port.write(b'\x24')
-                                err = await_data(1)
-                                if len(err) > 0: show_error(f"Code: {err[0]:02x}")
-                                show_error("Lost contact with Bus Host")
+                                err = read_buffer(count=1).encode()
+                                if len(err) > 0:
+                                    show_error(f"Code: 0x{err[0]:02x}")
+                                if len(err) == 0 or err[0] != 0:
+                                    show_error("Lost contact with Bus Host")
 
                     # Tell matrices to update
                     write(b'\xC1\x0C\x00')

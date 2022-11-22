@@ -156,13 +156,15 @@ if __name__ == '__main__':
                             b = 0x01
                         out[2 + (i * 2)] = (b >> 1) + ((b << 7) & 0xFF)
 
-                    # Write out matrix buffer
-                    if write(out) is False:
-                        # Not ACK'd -- get error code
-                        port.write(b'\x24')
-                        err = await_data(1)
-                        if len(err) > 0: show_error(f"Code: {err[0]:02x}")
-                        show_error("Lost contact with Bus Host")
+                        # Write out matrix buffer
+                        if write(out) is False:
+                            # Not ACK'd -- get error code
+                            port.write(b'\x24')
+                            err = read_buffer(count=1).encode()
+                            if len(err) > 0:
+                                show_error(f"Code: 0x{err[0]:02x}")
+                            if len(err) == 0 or err[0] != 0:
+                                show_error("Lost contact with Bus Host")
 
                     sleep(0.5)
             else:

@@ -4,6 +4,7 @@
 IMPORTS
 '''
 import signal
+import serial
 from psutil import cpu_percent
 from sys import exit, argv
 from time import sleep, time_ns, monotonic_ns
@@ -20,54 +21,52 @@ port = None
 '''
 FUNCTIONS
 '''
-def await_ok(timeout=2000):
-    return await_data(0) == "OK"
+def await_ok():
+    s = read_buffer()
+    print(s if len(s) > 0 else "NULL")
+    return s == "OK"
 
 
-def await_data(count=0, timeout=5000):
+def read_buffer(count=0, timeout=5000):
     buffer = bytes()
-    now = monotonic_ns() // 1000000
-    while (monotonic_ns() // 1000000) - now < timeout:
+    then = ticks_ms()
+    while ticks_ms() - then < timeout:
         if port.in_waiting > 0:
             buffer += port.read(1)
-            if count == 0 and len(buffer) > 3:
-                if buffer.decode().endswith("\r\n"):
+            print(buffer[len(buffer) - 1])
+            if count == 0 and buffer.decode().endswith("\r\n"):
                     return buffer.decode()[:-2]
             if count > 0 and len(buffer) >= count:
-                print(buffer)
                 return buffer.decode()[:count]
-    # Error -- No data received (or mis-formatted)
+    # Error -- Timeout
     return buffer.decode()
 
 
 def await_ack(timeout=2000):
-    then = monotonic_ns() // 1000000
-    now = then
-    while now - then < timeout:
+    sleep(0.001)
+    buffer = bytes()
+    then = ticks_ms()
+    while ticks_ms() - then < timeout:
         if port.in_waiting > 0:
             r = port.read(1)
-            if r[0] == 0x0F:
-                return True
-            else:
-                print("NO ACK", r[0])
-                return False
-        else:
-            sleep(0.001)
-        now = monotonic_ns() // 1000000
-    # Error -- No Ack received
-    print("Timeout",now,then)
+            if r[0] == 0x0F: return True
+            if r[0] == 0xF0: return False
+            print("*",[0])
+    # Error -- Timeout
+    print("Timeout",ticks_ms() - then,"ms")
     return False
 
 
 def write(data):
-    l = port.write(data)
-    if l != len(data): print("Only",l,"/",len(data),"written")
+    port.write(data)
     return await_ack()
 
 
 def show_error(message):
     print("[ERROR]", message)
-    if port: port.close()
+    if port: 
+        port.flush()
+        port.close()
     exit(1)
 
 
@@ -96,9 +95,14 @@ def handler(signum, frame):
     if port:
         # Reset the host's I2C bus
         port.write(b'\x78')
+        port.flush()
         port.close()
         print("\nDone")
     exit(0)
+
+
+def ticks_ms():
+    return monotonic_ns() // 1000000
 
 
 '''
@@ -124,16 +128,13 @@ if __name__ == '__main__':
     if device:
         # Set the port or fail
         try:
-            import serial
-            port = serial.Serial(port=device, baudrate=1000000)
-            #reset_input_buffer()
-            #reset_output_buffer()
+            port = serial.Serial(port=device, baudrate=1000000, write_timeout=1000)
         except:
             show_error(f"An invalid device file specified: {device}")
 
         if port:
             # Check we can connect
-            r = port.write(b'\x21')
+            port.write(b'\x21')
             if await_ok() is True:
                 write(b'\x69')
                 out = bytearray(2)
@@ -170,9 +171,11 @@ if __name__ == '__main__':
                         if write(out) is False:
                             # Not ACK'd -- get error code
                             port.write(b'\x24')
-                            err = await_data(1)
-                            if len(err) > 0: show_error(f"Code: {err[0]:02x}")
-                            show_error("Lost contact with Bus Host")
+                            err = read_buffer(count=1).encode()
+                            if len(err) > 0:
+                                show_error(f"Code: 0x{err[0]:02x}")
+                            if len(err) == 0 or err[0] != 0:
+                                show_error("Lost contact with Bus Host")
                     
                     sleep(0.5)
             else:

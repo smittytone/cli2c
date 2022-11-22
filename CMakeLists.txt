@@ -25,7 +25,7 @@ set(FW_5_SRC_DIRECTORY "${CMAKE_SOURCE_DIR}/firmware/trinkey")
 set(COMMON_CODE_DIRECTORY "${CMAKE_SOURCE_DIR}/firmware/common")
 
 # Uncomment to enable app-side debugging.
-set(DO_DEBUG 1)
+#set(DO_DEBUG 1)
 if(DO_DEBUG)
 # DO_UART_DEBUG pus the firmware in debug mode. Outputs a log on UART 0
 add_compile_definitions(DO_UART_DEBUG=1)

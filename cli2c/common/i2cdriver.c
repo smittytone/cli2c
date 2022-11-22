@@ -409,7 +409,7 @@ static void i2c_get_info(I2CDriver *sd, bool do_print) {
         if (address == 0xFF) {
             fprintf(stderr, "Target I2C address: NONE\n");
         } else {
-            fprintf(stderr, "Target I2C address: 0x%02X\n", address > 1);
+            fprintf(stderr, "Target I2C address: 0x%02X\n", address);
         }
     }
 }
@@ -542,7 +542,7 @@ static bool i2c_set_speed(I2CDriver *sd, long speed) {
 static bool i2c_set_bus(I2CDriver *sd, uint8_t bus_id, uint8_t sda_pin, uint8_t scl_pin) {
     
     // FROM 1.2.0 -- Update to use the new I2C mode selection key
-    uint8_t set_bus_data[6] = {'#', 'i', 'c', (bus_id & 0x01), sda_pin, scl_pin};
+    uint8_t set_bus_data[4] = {'c', (bus_id & 0x01), sda_pin, scl_pin};
     writeToSerialPort(sd->port, set_bus_data, sizeof(set_bus_data));
     return i2c_ack(sd);
 }
@@ -575,7 +575,7 @@ bool i2c_start(I2CDriver *sd, uint8_t address) {
     // This is a two-byte command: command + (address | op)
     // FROM 1.2.0 -- Update to use the new I2C mode selection key
     sd->address = address;
-    uint8_t start_data[4] = {'#', 'i', 's', (sd->address << 1)};
+    uint8_t start_data[2] = {'s', (sd->address << 1)};
     writeToSerialPort(sd->port, start_data, sizeof(start_data));
     bool ackd = i2c_ack(sd);
     if (ackd) sd->started = true;
@@ -674,7 +674,7 @@ void i2c_read(I2CDriver *sd, uint8_t bytes[], size_t byte_count) {
 static bool gpio_set_pin(I2CDriver *sd, uint8_t pin) {
     
     // FROM 1.2.0 -- Update to use the new I2C mode selection key
-    uint8_t set_pin_data[4] = {'#', 'i', 'g', pin};
+    uint8_t set_pin_data[2] = {'g', pin};
     writeToSerialPort(sd->port, set_pin_data, sizeof(set_pin_data));
     return i2c_ack(sd);
 }
@@ -691,7 +691,7 @@ static bool gpio_set_pin(I2CDriver *sd, uint8_t pin) {
 static uint8_t gpio_get_pin(I2CDriver *sd, uint8_t pin) {
     
     // FROM 1.2.0 -- Update to use the new I2C mode selection key
-    uint8_t set_pin_data[4] = {'#', 'i', 'g', pin};
+    uint8_t set_pin_data[2] = {'g', pin};
     writeToSerialPort(sd->port, set_pin_data, sizeof(set_pin_data));
     uint8_t pin_read = 0;
     i2c_read(sd, &pin_read, 1);
@@ -704,7 +704,7 @@ static uint8_t gpio_get_pin(I2CDriver *sd, uint8_t pin) {
 static bool board_set_led(I2CDriver *sd, bool is_on) {
     
     // FROM 1.2.0 -- Update to use the new I2C mode selection key
-    uint8_t set_led_data[4] = {'#', 'i', '*', (is_on ? 1 : 0)};
+    uint8_t set_led_data[2] = {'*', (is_on ? 1 : 0)};
     writeToSerialPort(sd->port, set_led_data, sizeof(set_led_data));
     return i2c_ack(sd);
 }
@@ -718,10 +718,8 @@ static bool board_set_led(I2CDriver *sd, bool is_on) {
  */
 static void send_command(I2CDriver* sd, char c) {
     
-    // FROM 1.2.0 -- Update to use the new I2C mode selection key
-    char cmd_data[3] = "#i";
-    cmd_data[2] = c;
-    writeToSerialPort(sd->port, (uint8_t*)cmd_data, sizeof(cmd_data));
+    uint8_t cmd[1] = {c};
+    writeToSerialPort(sd->port, cmd, 1);
 }
 
 
@@ -733,8 +731,6 @@ static void get_and_show_last_error(I2CDriver *sd) {
     // Read back an error record. Extract the fields and print it
     size_t result = readFromSerialPort(sd->port, &err_code, 1);
     if (result > 0) {
-        //int err_code = 0;
-        //sscanf((char*)err_buffer, "%i", &err_code);
         fprintf(stderr, "Host reported error code %i\n", err_code);
     }
 }

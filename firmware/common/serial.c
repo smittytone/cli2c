@@ -246,6 +246,7 @@ void rx_loop(void) {
 
                         // FROM 1.2.0
                         case '$':   // RETURN LAST ERROR CODE
+                            led_set_colour(0x001000);
                             putchar(last_error_code);
                             break;
 
@@ -397,6 +398,7 @@ void rx_loop(void) {
 
                         default:    // UNKNOWN COMMAND -- FAIL
                             last_error_code = GEN_UNKNOWN_COMMAND;
+                            led_set_colour(0x100000);
                             send_err();
                 }
             }
