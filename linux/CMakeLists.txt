@@ -2,6 +2,7 @@ cmake_minimum_required(VERSION 3.18)
 
 # Set project data
 set(PROJECT_NAME "cli2c for Linux")
+set(VERSION_NUMBER "1.1.2")
 set(BUILD_NUMBER "34")
 
 # Set app name(s) and version(s)
@@ -26,9 +27,12 @@ include_directories(
 # Name the project
 project(${PROJECT_NAME}
         LANGUAGES C
-        VERSION 1.1.2
+        VERSION ${VERSION_NUMBER}
         DESCRIPTION "Command line I2C access"
         HOMEPAGE_URL https://smittytone.net/cli2c)
+
+# Set the build version
+add_compile_definitions(APP_VERSION=${VERSION_NUMBER})
 
 # Include app source code file(s)
 add_executable(cli2c
