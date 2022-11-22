@@ -6,7 +6,7 @@ IMPORTS
 import signal
 from psutil import cpu_percent
 from sys import exit, argv
-from time import sleep, time_ns
+from time import sleep, time_ns, monotonic_ns
 
 
 '''
@@ -18,42 +18,43 @@ port = None
 '''
 FUNCTIONS
 '''
-def await_ok(timeout=2000):
-    if await_data(timeout) == "OK":
-        return True
-    # Error -- No OK received
-    return False
+def await_ok():
+    return await_data() == "OK"
 
 
-def await_data(timeout=2000):
+def await_data(count=0, timeout=5000):
     buffer = bytes()
-    now = (time_ns() // 1000000)
-    while ((time_ns() // 1000000) - now) < timeout:
+    then = monotonic_ns() // 1000000
+    now = then
+    while now - then < timeout:
         if port.in_waiting > 0:
-            buffer += port.read(port.in_waiting)
-            if len(buffer) == 4:
-                if "\r\n" in buffer.decode():
-                    return buffer.decode()[0:-2]
-                break
-    # Error -- No data received (or mis-formatted)
-    return ""
+            buffer += port.read(1)
+            if count == 0 and len(buffer) > 3:
+                if buffer.decode().endswith("\r\n"):
+                    return buffer.decode()[:-2]
+            if count > 0 and len(buffer) >= count:
+                return buffer.decode()[:count]
+        now = monotonic_ns() // 1000000
+    # Error -- Timeout
+    return buffer.decode()
 
 
 def await_ack(timeout=2000):
     buffer = bytes()
-    now = (time_ns() // 1000000)
-    while ((time_ns() // 1000000) - now) < timeout:
+    then = monotonic_ns() // 1000000
+    now = then
+    while now - then < timeout:
         if port.in_waiting > 0:
             r = port.read(1)
-            if r[0] == 0x0F:
-                return True
-    # Error -- No Ack received
+            return r[0] == 0x0F
+        now = monotonic_ns() // 1000000
+    # Error -- Timeout
     return False
 
 
-def write(data, timeout=2000):
-    l = port.write(data)
-    return await_ack(timeout)
+def write(data):
+    port.write(data)
+    return await_ack()
 
 
 def show_error(message):
@@ -74,7 +75,7 @@ def str_to_int(num_str):
 def handler(signum, frame):
     if port:
         # Reset the host's I2C bus
-        port.write(b'\x23\x69\x78')
+        port.write(b'\x78')
         port.close()
         print("\nDone")
     exit(0)
@@ -110,18 +111,16 @@ if __name__ == '__main__':
 
         if port:
             # Check we can connect
-            r = port.write(b'\x23\x69\x21')
+            r = port.write(b'\x21')
             if await_ok() is True:
-                write(b'\x23\x69\x69')
-                out = bytearray(4)
-                out[0] = 0x23
-                out[1] = 0x69
-                out[2] = 0x73
-                out[3] = (i2c_address << 1)
+                write(b'\x69')
+                out = bytearray(2)
+                out[0] = 0x73
+                out[1] = i2c_address << 1
                 write(out)
                 write(b'\xC0\x21')
                 write(b'\xC0\x81')
-                write( b'\xC0\xE2')
+                write(b'\xC0\xE2')
                 
                 while True:
                     cpu = int(cpu_percent())
@@ -157,13 +156,12 @@ if __name__ == '__main__':
                             b = 0x01
                         out[2 + (i * 2)] = (b >> 1) + ((b << 7) & 0xFF)
 
-                    r = write(out)
-                    if r is False:
+                    # Write out matrix buffer
+                    if write(out) is False:
                         # Not ACK'd -- get error code
-                        port.write(b'\x23\x69\x24')
-                        r = await_data(1)
-                        if len(r) > 0:
-                            show_error(f"Code: {int(r[0])}")
+                        port.write(b'\x24')
+                        err = await_data(1)
+                        if len(err) > 0: show_error(f"Code: {err[0]:02x}")
                         show_error("Lost contact with Bus Host")
 
                     sleep(0.5)

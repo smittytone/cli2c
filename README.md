@@ -326,7 +326,7 @@ Thanks are also due to Hermann Stamm-Wilbrandt ([@Hermann-SW](https://github.com
     * Internal changes.
 * 1.1.0 *22 October 2022*
     * Support I&sup2;C bus and pin selection.
-    * Support building and running client apps on Linux (RPiOS).
+    * Support building and running client apps on Linux (RPiOS/Ubuntu).
     * Support firmware transfer to board on Linux (RPiOS).
     * Add LED control to `cli2c`.
 * 1.0.1 *18 October 2022*

@@ -14,13 +14,13 @@
 /*
  * STATIC PROTOTYPES
  */
-static void     send_status(I2C_State* itr);
-static void     send_ack(void);
-static void     send_err(void);
-static uint32_t rx(uint8_t *buffer);
+static void             send_status(I2C_State* itr);
+static inline void      send_ack(void);
+static inline void      send_err(void);
+static inline uint32_t  rx(uint8_t *buffer);
 // FROM 1.2.0
-static uint8_t  get_mode(char mode_key);
-static void     send_host_status(uint8_t mode);
+static uint8_t          get_mode(char mode_key, bool do_set_led);
+static void             send_host_status(uint8_t mode);
 
 
 /*
@@ -39,6 +39,9 @@ void rx_loop(void) {
     uint8_t rx_buffer[RX_BUFFER_LENGTH_B + 1] = {0};
     uint32_t read_count = 0;
     bool do_use_led = true;
+
+    // Heartbeat variables
+    uint64_t last = time_us_64();
 
     // Prepare a transaction record with default data
     I2C_State i2c_state;
@@ -72,11 +75,9 @@ void rx_loop(void) {
     // FROM 1.2.0
     // Default current mode to I2C, for backwards compatibility
     // NOTE Call the function so the LED colour is correctly set
-    uint8_t current_mode = get_mode('I');
+    uint8_t current_mode = get_mode('I', true);
     void* bus_states[2] = {&i2c_state, &spi_state};
-
-    // Heartbeat variables
-    uint64_t last = time_us_64();
+    bool client_is_old = false;
 
 #ifdef DO_UART_DEBUG
     uart_init(DEBUG_UART, 115200);
@@ -88,7 +89,6 @@ void rx_loop(void) {
     while(1) {
         // Scan for input
         read_count = rx(rx_buffer);
-        bool client_is_old = true;
 
         // Did we receive anything?
         if (read_count > 0) {
@@ -101,6 +101,7 @@ void rx_loop(void) {
             uint8_t* rx_ptr = rx_buffer;
             char cmd = (char)status_byte;
 
+            /*
             // FROM 1.2.0
             // Look for the key and mode specifier bytes
             if (cmd == '#') {
@@ -112,11 +113,17 @@ void rx_loop(void) {
                 }
 
                 // Set the mode from the mode specifier byte
-                current_mode = get_mode(rx_buffer[1]);
-                if (current_mode == MODE_NONE) {
-                    last_error_code = GEN_UNKNOWN_MODE;
-                    send_err();
-                    continue;
+                uint8_t requested_mode = get_mode(rx_buffer[1], false);
+                if (requested_mode != current_mode) {
+                    if (requested_mode == MODE_NONE) {
+                        last_error_code = GEN_UNKNOWN_MODE;
+                        send_err();
+                        continue;
+                    }
+
+                    // Set the mode and the board LED
+                    current_mode = requested_mode;
+                    get_mode(rx_buffer[1], true);
                 }
 
                 // Move the status/command and buffer pointer on two bytes
@@ -127,6 +134,7 @@ void rx_loop(void) {
                 // Note client type
                 client_is_old = false;           
             }
+            */
 
             if (status_byte >= READ_LENGTH_BASE) {
                 // We have data or a read op
@@ -141,7 +149,7 @@ void rx_loop(void) {
                                 debug_log("Write command received: %i byte(s)", i2c_state.write_byte_count);
                                 debug_log_bytes(&rx_ptr[1], i2c_state.write_byte_count);
 #endif  
-                                bytes_sent = i2c_write_timeout_us(i2c_state.bus, i2c_state.address, &rx_ptr[1], i2c_state.write_byte_count, false, 1000);
+                                bytes_sent = i2c_write_timeout_us(i2c_state.bus, i2c_state.address, &rx_ptr[1], i2c_state.write_byte_count, false, 1000 * i2c_state.write_byte_count);
 #ifdef DO_UART_DEBUG
                                 debug_log("Wrote %i byte(s)", bytes_sent);
 #endif 
@@ -197,7 +205,7 @@ void rx_loop(void) {
             } else {
                 // Maybe we received a command
 #ifdef DO_UART_DEBUG
-                debug_log("Command received: %c (%02X)", status_byte, status_byte);
+                debug_log("Command received. Char: %c Hex: %02X", status_byte, status_byte);
 #endif 
                 char cmd = (char)status_byte;
                 switch(cmd) {
@@ -206,7 +214,7 @@ void rx_loop(void) {
                      */
                     case '?':   // GET STATUS
                         if (client_is_old) {
-                            // DEPRECATE IN 2.0.0
+                            // REMOVE IN 2.0.0
                             send_status(&i2c_state);
                         } else {
                             send_host_status(current_mode);
@@ -215,7 +223,12 @@ void rx_loop(void) {
 
                         // FROM 1.1.1 -- change command from z to !
                         case '!':   // RESPOND TO CONNECTION REQUEST
+                            client_is_old = false;
+                            tx("OK\r\n", 4);
+                            break;
+                        
                         case 'z':
+                            client_is_old = true;
                             tx("OK\r\n", 4);
                             break;
 
@@ -234,6 +247,24 @@ void rx_loop(void) {
                         // FROM 1.2.0
                         case '$':   // RETURN LAST ERROR CODE
                             putchar(last_error_code);
+                            break;
+
+                        case '#':   // SET THE MODE
+                            {
+                                uint8_t requested_mode = get_mode(rx_buffer[1], false);
+                                if (requested_mode != current_mode) {
+                                    if (requested_mode == MODE_NONE) {
+                                        last_error_code = GEN_UNKNOWN_MODE;
+                                        send_err();
+                                        break;
+                                    }
+
+                                    // Set the mode and the board LED
+                                    current_mode = requested_mode;
+                                    get_mode(rx_buffer[1], true);
+                                }
+                            }
+
                             break;
 
                         /*
@@ -502,9 +533,9 @@ static void send_host_status(uint8_t mode) {
 /**
  * @brief Send a single-byte ACK.
  */
-static void send_ack(void) {
+static inline void send_ack(void) {
 #ifdef BUILD_FOR_TERMINAL_TESTING
-    printf("OK\r\n");
+    printf("ACK\r\n");
 #else
     putchar(ACK);
 #endif
@@ -518,7 +549,7 @@ static void send_ack(void) {
 /**
  * @brief Send a single-byte ERR.
  */
-static void send_err(void) {
+static inline void send_err(void) {
 #ifdef BUILD_FOR_TERMINAL_TESTING
     printf("ERR\r\n");
 #else
@@ -538,7 +569,7 @@ static void send_err(void) {
  *
  * @retval The number of bytes to process.
  */
-static uint32_t rx(uint8_t* buffer) {
+static inline uint32_t rx(uint8_t* buffer) {
 
     uint32_t data_count = 0;
     int c = PICO_ERROR_TIMEOUT;
@@ -563,7 +594,7 @@ void tx(uint8_t* buffer, uint32_t byte_count) {
 
     for (size_t i = 0 ; i < byte_count ; ++i) {
         putchar((buffer[i]));
-        sleep_ms(UART_LOOP_DELAY_MS);
+        //sleep_ms(UART_LOOP_DELAY_MS);
     }
 
 #ifdef DO_UART_DEBUG
@@ -609,25 +640,29 @@ bool pin_check(uint8_t* pins, uint8_t pin, uint8_t delta) {
  *
  * @retval The mode ID as an integer.
  */
-static uint8_t get_mode(char mode_key) {
+static uint8_t get_mode(char mode_key, bool do_set_led) {
 
     switch(mode_key) {
         case 'i':
         case 'I':
-            led_set_colour(COLOUR_MODE_I2C);
+        case MODE_I2C:
+            if (do_set_led) led_set_colour(COLOUR_MODE_I2C);
             return MODE_I2C;
         case 's':
         case 'S':
-            led_set_colour(COLOUR_MODE_SPI);
+        case MODE_SPI:
+            if (do_set_led) led_set_colour(COLOUR_MODE_SPI);
             return MODE_SPI;
         case 'u':
         case 'U':
-            led_set_colour(COLOUR_MODE_UART);
+        case MODE_UART:
+            if (do_set_led) led_set_colour(COLOUR_MODE_UART);
             return MODE_UART;
         case 'o':
         case 'O':
         case '1':
-            led_set_colour(COLOUR_MODE_ONE_WIRE);
+        case MODE_ONE_WIRE:
+            if (do_set_led) led_set_colour(COLOUR_MODE_ONE_WIRE);
             return MODE_ONE_WIRE;
     }
 
