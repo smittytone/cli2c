@@ -66,13 +66,8 @@ void rx_loop(void) {
     GPIO_State gpio_state;
     memset(gpio_state.state_map, 0, 32);
 
-#ifdef DO_DEBUG
-    // Set up a parallel segment display to assist
-    // with debugging
-    init_i2c(i2c_state.frequency);
-    HT16K33_init();
-    HT16K33_clear_buffer();
-    HT16K33_draw();
+#ifdef DO_UART_DEBUG
+    debug_init();
 #endif
 
     while(1) {
@@ -94,8 +89,16 @@ void rx_loop(void) {
                 if (status_byte >= WRITE_LENGTH_BASE) {
                     // Write data received, so send it and ACK
                     i2c_state.write_byte_count = status_byte - WRITE_LENGTH_BASE + 1;
-                    int bytes_sent = i2c_write_timeout_us(i2c_state.bus, i2c_state.address, &rx_buffer[1], i2c_state.write_byte_count, false, 1000);
 
+#ifdef DO_UART_DEBUG
+                    debug_log("Bytes to write: %i", i2c_state.write_byte_count);
+#endif
+
+                    int bytes_sent = i2c_write_timeout_us(i2c_state.bus, i2c_state.address, &rx_buffer[1], i2c_state.write_byte_count, true, 1000);
+
+#ifdef DO_UART_DEBUG
+                    debug_log("Bytes sent: %i", bytes_sent);
+#endif
                     // Send an ACK to say we wrote the data -- or an ERR if we didn't
                     if (bytes_sent == PICO_ERROR_GENERIC || bytes_sent == PICO_ERROR_TIMEOUT) {
                         send_err();
@@ -118,6 +121,11 @@ void rx_loop(void) {
             } else {
                 // Maybe we received a command
                 char cmd = (char)status_byte;
+
+#ifdef DO_UART_DEBUG
+                debug_log("Command received: %c 0x%02X", cmd, status_byte);
+#endif
+
                 switch(cmd) {
                     case '1':   // SET BUS TO 100kHz
                         if (i2c_state.frequency != 100) {
@@ -203,7 +211,8 @@ void rx_loop(void) {
                     case 'p':   // SEND AN I2C STOP
                         if (i2c_state.is_ready && i2c_state.is_started) {
                             // Send no bytes and STOP
-                            i2c_write_blocking(i2c_state.bus, i2c_state.address, rx_buffer, 0, true);
+                            uint8_t data = 0;
+                            i2c_write_timeout_us(i2c_state.bus, i2c_state.address, &data, 0, false, 1000);
 
                             // Reset state
                             i2c_state.is_started = false;
@@ -345,8 +354,8 @@ static void send_scan(I2C_State* itr) {
     // Generate a list if devices by their addresses.
     // List in the form "13.71.A0."
     for (uint32_t i = 0 ; i < 0x78 ; ++i) {
-        reading = i2c_read_blocking(itr->bus, i, &rx_data, 1, false);
-        if (reading >= 0) {
+        reading = i2c_read_timeout_us(itr->bus, i, &rx_data, 1, false, 1000);
+        if (reading > 0) {
             sprintf(scan_buffer + (device_count * 3), "%02X.", i);
             device_count++;
         }
@@ -422,6 +431,9 @@ static inline void send_ack(void) {
     printf("ACK\r\n");
 #else
     putchar(ACK);
+#ifdef DO_UART_DEBUG
+    debug_log("********** ACK **********");
+#endif
 #endif
 }
 
@@ -449,8 +461,8 @@ static uint32_t rx(uint8_t* buffer) {
 
     uint32_t data_count = 0;
     int c = PICO_ERROR_TIMEOUT;
-    while (data_count < RX_BUFFER_LENGTH_B + 1) {
-        c = getchar_timeout_us(1);
+    while (data_count < RX_BUFFER_LENGTH_B) {
+        c = getchar_timeout_us(0);
         if (c == PICO_ERROR_TIMEOUT) break;
         buffer[data_count++] = (uint8_t)c;
         sleep_ms(UART_LOOP_DELAY_MS);

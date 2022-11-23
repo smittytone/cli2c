@@ -73,11 +73,11 @@ static int openSerialPort(const char *device_file) {
     
     // FROM 1.1.2
     // Issue raw output, set non-canon input
-    serial_settings.c_oflag = 0;
-    serial_settings.c_lflag = 0;
+    //serial_settings.c_oflag = 0;
+    //serial_settings.c_lflag = 0;
 
-    //tcflow(fd, TCIFLUSH);
-    if (tcsetattr(fd, TCSAFLUSH, &serial_settings) != 0) {
+    tcflow(fd, TCIFLUSH);
+    if (tcsetattr(fd, TCSANOW, &serial_settings) != 0) {
         print_error("Could not apply the port settings - %s (%d)", strerror(errno), errno);
         goto error;
     }

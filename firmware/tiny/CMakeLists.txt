@@ -27,9 +27,9 @@ add_executable(${FW_4_NAME}
     ${COMMON_CODE_DIRECTORY}/led.c
     ${COMMON_CODE_DIRECTORY}/gpio.c)
 
-# Compile debug segment LED sources
+# Compile debug sources
 if (DO_DEBUG)
-    target_sources(${FW_4_NAME} PRIVATE segment.c)
+    target_sources(${FW_4_NAME} PRIVATE ${COMMON_CODE_DIRECTORY}/debug.c)
 endif()
 
 # Link to built libraries

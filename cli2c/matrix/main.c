@@ -349,7 +349,7 @@ static int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
         }
     }
 
-    if (do_draw) HT16K33_draw(true);
+    if (do_draw) HT16K33_draw(false);
     return EXIT_OK;
 }
 

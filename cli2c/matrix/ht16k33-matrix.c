@@ -13,7 +13,7 @@
  * STATIC PROTOTYPES
  */
 static void HT16K33_sleep_ms(int ms);
-static void HT16K33_write_cmd(uint8_t cmd);
+static void HT16K33_write_cmd(uint8_t cmd, bool do_stop);
 
 
 /*
@@ -153,11 +153,11 @@ void HT16K33_init(I2CDriver *sd, int address, uint8_t angle) {
 void HT16K33_power(bool is_on) {
 
     if (is_on) {
-        HT16K33_write_cmd(HT16K33_CMD_POWER_ON);
-        HT16K33_write_cmd(HT16K33_CMD_DISPLAY_ON);
+        HT16K33_write_cmd(HT16K33_CMD_POWER_ON, false);
+        HT16K33_write_cmd(HT16K33_CMD_DISPLAY_ON, true);
     } else {
-        HT16K33_write_cmd(HT16K33_CMD_DISPLAY_OFF);
-        HT16K33_write_cmd(HT16K33_CMD_POWER_OFF);
+        HT16K33_write_cmd(HT16K33_CMD_DISPLAY_OFF, false);
+        HT16K33_write_cmd(HT16K33_CMD_POWER_OFF, true);
     }
 }
 
@@ -184,7 +184,7 @@ void HT16K33_set_angle(uint8_t angle) {
 void HT16K33_set_brightness(uint8_t brightness) {
 
     if (brightness > 15) brightness = 15;
-    HT16K33_write_cmd(HT16K33_CMD_BRIGHTNESS | brightness);
+    HT16K33_write_cmd(HT16K33_CMD_BRIGHTNESS | brightness, true);
 }
 
 
@@ -195,16 +195,14 @@ void HT16K33_set_brightness(uint8_t brightness) {
  */
 void HT16K33_clear_buffer(void) {
 
-    for (uint8_t i = 0 ; i < 8 ; ++i) {
-        display_buffer[i] = 0;
-    }
+    memset(display_buffer, 0x00, 8);
 }
 
 
 /**
  * @brief Write the display buffer out to the LED.
  */
-void HT16K33_draw(bool and_stop) {
+void HT16K33_draw(bool do_stop) {
 
     // Set up the buffer holding the data to be
     // transmitted to the LED
@@ -224,7 +222,7 @@ void HT16K33_draw(bool and_stop) {
     // Display the buffer and flash the LED
     i2c_start(host_i2c, i2c_address, 0);
     i2c_write(host_i2c, tx_buffer, 17);
-    if (and_stop) i2c_stop(host_i2c);
+    //if (do_stop) i2c_stop(host_i2c);
 }
 
 
@@ -246,6 +244,12 @@ void HT16K33_plot(uint8_t x, uint8_t y, bool is_set) {
 }
 
 
+/**
+ *  @brief Set an alphanumeric character on the display.
+ *
+ *  @param ascii:      The character's Ascii code.
+ *  @param is_centred: Whether to centre the character on the display.
+ */
 void HT16K33_set_char(uint8_t ascii, bool is_centred) {
 
     uint8_t delta = 0;
@@ -260,11 +264,16 @@ void HT16K33_set_char(uint8_t ascii, bool is_centred) {
 }
 
 
+/**
+ *  @brief Set an user-defined character on the display.
+ *
+ *  @param bytes: A pointer to an array of 8 bytes defining the glyph.
+ *                Each byte is a column of image pixels, one bix per pixel,
+ *                with bit zero at the bottom.
+ */
 void HT16K33_set_glyph(uint8_t* bytes) {
 
-    for (uint8_t i = 0 ; i < 8 ; ++i) {
-        display_buffer[i] = bytes[i];
-    }
+    memcpy(display_buffer, bytes, 8);
 }
 
 
@@ -286,7 +295,6 @@ void HT16K33_print(const char *text, uint32_t delay_ms) {
 
     // Make the output buffer to match the required number of columns
     uint8_t src_buffer[length];
-    for (uint64_t i = 0 ; i < length ; ++i) src_buffer[i] = 0x00;
 
     // Write each character's glyph columns into the output buffer
     uint64_t col = 0;
@@ -294,26 +302,27 @@ void HT16K33_print(const char *text, uint32_t delay_ms) {
         uint8_t asc_val = text[i] - 32;
         if (asc_val == 0) {
             // It's a space, so just add two blank columns
-            col += 2;
+            src_buffer[col++] = 0x00;
+            src_buffer[col++] = 0x00;
         } else {
             // Get the character glyph and write it to the buffer
             uint8_t glyph_len = strlen(CHARSET[asc_val]);
-
-            for (uint64_t j = 0 ; j < glyph_len ; ++j) {
+            for (size_t j = 0 ; j < glyph_len ; ++j) {
                 src_buffer[col] = CHARSET[asc_val][j];
                 ++col;
             }
 
-            ++col;
+            // Space between lines
+            src_buffer[col++] = 0x00;
         }
     }
 
     // Finally, animate the line by repeatedly sending 8 columns
     // of the output buffer to the matrix
-    uint64_t cursor = 0;
+    int cursor = 0;
     while (1) {
-        uint64_t a = cursor;
-        for (uint8_t i = 0 ; i < 8 ; ++i) {
+        int a = cursor;
+        for (size_t i = 0 ; i < 8 ; ++i) {
             display_buffer[i] = src_buffer[a];
             a += 1;
         }
@@ -322,7 +331,7 @@ void HT16K33_print(const char *text, uint32_t delay_ms) {
         HT16K33_draw(cursor > length - 8);
         if (cursor > length - 8) break;
 
-        //HT16K33_sleep_ms(display_angle == 0 ? delay_ms : (delay_ms * 2 / 3));
+        HT16K33_sleep_ms(display_angle == 0 ? delay_ms : (delay_ms * 2 / 3));
     };
 }
 
@@ -338,9 +347,9 @@ void HT16K33_rotate(uint8_t angle) {
     uint8_t a = 0;
     uint8_t line_value = 0;
 
-    for (int32_t y = 0 ; y < 8 ; ++y) {
+    for (size_t y = 0 ; y < 8 ; ++y) {
         line_value = display_buffer[y];
-        for (int32_t x = 7 ; x > -1 ; x--) {
+        for (size_t x = 7 ; x > -1 ; x--) {
             a = line_value & (1 << x);
             if (a != 0) {
                 if (angle == 1) {
@@ -366,31 +375,35 @@ void HT16K33_rotate(uint8_t angle) {
  */
 static void HT16K33_sleep_ms(int ms) {
     
-    /*
-    struct timespec ts;
-    int res;
-
-    ts.tv_sec = ms / 1000;
-    ts.tv_nsec = (ms % 1000) * 1000000;
-
-    do {
-        res = nanosleep(&ts, &ts);
-    } while (res && errno == EINTR);
-    */
-    
-    usleep(ms * 1000);
+    // FROM 1.1.2
+    // New, better alogrithm
+    long delta = 0;
+    struct timespec now, then;
+    clock_gettime(CLOCK_MONOTONIC_RAW, &then);
+    clock_gettime(CLOCK_MONOTONIC_RAW, &now);
+    while (now.tv_nsec - then.tv_nsec < ms * 1000000 - delta) {
+        clock_gettime(CLOCK_MONOTONIC_RAW, &now);
+        if (now.tv_nsec < then.tv_nsec) {
+            // Roll over
+            delta = LONG_MAX - then.tv_nsec;
+            then.tv_nsec = 0;
+        }
+    }
 }
 
 
 /**
  * @brief Issue a single command byte to the HT16K33.
  *
- * @param cmd: The single-byte command.
+ * @param cmd:     The single-byte command.
+ * @param do_stop: Issue a stop upon completion
  */
-static void HT16K33_write_cmd(uint8_t cmd) {
+static void HT16K33_write_cmd(uint8_t cmd, bool do_stop) {
 
     // NOTE Already connected at this stage
-    i2c_start(host_i2c, i2c_address, 0);
-    i2c_write(host_i2c, &cmd, 1);
-    i2c_stop(host_i2c);
+    bool ackd = i2c_start(host_i2c, i2c_address, 0);
+    if (ackd) {
+        ackd = i2c_write(host_i2c, &cmd, 1);
+        if (do_stop) ackd = i2c_stop(host_i2c);
+    }
 }

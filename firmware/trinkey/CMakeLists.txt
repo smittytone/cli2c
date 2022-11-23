@@ -38,6 +38,11 @@ add_executable(${FW_5_NAME}
     ${COMMON_CODE_DIRECTORY}/led.c
     ${COMMON_CODE_DIRECTORY}/gpio.c)
 
+# Compile debug sources
+if (DO_DEBUG)
+    target_sources(${FW_5_NAME} PRIVATE ${COMMON_CODE_DIRECTORY}/debug.c)
+endif()
+
 # Set the stack size
 target_compile_definitions(${FW_5_NAME} PRIVATE PICO_STACK_SIZE=4096)
 

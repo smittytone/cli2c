@@ -26,8 +26,9 @@
 // App Includes
 #include "led.h"
 #include "gpio.h"
-#ifdef DO_DEBUG
+#ifdef DO_UART_DEBUG
 #include "segment.h"
+#include "debug.h"
 #endif
 
 

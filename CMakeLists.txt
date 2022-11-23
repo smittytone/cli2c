@@ -4,6 +4,7 @@ cmake_minimum_required(VERSION 3.18)
 set(PROJECT_NAME "I2C Host Firmware")
 set(FW_BUILD_NUMBER "29")
 set(FW_VERSION_NUMBER "1.1.2")
+set(DO)
 
 # Set app name(s) and version(s)
 set(FW_1_NAME "firmware_qtpy_rp2040")
@@ -26,15 +27,19 @@ set(COMMON_CODE_DIRECTORY "${CMAKE_SOURCE_DIR}/firmware/common")
 
 # Set app-side debugging. The following defines can be set by
 # uncommenting their lines:
-#   DO_DEBUG                   -- Put the firmware in debug mode. Shows info
-#                                 on a connected LED segment display.
+#   DO_UART_DEBUG              -- Put the firmware in debug mode.
 #   DEBUG_SEG_ADDR             -- The 7-bit I2C address of an LED segment
 #                                 display used for debugging firmware
 #                                 reads and writes.
 #                                 IGNORED if DO_DEBUG is not defined.
 #   SHOW_HEARTBEAT             -- Display a heartbeat on the board LED/NeoPixel.
-#add_compile_definitions(DO_DEBUG=1)
-#add_compile_definitions(DEBUG_SEG_ADDR=0x70)
+set(DO_DEBUG 1)
+if(DO_DEBUG)
+add_compile_definitions(DO_UART_DEBUG=1)
+add_compile_definitions(DEBUG_SEG_ADDR=0x70)
+endif()
+
+# Show the bus host's pulse
 add_compile_definitions(SHOW_HEARTBEAT=1)
 
 # Set env variable 'PICO_SDK_PATH' to the local Pico SDK

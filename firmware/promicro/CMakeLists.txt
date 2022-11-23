@@ -43,9 +43,9 @@ add_executable(${FW_3_NAME}
     ${COMMON_CODE_DIRECTORY}/led.c
     ${COMMON_CODE_DIRECTORY}/gpio.c)
 
-# Compile debug segment LED sources
+# Compile debug sources
 if (DO_DEBUG)
-    target_sources(${FW_3_NAME} PRIVATE segment.c)
+    target_sources(${FW_3_NAME} PRIVATE ${COMMON_CODE_DIRECTORY}/debug.c)
 endif()
 
 # Set the stack size

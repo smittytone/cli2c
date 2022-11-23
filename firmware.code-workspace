@@ -14,7 +14,8 @@
             "string.h": "c",
             "main.h": "c",
             "algorithm": "c",
-            "stdint.h": "c"
+            "stdint.h": "c",
+            "debug.h": "c"
         }
     }
 }
