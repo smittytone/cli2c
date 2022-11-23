@@ -64,12 +64,20 @@ static int openSerialPort(const char *device_file) {
     serial_settings = original_settings;
 
     // Calls to read() will return as soon as there is
-    // at least one byte available or after 100ms.
+    // at least one byte available or after 100ms
+    // NOTE VTIME unit is 0.1s -- inter-byte timeout
+    //      VMIN is read block duration in number of received chars
     cfmakeraw(&serial_settings);
     serial_settings.c_cc[VMIN] = 0;
     serial_settings.c_cc[VTIME] = 1;
+    
+    // FROM 1.1.2
+    // Issue raw output, set non-canon input
+    serial_settings.c_oflag = 0;
+    serial_settings.c_lflag = 0;
 
-    if (tcsetattr(fd, TCSANOW, &serial_settings) != 0) {
+    //tcflow(fd, TCIFLUSH);
+    if (tcsetattr(fd, TCSAFLUSH, &serial_settings) != 0) {
         print_error("Could not apply the port settings - %s (%d)", strerror(errno), errno);
         goto error;
     }
