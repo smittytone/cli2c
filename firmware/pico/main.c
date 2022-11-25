@@ -28,7 +28,7 @@ int main(void) {
         rx_loop();
 
         // End
-        return 0;
+        // return 0;
     }
 
     // Could not initialize stdio over USB,

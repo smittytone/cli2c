@@ -6,12 +6,14 @@ from psutil import cpu_percent
 from sys import exit, argv
 from time import sleep
 
-i2c_device = None
-i2c_address = 0x18
+app = "cli2c"
+device = None
+i2c_address = "0x18"
 
 def handler(signum, frame):
     # Reset the host's I2C bus
-    run(["cli2c", i2c_device, "x"])
+    sleep(0.5)
+    run([app, device, "x"])
     print("\nDone")
     exit(0)
 
@@ -20,17 +22,17 @@ signal.signal(signal.SIGINT, handler)
 if len(argv) > 1:
     i2c_device = argv[1]
 
-    if len(argv) > 2:
-        i2c_address = argv[2]
+if len(argv) > 2:
+    i2c_address = argv[2]
 
-if i2c_device:
+if device:
     # Activate I2C on the host
-    run(["cli2c", i2c_device, "z"])
+    run([app, device, "z"])
     
     # Loop and read the temperature from the MCP9808
     while True:
         # Read the MCP9808's ambient temperature measurement (two bytes from register 0x05)
-        result = run(["cli2c", i2c_device, "w", str(i2c_address), "0x05", "r", str(i2c_address), "2"], stdout=PIPE)
+        result = run([app, device, "w", i2c_address, "0x05", "r", i2c_address, "2"], stdout=PIPE)
         
         # Convert the raw value to a Celsius reading
         temp_raw = (int(result.stdout[0:2], 16) << 8) | int(result.stdout[2:], 16)

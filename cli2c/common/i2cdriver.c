@@ -14,7 +14,7 @@
 // FROM 1.1.1 -- implement internal functions as statics
 static int          openSerialPort(const char *portname);
 static size_t       readFromSerialPort(int fd, uint8_t* b, size_t s);
-static void         writeToSerialPort(int fd, const uint8_t* b, size_t s);
+static bool         writeToSerialPort(int fd, const uint8_t* b, size_t s);
 static inline void  print_bad_command_help(char* token);
 static bool         board_set_led(I2CDriver *sd, bool is_on);
 static inline void  send_command(I2CDriver *sd, char c);
@@ -46,42 +46,55 @@ static int openSerialPort(const char *device_file) {
 
     struct termios serial_settings;
 
+#ifdef DEBUG
+    fprintf(stderr, "Opening %s\n", device_file);
+#endif
+    
     // Open the device
-    int fd = open(device_file, O_RDWR | O_NOCTTY);
+    int fd = open(device_file, O_RDWR | O_NOCTTY | O_NONBLOCK);
     if (fd == -1) {
         print_error("Could not open the device at %s - %s (%d)", device_file, strerror(errno), errno);
         return fd;
     }
-
+    
     // Prevent additional opens except by root-owned processes
     if (ioctl(fd, TIOCEXCL) == -1) {
         print_error("Could not set TIOCEXCL on %s - %s (%d)", device_file, strerror(errno), errno);
-        goto error;;
+        goto error;
     }
 
     // Get the port settings
     tcgetattr(fd, &original_settings);
     serial_settings = original_settings;
-
+    
     // Calls to read() will return as soon as there is
     // at least one byte available or after 100ms
     // NOTE VTIME unit is 0.1s -- inter-byte timeout
     //      VMIN is read block duration in number of received chars
     cfmakeraw(&serial_settings);
     serial_settings.c_cc[VMIN] = 0;
-    serial_settings.c_cc[VTIME] = 1;
+    serial_settings.c_cc[VTIME] = 2;
     
-    // FROM 1.1.2
-    // Issue raw output, set non-canon input
-    //serial_settings.c_oflag = 0;
-    //serial_settings.c_lflag = 0;
-
-    tcflow(fd, TCIFLUSH);
-    if (tcsetattr(fd, TCSANOW, &serial_settings) != 0) {
+#ifdef DEBUG
+    fprintf(stderr, "Flushing the port\n");
+#endif
+    
+#ifndef BUILD_FOR_LINUX
+    if (tcsetattr(fd, TCSASOFT | TCSAFLUSH, &serial_settings) != 0) {
         print_error("Could not apply the port settings - %s (%d)", strerror(errno), errno);
         goto error;
     }
+#else
+    if (tcsetattr(fd, TCSAFLUSH, &serial_settings) != 0) {
+        print_error("Could not apply the port settings - %s (%d)", strerror(errno), errno);
+        goto error;
+    }
+#endif
 
+#ifdef DEBUG
+    fprintf(stderr, "Setting the port speed\n");
+#endif
+    
     // Set the port speed
     speed_t speed = (speed_t)115200;
 #ifndef BUILD_FOR_LINUX
@@ -94,9 +107,13 @@ static int openSerialPort(const char *device_file) {
     cfsetospeed(&serial_settings, speed);
 #endif
     
+#ifdef DEBUG
+    fprintf(stderr, "Setting the port latency\n");
+#endif
+    
     // Set the latency -- MAY REMOVE IF NOT NEEDED
 #ifndef BUILD_FOR_LINUX
-    unsigned long lat_us = 1UL;
+    unsigned long lat_us = 2UL;
     if (ioctl(fd, IOSSDATALAT, &lat_us) == -1) {
         print_error("Could not set port latency - %s (%d)", strerror(errno), errno);
         goto error;
@@ -143,7 +160,7 @@ static size_t readFromSerialPort(int fd, uint8_t* buffer, size_t byte_count) {
             }
             
             clock_gettime(CLOCK_MONOTONIC_RAW, &now);
-            if (now.tv_sec - then.tv_sec > 15) {
+            if (now.tv_sec - then.tv_sec > READ_BUS_HOST_TIMEOUT_S) {
                 print_error("Read timeout: %i bytes read of %i", count, byte_count);
                 return -1;
             }
@@ -158,7 +175,7 @@ static size_t readFromSerialPort(int fd, uint8_t* buffer, size_t byte_count) {
             }
 
             clock_gettime(CLOCK_MONOTONIC_RAW, &now);
-            if (now.tv_sec - then.tv_sec > 15) {
+            if (now.tv_sec - then.tv_sec > READ_BUS_HOST_TIMEOUT_S) {
                 print_error("Read timeout: %i bytes read of %i", count, byte_count);
                 return -1;
             }
@@ -187,19 +204,29 @@ static size_t readFromSerialPort(int fd, uint8_t* buffer, size_t byte_count) {
  *
  * @retval The number of bytes read.
  */
-static void writeToSerialPort(int fd, const uint8_t* buffer, size_t byte_count) {
+static bool writeToSerialPort(int fd, const uint8_t* buffer, size_t byte_count) {
 
     // Write the bytes
-    write(fd, buffer, byte_count);
+    ssize_t written = write(fd, buffer, byte_count);
 
 #ifdef DEBUG
     // Output the read data for debugging
-    fprintf(stderr, "WRITE %u: ", (int)byte_count);
-    for (int i = 0 ; i < byte_count ; ++i) {
-        fprintf(stderr, "%02X ", 0xFF & buffer[i]);
+    if (written < 0) {
+        fprintf(stderr, "write() returned an error: %li\n", written);
+        fprintf(stderr, "Data written: %s\n", buffer);
+    } else {
+        fprintf(stderr, "WRITE %u: ", (int)byte_count);
+        for (int i = 0 ; i < byte_count ; ++i) {
+            fprintf(stderr, "%02X ", 0xFF & buffer[i]);
+        }
+        
+        fprintf(stderr, "\n");
+        
+        if (written != byte_count) fprintf(stderr, "write() returned %li\n", written);
     }
-    fprintf(stderr, "\n");
 #endif
+    
+    return (written == byte_count);
 }
 
 
@@ -208,18 +235,24 @@ static void writeToSerialPort(int fd, const uint8_t* buffer, size_t byte_count) 
  */
 void flush_and_close_port(int fd) {
 
-    // Drain the FIFOs -- alternative to `tcflush(fd, TCIOFLUSH)`;
-    if (tcdrain(fd) == -1) {
-        print_error("Could not flush the port. %s (%d).\n", strerror(errno), errno);
+    if (fd != -1) {
+        // Drain the FIFOs -- alternative to `tcflush(fd, TCIOFLUSH)`;
+        if (tcdrain(fd) == -1) {
+            print_error("Could not flush the port. %s (%d).\n", strerror(errno), errno);
+        }
+        
+        // Set the port back to how we found it
+        if (tcsetattr(fd, TCSANOW, &original_settings) == -1) {
+            print_error("Could not reset port - %s (%d)", strerror(errno), errno);
+        }
+        
+        // Close the port
+        close(fd);
+        
+#ifdef DEBUG
+        fprintf(stderr, "Port closed\n");
+#endif
     }
-
-    // Set the port back to how we found it
-    if (tcsetattr(fd, TCSANOW, &original_settings) == -1) {
-        print_error("Could not reset port - %s (%d)", strerror(errno), errno);
-    }
-
-    // Close the port
-    close(fd);
 }
 
 
@@ -240,8 +273,15 @@ void i2c_connect(I2CDriver *sd, const char* portname) {
 
     // Open and get the serial port or bail
     sd->port = openSerialPort(portname);
-    if (sd->port == -1) return;
-
+    if (sd->port == -1) {
+        print_error("Could not connect to port %s", portname);
+        return;
+    }
+    
+#ifdef DEBUG
+    fprintf(stderr, "Port %s FD: %i\n", portname, sd->port);
+#endif
+    
     // Perform a basic communications check
     send_command(sd, 'z');
     uint8_t rx[4] = {0};
@@ -268,8 +308,14 @@ void i2c_connect(I2CDriver *sd, const char* portname) {
 static bool i2c_ack(I2CDriver *sd) {
 
     uint8_t read_buffer[1] = {0};
-    if (readFromSerialPort(sd->port, read_buffer, 1) != 1)  return false;
-    return ((read_buffer[0] & ACK) == ACK);
+    if (readFromSerialPort(sd->port, read_buffer, 1) != 1) return false;
+    bool ackd = ((read_buffer[0] & ACK) == ACK);
+    
+#ifdef DEBUG
+    fprintf(stderr, "ACK\n");
+#endif
+    
+    return ackd;
 }
 
 
@@ -348,7 +394,7 @@ static void i2c_get_info(I2CDriver *sd, bool do_print) {
         if (address == 0xFF) {
             fprintf(stderr, "Target I2C address: NONE\n");
         } else {
-            fprintf(stderr, "Target I2C address: 0x%02X\n", address > 1);
+            fprintf(stderr, "Target I2C address: 0x%02X\n", address);
         }
 
     }

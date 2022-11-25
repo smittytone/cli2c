@@ -28,6 +28,8 @@
 #include <fcntl.h>
 #include <termios.h>
 #include <sys/ioctl.h>
+// FROM 1.1.2
+#include <limits.h>
 
 #ifndef BUILD_FOR_LINUX
 #include <IOKit/serial/ioss.h>
@@ -52,6 +54,9 @@
 
 #define ACK                             0x0F
 #define ERR                             0xF0
+
+// FROM 1.1.2
+#define READ_BUS_HOST_TIMEOUT_S         10
 
 
 /*

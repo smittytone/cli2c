@@ -66,11 +66,17 @@ void rx_loop(void) {
     GPIO_State gpio_state;
     memset(gpio_state.state_map, 0, 32);
 
+    // FROM 1.1.2 -- record connection status
+    bool is_connected = false;
+
 #ifdef DO_UART_DEBUG
     debug_init();
 #endif
 
     while(1) {
+        // FROM 1.1.2
+        is_connected = stdio_usb_connected();
+        
         // Scan for input
         read_count = rx(rx_buffer);
 
@@ -94,7 +100,7 @@ void rx_loop(void) {
                     debug_log("Bytes to write: %i", i2c_state.write_byte_count);
 #endif
 
-                    int bytes_sent = i2c_write_timeout_us(i2c_state.bus, i2c_state.address, &rx_buffer[1], i2c_state.write_byte_count, true, 1000);
+                    int bytes_sent = i2c_write_timeout_us(i2c_state.bus, i2c_state.address, &rx_buffer[1], i2c_state.write_byte_count, false, 1000);
 
 #ifdef DO_UART_DEBUG
                     debug_log("Bytes sent: %i", bytes_sent);
@@ -211,8 +217,8 @@ void rx_loop(void) {
                     case 'p':   // SEND AN I2C STOP
                         if (i2c_state.is_ready && i2c_state.is_started) {
                             // Send no bytes and STOP
-                            uint8_t data = 0;
-                            i2c_write_timeout_us(i2c_state.bus, i2c_state.address, &data, 0, false, 1000);
+                            //uint8_t data = 0;
+                            //i2c_write_timeout_us(i2c_state.bus, i2c_state.address, &data, 0, false, 1000);
 
                             // Reset state
                             i2c_state.is_started = false;
@@ -283,7 +289,7 @@ void rx_loop(void) {
         // Heartbeat LED blink for debugging
         if (do_use_led) {
             uint64_t now = time_us_64();
-            if (now - last > HEARTBEAT_PERIOD_US) {
+            if (now - last > (HEARTBEAT_PERIOD_US >> (is_connected ? 1 : 0))) {
                 led_set_state(true);
                 last = now;
             } else if (now - last > HEARTBEAT_FLASH_US) {

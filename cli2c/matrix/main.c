@@ -89,7 +89,9 @@ int main(int argc, char* argv[]) {
             }
         }
     }
-
+    
+    // Bail
+    flush_and_close_port(i2c.port);
     return EXIT_ERR;
 }
 

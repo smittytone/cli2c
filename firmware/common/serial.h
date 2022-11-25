@@ -38,7 +38,7 @@
 #define SERIAL_READ_TIMEOUT_US                  10
 #define RX_LOOP_DELAY_MS                        5
 #define HEARTBEAT_PERIOD_US                     2000000
-#define HEARTBEAT_FLASH_US                      100000
+#define HEARTBEAT_FLASH_US                      50000
 
 #ifndef DEFAULT_I2C_BUS
 #define DEFAULT_I2C_BUS                         1

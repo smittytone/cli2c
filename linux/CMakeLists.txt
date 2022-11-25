@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.18)
 # Set project data
 set(PROJECT_NAME "cli2c for Linux")
 set(VERSION_NUMBER "1.1.2")
-set(BUILD_NUMBER "34")
+set(BUILD_NUMBER "35")
 
 # Set app name(s) and version(s)
 set(CLI_CODE_DIRECTORY "${CMAKE_SOURCE_DIR}/../cli2c/cli2c")
