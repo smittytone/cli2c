@@ -14,7 +14,7 @@
  */
 static uint32_t bcd(uint32_t base);
 static void     HT16K33_sleep_ms(int ms);
-static void     HT16K33_write_cmd(uint8_t cmd);
+static void     HT16K33_write_cmd(uint8_t cmd, bool do_stop);
 
 
 /*
@@ -64,11 +64,11 @@ void HT16K33_flip(void) {
 void HT16K33_power(bool is_on) {
 
     if (is_on) {
-        HT16K33_write_cmd(HT16K33_CMD_POWER_ON);
-        HT16K33_write_cmd(HT16K33_CMD_DISPLAY_ON);
+        HT16K33_write_cmd(HT16K33_CMD_POWER_ON, false);
+        HT16K33_write_cmd(HT16K33_CMD_DISPLAY_ON, true);
     } else {
-        HT16K33_write_cmd(HT16K33_CMD_DISPLAY_OFF);
-        HT16K33_write_cmd(HT16K33_CMD_POWER_OFF);
+        HT16K33_write_cmd(HT16K33_CMD_DISPLAY_OFF, false);
+        HT16K33_write_cmd(HT16K33_CMD_POWER_OFF, true);
     }
 }
 
@@ -81,7 +81,7 @@ void HT16K33_power(bool is_on) {
 void HT16K33_set_brightness(uint8_t brightness) {
 
     if (brightness > 15) brightness = 15;
-    HT16K33_write_cmd(HT16K33_CMD_BRIGHTNESS | brightness);
+    HT16K33_write_cmd((HT16K33_CMD_BRIGHTNESS | brightness), true);
 }
 
 
@@ -99,7 +99,7 @@ void HT16K33_clear_buffer(void) {
 /**
  * @brief Write the display buffer out to the LED.
  */
-void HT16K33_draw(void) {
+void HT16K33_draw(bool do_stop) {
 
     // Check for an overturned LED
     if (is_flipped) {
@@ -125,7 +125,7 @@ void HT16K33_draw(void) {
     // Display the buffer and flash the LED
     i2c_start(host_i2c, i2c_address, 0);
     i2c_write(host_i2c, display_buffer, 17);
-    i2c_stop(host_i2c);
+    if (do_stop) i2c_stop(host_i2c);
 }
 
 
@@ -277,27 +277,35 @@ static uint32_t bcd(uint32_t base) {
  */
 static void HT16K33_sleep_ms(int ms) {
 
-    struct timespec ts;
-    int res;
-
-    ts.tv_sec = ms / 1000;
-    ts.tv_nsec = (ms % 1000) * 1000000;
-
-    do {
-        res = nanosleep(&ts, &ts);
-    } while (res && errno == EINTR);
+    // FROM 1.1.2
+    // New, better alogrithm
+    long delta = 0;
+    struct timespec now, then;
+    clock_gettime(CLOCK_MONOTONIC_RAW, &then);
+    clock_gettime(CLOCK_MONOTONIC_RAW, &now);
+    while (now.tv_nsec - then.tv_nsec < ms * 1000000 - delta) {
+        clock_gettime(CLOCK_MONOTONIC_RAW, &now);
+        if (now.tv_nsec < then.tv_nsec) {
+            // Roll over
+            delta = LONG_MAX - then.tv_nsec;
+            then.tv_nsec = 0;
+        }
+    }
 }
 
 
 /**
  * @brief Issue a single command byte to the HT16K33.
  *
- * @param cmd: The single-byte command.
+ * @param cmd:     The single-byte command.
+ * @param do_stop: Issue an I2C stop.
  */
-static void HT16K33_write_cmd(uint8_t cmd) {
+static void HT16K33_write_cmd(uint8_t cmd, bool do_stop) {
 
     // NOTE Already connected at this stage
-    i2c_start(host_i2c, i2c_address, 0);
-    i2c_write(host_i2c, &cmd, 1);
-    i2c_stop(host_i2c);
+    bool ackd = i2c_start(host_i2c, i2c_address, 0);
+    if (ackd) {
+        ackd = i2c_write(host_i2c, &cmd, 1);
+        if (do_stop) ackd = i2c_stop(host_i2c);
+    }
 }

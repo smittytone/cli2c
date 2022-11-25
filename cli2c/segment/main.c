@@ -392,7 +392,7 @@ static int segment_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
             case 'Z':
             case 'z':   // DRAW THE DISPLAY IMMEDIATELY
                         // No parameters
-                HT16K33_draw();
+                HT16K33_draw(false);
                 do_draw = false;
                 break;
 
@@ -403,7 +403,7 @@ static int segment_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
         }
     }
 
-    if (do_draw) HT16K33_draw();
+    if (do_draw) HT16K33_draw(true);
     return EXIT_OK;
 }
 

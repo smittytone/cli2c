@@ -170,9 +170,7 @@ void HT16K33_power(bool is_on) {
  */
 void HT16K33_set_angle(uint8_t angle) {
 
-    if (angle < 4) {
-        display_angle = angle;
-    }
+    if (angle < 4) display_angle = angle;
 }
 
 
@@ -184,7 +182,7 @@ void HT16K33_set_angle(uint8_t angle) {
 void HT16K33_set_brightness(uint8_t brightness) {
 
     if (brightness > 15) brightness = 15;
-    HT16K33_write_cmd(HT16K33_CMD_BRIGHTNESS | brightness, true);
+    HT16K33_write_cmd((HT16K33_CMD_BRIGHTNESS | brightness), true);
 }
 
 
@@ -222,7 +220,7 @@ void HT16K33_draw(bool do_stop) {
     // Display the buffer and flash the LED
     i2c_start(host_i2c, i2c_address, 0);
     i2c_write(host_i2c, tx_buffer, 17);
-    //if (do_stop) i2c_stop(host_i2c);
+    if (do_stop) i2c_stop(host_i2c);
 }
 
 
@@ -381,6 +379,7 @@ static void HT16K33_sleep_ms(int ms) {
     struct timespec now, then;
     clock_gettime(CLOCK_MONOTONIC_RAW, &then);
     clock_gettime(CLOCK_MONOTONIC_RAW, &now);
+    
     while (now.tv_nsec - then.tv_nsec < ms * 1000000 - delta) {
         clock_gettime(CLOCK_MONOTONIC_RAW, &now);
         if (now.tv_nsec < then.tv_nsec) {

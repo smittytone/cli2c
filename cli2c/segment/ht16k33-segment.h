@@ -24,7 +24,8 @@
 #include <time.h>
 #include <assert.h>
 #include <inttypes.h>
-
+// FROM 1.1.2
+#include <limits.h>
 
 /*
  * CONSTANTS
@@ -47,7 +48,7 @@
 void            HT16K33_init(I2CDriver* sd, int address);
 void            HT16K33_power(bool is_on);
 void            HT16K33_flip(void);
-void            HT16K33_draw(void);
+void            HT16K33_draw(bool do_stop);
 void            HT16K33_clear_buffer(void);
 void            HT16K33_set_brightness(uint8_t brightness);
 void            HT16K33_set_number(uint8_t number, uint8_t digit, bool has_dot);
