@@ -51,7 +51,7 @@ static int openSerialPort(const char *device_file) {
 #endif
     
     // Open the device
-    int fd = open(device_file, O_RDWR | O_NOCTTY | O_NONBLOCK);
+    int fd = open(device_file, O_RDWR | O_NOCTTY);
     if (fd == -1) {
         print_error("Could not open the device at %s - %s (%d)", device_file, strerror(errno), errno);
         return fd;
@@ -72,24 +72,19 @@ static int openSerialPort(const char *device_file) {
     // NOTE VTIME unit is 0.1s -- inter-byte timeout
     //      VMIN is read block duration in number of received chars
     cfmakeraw(&serial_settings);
-    serial_settings.c_cc[VMIN] = 0;
+    serial_settings.c_cc[VMIN]  = 0;
     serial_settings.c_cc[VTIME] = 2;
+    serial_settings.c_lflag     = 0;
     
 #ifdef DEBUG
-    fprintf(stderr, "Flushing the port\n");
+    fprintf(stderr, "Flushing the port, applying port settings\n");
 #endif
     
-#ifndef BUILD_FOR_LINUX
-    if (tcsetattr(fd, TCSASOFT | TCSAFLUSH, &serial_settings) != 0) {
+    tcflush(fd, TCIFLUSH);
+    if (tcsetattr(fd, TCSANOW, &serial_settings) != 0) {
         print_error("Could not apply the port settings - %s (%d)", strerror(errno), errno);
         goto error;
     }
-#else
-    if (tcsetattr(fd, TCSAFLUSH, &serial_settings) != 0) {
-        print_error("Could not apply the port settings - %s (%d)", strerror(errno), errno);
-        goto error;
-    }
-#endif
 
 #ifdef DEBUG
     fprintf(stderr, "Setting the port speed\n");

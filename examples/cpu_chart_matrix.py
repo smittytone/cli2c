@@ -6,7 +6,7 @@ from psutil import cpu_percent
 from sys import exit, argv
 from time import sleep
 
-app = "/Users/smitty/Library/Developer/Xcode/DerivedData/cli2c-dwftsezvbxnzhwcqphbablmhweao/Build/Products/Debug/matrix"
+app = "matrix"
 device = None
 i2c_address = "0x70"
 col = 0
@@ -26,6 +26,7 @@ if len(argv) > 1:
 
 if len(argv) > 2:
     i2c_address = argv[2]
+    
 
 if device:
     # Activate I2C on the host, clear the screen, and turn it on
@@ -69,7 +70,6 @@ if device:
         
         try:
             # Write out the display buffer
-            print("-------------------------------")
             run([app, device, i2c_address, "g", data_string], timeout=10.0)
         except TimeoutExpired:
             print("Attempt to write data timed out")

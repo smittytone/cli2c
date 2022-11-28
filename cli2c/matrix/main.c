@@ -74,8 +74,7 @@ int main(int argc, char* argv[]) {
                         return EXIT_ERR;
                     }
 
-                    // Note the non-standard I2C address
-                    fprintf(stderr, "Using I2C address: 0x%02X\n", i2c_address);
+                    // Step past handled args
                     delta = 3;
                 }
 
