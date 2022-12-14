@@ -33,7 +33,7 @@ if (DO_DEBUG)
 endif()
 
 # Set the stack size
-target_compile_definitions(${FW_2_NAME} PRIVATE PICO_STACK_SIZE=4096)
+target_compile_definitions(${FW_2_NAME} PRIVATE PICO_STACK_SIZE=8192)
 
 # Link to built libraries
 target_link_libraries(${FW_2_NAME} LINK_PUBLIC

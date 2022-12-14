@@ -34,6 +34,6 @@ int main(void) {
     // Could not initialize stdio over USB,
     // so signal error and end
     pico_led_flash(10);
-    pico_led_off();
+    pico_led_on();
     return 1;
 }

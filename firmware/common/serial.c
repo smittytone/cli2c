@@ -28,7 +28,7 @@ static uint32_t     rx(uint8_t *buffer);
 // FROM 1.1.0
 static bool         check_pins(uint8_t bus, uint8_t sda, uint8_t scl);
 static bool         pin_check(uint8_t* pins, uint8_t pin);
-
+static void         sig_handler(int signal);
 
 /*
  * GLOBALS
@@ -44,6 +44,8 @@ extern uint8_t PIN_PAIRS_BUS_1[];
  */
 void rx_loop(void) {
 
+    signal(SIGABRT | SIGSEGV | SIGBUS | SIGTRAP | SIGSYS, sig_handler);
+
     // Prepare a UART RX buffer
     uint8_t rx_buffer[128] = {0};
     uint32_t read_count = 0;
@@ -51,6 +53,7 @@ void rx_loop(void) {
     
     // Heartbeat variables
     uint64_t last = time_us_64();
+    bool is_on = false;
 
     // Prepare a transaction record with default data
     I2C_State i2c_state;
@@ -66,17 +69,11 @@ void rx_loop(void) {
     GPIO_State gpio_state;
     memset(gpio_state.state_map, 0, 32);
 
-    // FROM 1.1.2 -- record connection status
-    bool is_connected = false;
-
 #ifdef DO_UART_DEBUG
     debug_init();
 #endif
 
     while(1) {
-        // FROM 1.1.2
-        is_connected = stdio_usb_connected();
-        
         // Scan for input
         read_count = rx(rx_buffer);
 
@@ -289,11 +286,23 @@ void rx_loop(void) {
         // Heartbeat LED blink for debugging
         if (do_use_led) {
             uint64_t now = time_us_64();
-            if (now - last > (HEARTBEAT_PERIOD_US >> (is_connected ? 1 : 0))) {
+            if (now - last > HEARTBEAT_PERIOD_US) {
                 led_set_state(true);
+                is_on = true;
                 last = now;
-            } else if (now - last > HEARTBEAT_FLASH_US) {
+
+#ifdef DO_UART_DEBUG
+                debug_log("LED ON");
+#endif
+
+            } else if ((now - last > HEARTBEAT_FLASH_US) && is_on) {
                 led_set_state(false);
+                is_on = false;
+
+#ifdef DO_UART_DEBUG
+                debug_log("LED OFF");
+#endif
+
             }
         }
 #endif
@@ -305,7 +314,7 @@ void rx_loop(void) {
     // Should not get here, but just in case...
     // Signal an error on the host's LED
     led_set_colour(0xFF0000);
-    led_flash(5);
+    led_on();
 
     // Fall out of the firmware at this point...
 }
@@ -468,12 +477,15 @@ static uint32_t rx(uint8_t* buffer) {
     uint32_t data_count = 0;
     int c = PICO_ERROR_TIMEOUT;
     while (data_count < RX_BUFFER_LENGTH_B) {
-        c = getchar_timeout_us(0);
+        c = getchar_timeout_us(1);
         if (c == PICO_ERROR_TIMEOUT) break;
         buffer[data_count++] = (uint8_t)c;
         sleep_ms(UART_LOOP_DELAY_MS);
     }
 
+#ifdef DO_UART_DEBUG
+    if (data_count > 0) debug_log("Bytes received: %i", data_count);
+#endif
     return data_count;
 }
 
@@ -540,4 +552,12 @@ static bool pin_check(uint8_t* pins, uint8_t pin) {
     }
 
     return false;
+}
+
+static void sig_handler(int signal) {
+
+#ifdef DO_UART_DEBUG
+    debug_log("Signal received: %i", signal);
+#endif
+
 }

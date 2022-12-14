@@ -6,7 +6,7 @@ from psutil import cpu_percent
 from sys import exit, argv
 from time import sleep
 
-app = "matrix"
+app = "/Users/smitty/Library/Developer/Xcode/DerivedData/cli2c-dwftsezvbxnzhwcqphbablmhweao/Build/Products/Debug/matrix"
 device = None
 i2c_address = "0x70"
 col = 0
@@ -70,11 +70,11 @@ if device:
         
         try:
             # Write out the display buffer
-            run([app, device, i2c_address, "g", data_string], timeout=10.0)
+            run([app, device, i2c_address, "g", data_string], timeout=90.0)
         except TimeoutExpired:
             print("Attempt to write data timed out")
             exit(1)
 
-        sleep(0.5)
+        sleep(1)
 else:
     print("Usage: python cpu_chart_matrix.py {device} {i2C address}")

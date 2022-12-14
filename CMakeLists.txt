@@ -32,7 +32,7 @@ set(COMMON_CODE_DIRECTORY "${CMAKE_SOURCE_DIR}/firmware/common")
 #                                 reads and writes.
 #                                 IGNORED if DO_DEBUG is not defined.
 #   SHOW_HEARTBEAT             -- Display a heartbeat on the board LED/NeoPixel.
-#set(DO_DEBUG 1)
+set(DO_DEBUG 1)
 if(DO_DEBUG)
 add_compile_definitions(DO_UART_DEBUG=1)
 add_compile_definitions(DEBUG_SEG_ADDR=0x70)

@@ -46,69 +46,49 @@ static int openSerialPort(const char *device_file) {
 
     struct termios serial_settings;
 
-#ifdef DEBUG
-    fprintf(stderr, "Opening %s\n", device_file);
-#endif
-    
     // Open the device
     int fd = open(device_file, O_RDWR | O_NOCTTY);
     if (fd == -1) {
         print_error("Could not open the device at %s - %s (%d)", device_file, strerror(errno), errno);
         return fd;
     }
-    
+
     // Prevent additional opens except by root-owned processes
     if (ioctl(fd, TIOCEXCL) == -1) {
         print_error("Could not set TIOCEXCL on %s - %s (%d)", device_file, strerror(errno), errno);
-        goto error;
+        goto error;;
     }
 
     // Get the port settings
     tcgetattr(fd, &original_settings);
-    serial_settings = original_settings;
-    
+    //serial_settings = original_settings;
+
     // Calls to read() will return as soon as there is
-    // at least one byte available or after 100ms
-    // NOTE VTIME unit is 0.1s -- inter-byte timeout
-    //      VMIN is read block duration in number of received chars
+    // at least one byte available or after 100ms.
     cfmakeraw(&serial_settings);
     serial_settings.c_cc[VMIN]  = 0;
-    serial_settings.c_cc[VTIME] = 2;
-    serial_settings.c_lflag     = 0;
-    
-#ifdef DEBUG
-    fprintf(stderr, "Flushing the port, applying port settings\n");
-#endif
-    
-    tcflush(fd, TCIFLUSH);
+    serial_settings.c_cc[VTIME] = 1;
+
     if (tcsetattr(fd, TCSANOW, &serial_settings) != 0) {
         print_error("Could not apply the port settings - %s (%d)", strerror(errno), errno);
         goto error;
     }
 
-#ifdef DEBUG
-    fprintf(stderr, "Setting the port speed\n");
-#endif
-    
     // Set the port speed
-    speed_t speed = (speed_t)115200;
+    speed_t speed = (speed_t)203400;
 #ifndef BUILD_FOR_LINUX
     if (ioctl(fd, IOSSIOSPEED, &speed) == -1) {
-        print_error("Could not set port speed to 115200bps - %s (%d)", strerror(errno), errno);
+        print_error("Could not set port speed to %i bps - %s (%d)", speed, strerror(errno), errno);
         goto error;
     }
 #else
-    cfsetispeed(&serial_settings, speed);
-    cfsetospeed(&serial_settings, speed);
-#endif
-    
-#ifdef DEBUG
-    fprintf(stderr, "Setting the port latency\n");
+    cfsetispeed(&serial_settings, B203400);
+    cfsetospeed(&serial_settings, B203400);
 #endif
     
     // Set the latency -- MAY REMOVE IF NOT NEEDED
 #ifndef BUILD_FOR_LINUX
-    unsigned long lat_us = 2UL;
+    unsigned long lat_us = 1UL;
     if (ioctl(fd, IOSSDATALAT, &lat_us) == -1) {
         print_error("Could not set port latency - %s (%d)", strerror(errno), errno);
         goto error;
@@ -123,55 +103,54 @@ error:
     return -1;
 }
 
-
 /**
  * @brief Read bytes from the serial port FIFO.
  *
- * @param fd:         The port’s OS file descriptor.
- * @param buffer:     The buffer into which the read data will be written.
- * @param byte_count: The number of bytes to read, or 0 to scan for `\r\n`.
+ * @param fd:            The port’s OS file descriptor.
+ * @param buffer:        The buffer into which the read data will be written.
+ * @param bytes_to_read: The number of bytes to read, or 0 to scan for `\r\n`.
  *
  * @retval The number of bytes read.
  */
-static size_t readFromSerialPort(int fd, uint8_t* buffer, size_t byte_count) {
+static size_t readFromSerialPort(int fd, uint8_t* buffer, size_t bytes_to_read) {
 
-    size_t count = 0;
+    size_t rx_byte_count = 0;
     ssize_t number_read = -1;
     struct timespec now, then;
     clock_gettime(CLOCK_MONOTONIC_RAW, &then);
 
-    if (byte_count == 0) {
-        // Unknown number of bytes -- look for \r\n
+    if (bytes_to_read == 0) {
+        // Unknown number of bytes -- look for \r\n as EOL
         while(1) {
-            number_read = read(fd, buffer + count, 1);
+            number_read = read(fd, buffer + rx_byte_count, 1);
             if (number_read == -1) break;
-            count += number_read;
-            if (count > 2 && buffer[count - 2] == 0x0D && buffer[count - 1] == 0x0A) {
+            rx_byte_count += number_read;
+            if (rx_byte_count > 2 && buffer[rx_byte_count - 2] == 0x0D && buffer[rx_byte_count - 1] == 0x0A) {
                 // Backstep to clear the \r\n from the string
-                buffer[count - 2] = '\0';
-                buffer[count - 1] = '\0';
-                count -= 2;
+                buffer[rx_byte_count - 2] = '\0';
+                buffer[rx_byte_count - 1] = '\0';
+                rx_byte_count -= 2;
                 break;
             }
             
             clock_gettime(CLOCK_MONOTONIC_RAW, &now);
             if (now.tv_sec - then.tv_sec > READ_BUS_HOST_TIMEOUT_S) {
-                print_error("Read timeout: %i bytes read of %i", count, byte_count);
+                print_error("Read timeout: %i bytes read of %i", rx_byte_count, bytes_to_read);
                 return -1;
             }
         }
     } else {
-        // Read a fixed, expected number of bytes
-        while (count < byte_count) {
+        // Read a fixed number of bytes
+        while (rx_byte_count < bytes_to_read) {
             // Read in the data a byte at a time
-            number_read = read(fd, buffer + count, 1);
+            number_read = read(fd, buffer + rx_byte_count, 1);
             if (number_read != -1) {
-                count += number_read;
+                rx_byte_count += number_read;
             }
 
             clock_gettime(CLOCK_MONOTONIC_RAW, &now);
             if (now.tv_sec - then.tv_sec > READ_BUS_HOST_TIMEOUT_S) {
-                print_error("Read timeout: %i bytes read of %i", count, byte_count);
+                print_error("Read timeout: %i bytes read of %i", rx_byte_count, bytes_to_read);
                 return -1;
             }
         }
@@ -179,14 +158,14 @@ static size_t readFromSerialPort(int fd, uint8_t* buffer, size_t byte_count) {
 
 #ifdef DEBUG
     // Output the read data for debugging
-    fprintf(stderr, "  READ %d of %d: ", (int)count, (int)byte_count);
-    for (int i = 0 ; i < count ; ++i) {
+    fprintf(stderr, "  READ %d of %d: ", (int)rx_byte_count, (int)bytes_to_read);
+    for (size_t i = 0 ; i < rx_byte_count ; ++i) {
         fprintf(stderr, "%02X ", 0xFF & buffer[i]);
     }
     fprintf(stderr, "\n");
 #endif
 
-    return count;
+    return rx_byte_count;
 }
 
 

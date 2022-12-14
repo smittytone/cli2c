@@ -56,7 +56,7 @@
 #define ERR                             0xF0
 
 // FROM 1.1.2
-#define READ_BUS_HOST_TIMEOUT_S         10
+#define READ_BUS_HOST_TIMEOUT_S         5
 
 
 /*
