@@ -3,13 +3,13 @@
  *
  * @version     1.1.2
  * @author      Tony Smith (@smittytone)
- * @copyright   2022
+ * @copyright   2023
  * @licence     MIT
  *
  */
 #include <stdint.h>
 
-uint8_t PIN_PAIRS_BUS_0[] = {   6, 17, 
+uint8_t PIN_PAIRS_BUS_0[] = {   6, 17,
                                 255, 255};
 
 uint8_t PIN_PAIRS_BUS_1[] = {   255, 255};

@@ -3,7 +3,7 @@
  *
  * @version     1.1.2
  * @author      Tony Smith (@smittytone)
- * @copyright   2022
+ * @copyright   2023
  * @licence     MIT
  *
  */
@@ -50,7 +50,7 @@ void rx_loop(void) {
     uint8_t rx_buffer[128] = {0};
     uint32_t read_count = 0;
     bool do_use_led = true;
-    
+
     // Heartbeat variables
     uint64_t last = time_us_64();
     bool is_on = false;
@@ -64,7 +64,7 @@ void rx_loop(void) {
     i2c_state.bus = DEFAULT_I2C_BUS == 0 ? i2c0 : i2c1;   // The I2C bus to use
     i2c_state.sda_pin = DEFAULT_SDA_PIN;                  // The I2C SDA pin
     i2c_state.scl_pin = DEFAULT_SCL_PIN;                  // The I2C SCL pin
-    
+
     // FROM 1.1.0 -- record GPIO pin state
     GPIO_State gpio_state;
     memset(gpio_state.state_map, 0, 32);
@@ -176,7 +176,7 @@ void rx_loop(void) {
 #endif
                         break;
 
-                    // FROM 1.1.0              
+                    // FROM 1.1.0
                     case 'c':   // CONFIGURE THE BUS AND PINS
                         if (i2c_state.is_ready) {
                             send_err();
@@ -250,8 +250,8 @@ void rx_loop(void) {
                     /*
                      * GPIO COMMANDS
                      */
-                    
-                    // FROM 1.1.0                    
+
+                    // FROM 1.1.0
                     case 'g':   // SET DIGITAL OUT PIN
                         {
                             uint8_t read_value = 0;
@@ -272,7 +272,7 @@ void rx_loop(void) {
                             putchar(is_read ? read_value : ACK);
                         }
                         break;
-                        
+
                     default:    // UNKNOWN COMMAND -- FAIL
                         send_err();
                 }
@@ -514,18 +514,18 @@ static void tx(uint8_t* buffer, uint32_t byte_count) {
  * @param bus: The Pico SDK I2C bus ID, 0 or 1.
  * @param sda: The GPIO number of SDA pin.
  * @param scl: The GPIO number of SCL pin.
- * 
+ *
  * @retval Whether the pins are good (`true`) or not (`false`).
  */
 static bool check_pins(uint8_t bus, uint8_t sda, uint8_t scl) {
-    
+
     // Same pin? Bail
     if (sda == scl) return false;
 
     // Select the right pin-pair array
     uint8_t* pin_pairs = bus == 0 ? &PIN_PAIRS_BUS_0[0] : &PIN_PAIRS_BUS_1[0];
     if (!pin_check(pin_pairs, sda)) return false;
-    
+
     pin_pairs = bus == 0 ? &PIN_PAIRS_BUS_0[1] : &PIN_PAIRS_BUS_1[1];
     if (!pin_check(pin_pairs, scl)) return false;
     return true;
@@ -539,7 +539,7 @@ static bool check_pins(uint8_t bus, uint8_t sda, uint8_t scl) {
  * @param bus: The Pico SDK I2C bus ID, 0 or 1.
  * @param sda: The GPIO number of SDA pin.
  * @param scl: The GPIO number of SCL pin.
- * 
+ *
  * @retval Whether the pins are good (`true`) or not (`false`).
  */
 static bool pin_check(uint8_t* pins, uint8_t pin) {

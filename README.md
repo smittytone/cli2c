@@ -299,7 +299,7 @@ Thanks are also due to Hermann Stamm-Wilbrandt ([@Hermann-SW](https://github.com
 
 ## Known Issues
 
-* Under macOS, rapidly repeated calls to `cli2c`, `matrix` or `segment` (ie. the I2C driver they all depend upon) can cause the I2C Host firmware to crash. This has been experienced with the matrix and segment examples. The cause of this is unclear and cannot be replicated under Linux, even though the Host code and is the same, and the driver code largely the same. This is being investigated. 
+* Under macOS, rapidly repeated calls to `cli2c`, `matrix` or `segment` (ie. the I2C driver they all depend upon) can cause the I2C Host firmware to crash. This has been experienced with the matrix and segment examples. The cause of this is unclear and cannot be replicated under Linux, even though the Host code and is the same, and the driver code largely the same. This is being investigated.
 
 ## Release Notes
 
@@ -324,4 +324,4 @@ Thanks are also due to Hermann Stamm-Wilbrandt ([@Hermann-SW](https://github.com
 
 `cli2c`, `matrix` and `segment` contain small code portions © 2019, James Bowman. All other code © 2022, Tony Smith (@smittytone). They are licensed under the terms of the BSD 3-Clause Licence.
 
-The RP2040 firmware is © 2022, Tony Smith (@smittytone). It is licensed under the terms of the MIT Licence.
+The RP2040 firmware is © 2023, Tony Smith (@smittytone). It is licensed under the terms of the MIT Licence.

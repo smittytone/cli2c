@@ -3,7 +3,7 @@
  *
  * @version     1.1.2
  * @author      Tony Smith (@smittytone)
- * @copyright   2022
+ * @copyright   2023
  * @licence     MIT
  *
  */
@@ -28,7 +28,7 @@ void debug_init() {
  * @param ...:           Optional injectable values
  */
 void debug_log(char* format_string, ...) {
-    
+
     va_list args;
     char buffer[DEBUG_MESSAGE_MAX_B] = {0};
 
@@ -48,7 +48,7 @@ void debug_log(char* format_string, ...) {
 
 
 void debug_log_bytes(uint8_t* data, size_t count) {
-    
+
     char buffer[DEBUG_MESSAGE_MAX_B] = {0};
     int j = 0;
 

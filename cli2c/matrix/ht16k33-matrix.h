@@ -2,7 +2,7 @@
  * HT16K33 8x8 matrix driver
  *
  * Version 1.1.2
- * Copyright © 2022, Tony Smith (@smittytone)
+ * Copyright © 2023, Tony Smith (@smittytone)
  * Licence: MIT
  *
  */

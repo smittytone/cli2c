@@ -2,7 +2,7 @@
  * Generic macOS I2C driver
  *
  * Version 1.1.2
- * Copyright © 2022, Tony Smith (@smittytone)
+ * Copyright © 2023, Tony Smith (@smittytone)
  * Licence: MIT
  *
  */
@@ -82,8 +82,8 @@ static int openSerialPort(const char *device_file) {
         goto error;
     }
 #else
-    cfsetispeed(&serial_settings, B203400);
-    cfsetospeed(&serial_settings, B203400);
+    cfsetispeed(&serial_settings, speed);
+    cfsetospeed(&serial_settings, speed);
 #endif
     
     // Set the latency -- MAY REMOVE IF NOT NEEDED
