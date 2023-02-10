@@ -25,7 +25,8 @@ add_executable(${FW_2_NAME}
     ${FW_2_SRC_DIRECTORY}/pins.c
     ${COMMON_CODE_DIRECTORY}/serial.c
     ${COMMON_CODE_DIRECTORY}/led.c
-    ${COMMON_CODE_DIRECTORY}/gpio.c)
+    ${COMMON_CODE_DIRECTORY}/gpio.c
+    ${COMMON_CODE_DIRECTORY}/i2c.c)
 
 # Compile debug sources
 if (DO_DEBUG)
@@ -33,7 +34,9 @@ if (DO_DEBUG)
 endif()
 
 # Set the stack size
-target_compile_definitions(${FW_2_NAME} PRIVATE PICO_STACK_SIZE=8192)
+target_compile_definitions(${FW_2_NAME} PRIVATE
+    PICO_HEAP_SIZE=8192
+    PICO_STACK_SIZE=4096)
 
 # Link to built libraries
 target_link_libraries(${FW_2_NAME} LINK_PUBLIC

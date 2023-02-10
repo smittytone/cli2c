@@ -10,12 +10,9 @@
 #include "serial.h"
 
 
-
 /*
  * STATIC PROTOTYPES
  */
-static void         init_i2c(I2C_State* itr);
-static void         reset_i2c(I2C_State* itr);
 // FROM 1.1.2 -- make ack and err sends inline
 static inline void  send_ack(void);
 static inline void  send_err(void);
@@ -29,6 +26,7 @@ static uint32_t     rx(uint8_t *buffer);
 static bool         check_pins(uint8_t bus, uint8_t sda, uint8_t scl);
 static bool         pin_check(uint8_t* pins, uint8_t pin);
 static void         sig_handler(int signal);
+
 
 /*
  * GLOBALS
@@ -44,10 +42,15 @@ extern uint8_t PIN_PAIRS_BUS_1[];
  */
 void rx_loop(void) {
 
+#ifdef DO_UART_DEBUG
+    debug_init();
+#endif
+
+    // Trap certain signals
     signal(SIGABRT | SIGSEGV | SIGBUS | SIGTRAP | SIGSYS, sig_handler);
 
     // Prepare a UART RX buffer
-    uint8_t rx_buffer[128] = {0};
+    uint8_t rx_buffer[RX_BUFFER_LENGTH_B] = {0};
     uint32_t read_count = 0;
     bool do_use_led = true;
 
@@ -68,10 +71,6 @@ void rx_loop(void) {
     // FROM 1.1.0 -- record GPIO pin state
     GPIO_State gpio_state;
     memset(gpio_state.state_map, 0, 32);
-
-#ifdef DO_UART_DEBUG
-    debug_init();
-#endif
 
     while(1) {
         // Scan for input
@@ -320,40 +319,7 @@ void rx_loop(void) {
 }
 
 
-/**
- * @brief Initialise the host's I2C bus.
- *
- * @param frequency_khz: The bus speed in kHz.
- */
-static void init_i2c(I2C_State* itr) {
 
-    // Initialise I2C via SDK
-    i2c_init(itr->bus, itr->frequency * 1000);
-
-    // Initialise pins
-    // The values of SDA_PIN and SCL_PIN are set
-    // in the board's individual CMakeLists.txt file.
-    gpio_set_function(itr->sda_pin, GPIO_FUNC_I2C);
-    gpio_set_function(itr->scl_pin, GPIO_FUNC_I2C);
-    gpio_pull_up(itr->sda_pin);
-    gpio_pull_up(itr->scl_pin);
-
-    // Mark bus as ready for use
-    itr->is_ready = true;
-}
-
-
-/**
- * @brief Reset the host's I2C bus.
- *
- * @param frequency_khz: The bus speed in kHz.
- */
-static void reset_i2c(I2C_State* itr) {
-
-    i2c_deinit(itr->bus);
-    sleep_ms(10);
-    i2c_init(itr->bus, itr->frequency * 1000);
-}
 
 
 /**
@@ -474,19 +440,19 @@ static inline void send_err(void) {
  */
 static uint32_t rx(uint8_t* buffer) {
 
-    uint32_t data_count = 0;
+    uint32_t buffer_byte_count = 0;
     int c = PICO_ERROR_TIMEOUT;
-    while (data_count < RX_BUFFER_LENGTH_B) {
+    while (buffer_byte_count < RX_BUFFER_LENGTH_B) {
         c = getchar_timeout_us(1);
         if (c == PICO_ERROR_TIMEOUT) break;
-        buffer[data_count++] = (uint8_t)c;
+        buffer[buffer_byte_count++] = (uint8_t)c;
         sleep_ms(UART_LOOP_DELAY_MS);
     }
 
 #ifdef DO_UART_DEBUG
-    if (data_count > 0) debug_log("Bytes received: %i", data_count);
+    if (buffer_byte_count > 0) debug_log("Bytes received: %i", buffer_byte_count);
 #endif
-    return data_count;
+    return buffer_byte_count;
 }
 
 
@@ -547,17 +513,18 @@ static bool pin_check(uint8_t* pins, uint8_t pin) {
     uint8_t a_pin = *pins;
     while (a_pin != 255) {
         if (a_pin == pin) return true;
-        pins += 2;;
+        pins += 2;
         a_pin = *pins;
     }
 
     return false;
 }
 
+
 static void sig_handler(int signal) {
 
-#ifdef DO_UART_DEBUG
+
     debug_log("Signal received: %i", signal);
-#endif
+
 
 }

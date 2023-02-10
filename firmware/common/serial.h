@@ -27,6 +27,7 @@
 // App Includes
 #include "led.h"
 #include "gpio.h"
+#include "i2c.h"
 #ifdef DO_UART_DEBUG
 #include "segment.h"
 #include "debug.h"
@@ -40,10 +41,6 @@
 #define RX_LOOP_DELAY_MS                        5
 #define HEARTBEAT_PERIOD_US                     2000000
 #define HEARTBEAT_FLASH_US                      50000
-
-#ifndef DEFAULT_I2C_BUS
-#define DEFAULT_I2C_BUS                         1
-#endif
 
 #define WRITE_LENGTH_BASE                       0xC0
 #define READ_LENGTH_BASE                        0x80
@@ -64,23 +61,6 @@
 // FROM 1.1.2
 #define UART_LOOP_DELAY_MS                      1
 #define RX_BUFFER_LENGTH_B                      128
-
-
-/*
- * STRUCTURES
- */
-typedef struct {
-    bool        is_ready;
-    bool        is_started;
-    bool        is_read_op;
-    uint8_t     address;
-    uint8_t     sda_pin;
-    uint8_t     scl_pin;
-    uint32_t    frequency;
-    uint32_t    read_byte_count;
-    uint32_t    write_byte_count;
-    i2c_inst_t* bus;
-} I2C_State;
 
 
 /*
