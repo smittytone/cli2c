@@ -299,7 +299,7 @@ Thanks are also due to Hermann Stamm-Wilbrandt ([@Hermann-SW](https://github.com
 
 ## Known Issues
 
-* Under macOS, rapidly repeated calls to `cli2c`, `matrix` or `segment` (ie. the I2C driver they all depend upon) can cause the I2C Host firmware to crash. This has been experienced with the matrix and segment examples. The cause of this is unclear and cannot be replicated under Linux, even though the Host code and is the same, and the driver code largely the same. This is being investigated.
+* Under macOS, rapidly repeated calls to `cli2c`, `matrix` or `segment` (ie. the I2C driver they all depend upon) can cause the I2C Host firmware to crash. This has been experienced with the matrix and segment examples. This is being investigated.
 
 ## Release Notes
 
