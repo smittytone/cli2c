@@ -523,8 +523,8 @@ static bool pin_check(uint8_t* pins, uint8_t pin) {
 
 static void sig_handler(int signal) {
 
-
+#ifdef DO_UART_DEBUG
     debug_log("Signal received: %i", signal);
-
+#endif
 
 }
