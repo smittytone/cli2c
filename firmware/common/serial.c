@@ -214,8 +214,8 @@ void rx_loop(void) {
                     case 'p':   // SEND AN I2C STOP
                         if (i2c_state.is_ready && i2c_state.is_started) {
                             // Send no bytes and STOP
-                            //uint8_t data = 0;
-                            //i2c_write_timeout_us(i2c_state.bus, i2c_state.address, &data, 0, false, 1000);
+                            uint8_t data = 0;
+                            i2c_write_timeout_us(i2c_state.bus, i2c_state.address, &data, 1, false, 1000);
 
                             // Reset state
                             i2c_state.is_started = false;
