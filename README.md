@@ -303,7 +303,7 @@ Thanks are also due to Hermann Stamm-Wilbrandt ([@Hermann-SW](https://github.com
 
 ## Release Notes
 
-* 1.1.2 *Unreleased*
+* 1.1.2 *11 February 2023*
     * A big data transfer speed improvement.
     * Document GPIO usage.
     * Better error messages.

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.18)
 
 # Uncomment the following line to use the STEMMA
-set(USE_STEMMA 1)
+#set(USE_STEMMA 1)
 
 # Make project data accessible to compiler
 # IMPORTANT `HW_MODEL` must be no more than 24 characters
