@@ -57,7 +57,10 @@ typedef struct {
 void    init_i2c(I2C_State* itr);
 void    reset_i2c(I2C_State* itr);
 void    set_i2c_frequency(I2C_State* its, uint32_t frequency_khz);
+bool    configure_i2c(I2C_State* its, uint8_t* data);
 void    send_i2c_scan(I2C_State* itr);
+void    send_i2c_status(I2C_State* itr);
+bool    is_pin_in_use_by_i2c(I2C_State* its, uint8_t pin);
 
 
 #endif  // _HEADER_LED_

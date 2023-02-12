@@ -13,7 +13,8 @@
 /*
  * STATIC PROTOTYPES
  */
-
+static bool check_i2c_pins(uint8_t* data);
+static bool pin_check(uint8_t* pins, uint8_t pin);
 
 
 /*
@@ -84,6 +85,30 @@ void set_i2c_frequency(I2C_State* its, uint32_t frequency_khz) {
 
 
 /**
+ * @brief Configure the I2C bus: its ID and pins.
+ *
+ * @param data: The received data. Byte 1 is the bus ID,
+ *              byte 2 the SDA pin, byte 3 the SCL pin
+ *
+ * @retval Whether the config was set successfully (`true`) or not (`false`).
+ */
+bool configure_i2c(I2C_State* its, uint8_t* data) {
+
+    // Make sure we have valid data
+    if (its->is_ready || !check_i2c_pins(data)) {
+        return false;
+    }
+
+    // Store the values
+    uint8_t bus_index = data[0] & 0x01;
+    its->bus = bus_index == 0 ? i2c0 : i2c1;
+    its->sda_pin = data[1];
+    its->scl_pin = data[2];
+    return true;
+}
+
+
+/**
  * @brief Scan the host's I2C bus for devices, and send the results.
  */
 void send_i2c_scan(I2C_State* itr) {
@@ -113,4 +138,119 @@ void send_i2c_scan(I2C_State* itr) {
 
     // Send the scan data back
     tx(scan_buffer, strlen(scan_buffer));
+}
+
+
+/**
+ * @brief Scan the host's I2C bus for devices, and send the results.
+ *
+ * @param t: A pointer to the current I2C transaction record.
+ */
+void send_i2c_status(I2C_State* itr) {
+
+    // Get the RP2040 unique ID
+    char pid[2 * PICO_UNIQUE_BOARD_ID_SIZE_BYTES + 1] = {0};
+    pico_get_unique_board_id_string(pid, 2 * PICO_UNIQUE_BOARD_ID_SIZE_BYTES + 1);
+    // eg. DF6050788B3E1A2E
+
+    // Get the firmware version as integers
+    int major, minor, patch;
+    sscanf(FW_VERSION, "%i.%i.%i",
+        &major,
+        &minor,
+        &patch
+    );
+
+    char model[HW_MODEL_NAME_SIZE_MAX + 1] = {0};
+    //strncpy(model, model, HW_MODEL_NAME_SIZE_MAX);
+    strncat(model, HW_MODEL, HW_MODEL_NAME_SIZE_MAX);
+
+    // Generate and return the status data string.
+    // Data in the form: "1.1.100.110.QTPY-RP2040" or "1.1.100.110.PI-PICO"
+    char status_buffer[129] = {0};
+
+    sprintf(status_buffer, "%s.%s.%s.%i.%i.%i.%i.%i.%i.%i.%i.%s.%s\r\n",
+            (itr->is_ready   ? "1" : "0"),          // 2 chars
+            (itr->is_started ? "1" : "0"),          // 2 chars
+            (itr->bus == i2c0 ? "0" : "1"),         // 2 chars
+            itr->sda_pin,                           // 2-3 chars
+            itr->scl_pin,                           // 2-3 chars
+            itr->frequency,                         // 2 chars
+            itr->address,                           // 2-4 chars
+            major,                                  // 2-4 chars
+            minor,                                  // 2-4 chars
+            patch,                                  // 2-4 chars
+            BUILD_NUM,                              // 2-4 chars
+            pid,                                    // 17 chars
+            model);                                 // 2-17 chars
+                                                    // == 41-68 chars
+
+    // Send the data
+    tx(status_buffer, strlen(status_buffer));
+}
+
+
+/**
+ * @brief Check that supplied SDA and SCL pins are valid for the
+ *        board we're using
+ *
+ * @param bus: The Pico SDK I2C bus ID, 0 or 1.
+ * @param sda: The GPIO number of SDA pin.
+ * @param scl: The GPIO number of SCL pin.
+ *
+ * @retval Whether the pins are good (`true`) or not (`false`).
+ */
+static bool check_i2c_pins(uint8_t* data) {
+
+    i2c_inst_t* bus = (data[0] & 0x01) == 0 ? i2c0 : i2c1;
+    uint8_t sda_pin = data[1];
+    uint8_t scl_pin = data[2];
+
+    // Same pin? Bail
+    if (sda_pin == scl_pin) return false;
+
+    // Select the right pin-pair array
+    uint8_t* pin_pairs = bus == i2c0 ? &I2C_PIN_PAIRS_BUS_0[0] : &I2C_PIN_PAIRS_BUS_1[0];
+    if (!pin_check(pin_pairs, sda_pin)) return false;
+
+    pin_pairs = bus == i2c0 ? &I2C_PIN_PAIRS_BUS_0[1] : &I2C_PIN_PAIRS_BUS_1[1];
+    if (!pin_check(pin_pairs, scl_pin)) return false;
+    return true;
+}
+
+
+/**
+ * @brief Check that a supplied pin are valid for the
+ *        board we're using
+ *
+ * @param bus: The Pico SDK I2C bus ID, 0 or 1.
+ * @param sda: The GPIO number of SDA pin.
+ * @param scl: The GPIO number of SCL pin.
+ *
+ * @retval Whether the pins are good (`true`) or not (`false`).
+ */
+static bool pin_check(uint8_t* pins, uint8_t pin) {
+
+    uint8_t a_pin = *pins;
+    while (a_pin != 255) {
+        if (a_pin == pin) return true;
+        pins += 2;
+        a_pin = *pins;
+    }
+
+    return false;
+}
+
+
+/**
+ * @brief Check pin usage.
+ *
+ * @param its: The I2C state record.
+ * @param pin: An arbitrary GPIO pin that we're checking.
+ *
+ * @retval `true` if the pin is in use by the bus, or `false`.
+ */
+bool is_pin_in_use_by_i2c(I2C_State* its, uint8_t pin) {
+
+    return (pin == its->sda_pin || pin == its->scl_pin);
 }

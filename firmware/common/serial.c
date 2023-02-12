@@ -17,14 +17,17 @@
 static inline void  send_ack(void);
 static inline void  send_err(void);
 //static void         send_scan(I2C_State* itr);
-static void         send_status(I2C_State* itr);
+//static void         send_status(I2C_State* itr);
 //static void         tx(uint8_t* buffer, uint32_t byte_count);
 static uint32_t     rx(uint8_t *buffer);
 
 // FROM 1.1.0
-static bool         check_pins(uint8_t bus, uint8_t sda, uint8_t scl);
-static bool         pin_check(uint8_t* pins, uint8_t pin);
+//static bool         check_pins(uint8_t bus, uint8_t sda, uint8_t scl);
+//static bool         pin_check(uint8_t* pins, uint8_t pin);
 static void         sig_handler(int signal);
+
+// FROM 1.1.3
+static uint8_t      get_mode(char mode_key);
 
 
 /*
@@ -53,10 +56,6 @@ void rx_loop(void) {
     uint32_t read_count = 0;
     bool do_use_led = true;
 
-    // Heartbeat variables
-    uint64_t last = time_us_64();
-    bool is_on = false;
-
     // Prepare a transaction record with default data
     I2C_State i2c_state;
     i2c_state.is_started = false;                         // No transaction taking place
@@ -70,6 +69,15 @@ void rx_loop(void) {
     // FROM 1.1.0 -- record GPIO pin state
     GPIO_State gpio_state;
     memset(gpio_state.state_map, 0, 32);
+
+    // FROM 1.1.3
+    // Default current mode to I2C, for backwards compatibility
+    // NOTE Call the function so the LED colour is correctly set
+    uint8_t current_mode = get_mode('i');
+
+    // Heartbeat variables
+    uint64_t last = time_us_64();
+    bool is_on = false;
 
     while(1) {
         // Scan for input
@@ -128,9 +136,9 @@ void rx_loop(void) {
 #endif
 
                 switch(cmd) {
-                    case '?':   // GET STATUS
-                        send_status(&i2c_state);
-                        break;
+                    /*
+                     * FIRMWARE COMMANDS
+                     */
 
                     // FROM 1.1.1 -- change command from z to !
                     case 'z':   // REMOVE IN 1.2.0
@@ -148,28 +156,36 @@ void rx_loop(void) {
 #endif
                         break;
 
+                    case '?':   // GET STATUS
+                        send_i2c_status(&i2c_state);
+                        break;
+
+                    /*
+                     * I2C-SPECIFIC COMMANDS
+                     */
+                    case '1':   // SET BUS TO 100kHz
+                        set_i2c_frequency(&i2c_state, 100);
+                        send_ack();
+                        break;
+
+                    case '4':   // SET BUS TO 400kHZ
+                        set_i2c_frequency(&i2c_state, 400);
+                        send_ack();
+                        break;
+                        break;
+
                     // FROM 1.1.0
                     case 'c':   // CONFIGURE THE BUS AND PINS
-                        if (i2c_state.is_ready) {
+                        if (configure_i2c(&i2c_state, &rx_buffer[1])) {
+                            send_ack();
+                        } else {
                             send_err();
-                            break;
                         }
+                        break;
 
-                        uint8_t bus_index = rx_buffer[1] & 0x01;
-                        uint8_t sda_pin = rx_buffer[2];
-                        uint8_t scl_pin = rx_buffer[3];
-
-                        // Check we have valid pin values for the device
-                        if (!check_pins(bus_index, sda_pin, scl_pin)) {
-                            send_err();
-                            break;
-                        }
-
-                        // Store the values
-                        i2c_state.bus = bus_index == 0 ? i2c0 : i2c1;
-                        i2c_state.sda_pin = sda_pin;
-                        i2c_state.scl_pin = scl_pin;
-                        send_ack();
+                    case 'd':   // SCAN THE I2C BUS FOR DEVICES
+                        if (!i2c_state.is_ready) init_i2c(&i2c_state);
+                        send_i2c_scan(&i2c_state);
                         break;
 
                     case 'i':   // INITIALISE THE I2C BUS
@@ -215,25 +231,6 @@ void rx_loop(void) {
                         break;
 
                     /*
-                     * I2C-SPECIFIC COMMANDS
-                     */
-                    case '1':   // SET BUS TO 100kHz
-                        set_i2c_frequency(&i2c_state, 100);
-                        send_ack();
-                        break;
-
-                    case '4':   // SET BUS TO 400kHZ
-                        set_i2c_frequency(&i2c_state, 400);
-                        send_ack();
-                        break;
-                        break;
-
-                    case 'd':   // SCAN THE I2C BUS FOR DEVICES
-                        if (!i2c_state.is_ready) init_i2c(&i2c_state);
-                        send_i2c_scan(&i2c_state);
-                        break;
-
-                    /*
                      * GPIO COMMANDS
                      */
 
@@ -244,7 +241,7 @@ void rx_loop(void) {
                             uint8_t gpio_pin = (rx_ptr[1] & 0x1F);
 
                             // Make sure the pin's not in use for I2C
-                            if (gpio_pin == i2c_state.sda_pin || gpio_pin == i2c_state.scl_pin) {
+                            if (is_pin_in_use_by_i2c(&i2c_state, gpio_pin)) {
                                 send_err();
                                 break;
                             }
@@ -303,55 +300,6 @@ void rx_loop(void) {
     led_on();
 
     // Fall out of the firmware at this point...
-}
-
-
-/**
- * @brief Scan the host's I2C bus for devices, and send the results.
- *
- * @param t: A pointer to the current I2C transaction record.
- */
-static void send_status(I2C_State* itr) {
-
-    // Get the RP2040 unique ID
-    char pid[2 * PICO_UNIQUE_BOARD_ID_SIZE_BYTES + 1] = {0};
-    pico_get_unique_board_id_string(pid, 2 * PICO_UNIQUE_BOARD_ID_SIZE_BYTES + 1);
-    // eg. DF6050788B3E1A2E
-
-    // Get the firmware version as integers
-    int major, minor, patch;
-    sscanf(FW_VERSION, "%i.%i.%i",
-        &major,
-        &minor,
-        &patch
-    );
-
-    char model[HW_MODEL_NAME_SIZE_MAX + 1] = {0};
-    //strncpy(model, model, HW_MODEL_NAME_SIZE_MAX);
-    strncat(model, HW_MODEL, HW_MODEL_NAME_SIZE_MAX);
-
-    // Generate and return the status data string.
-    // Data in the form: "1.1.100.110.QTPY-RP2040" or "1.1.100.110.PI-PICO"
-    char status_buffer[129] = {0};
-
-    sprintf(status_buffer, "%s.%s.%s.%i.%i.%i.%i.%i.%i.%i.%i.%s.%s\r\n",
-            (itr->is_ready   ? "1" : "0"),          // 2 chars
-            (itr->is_started ? "1" : "0"),          // 2 chars
-            (itr->bus == i2c0 ? "0" : "1"),         // 2 chars
-            itr->sda_pin,                           // 2-3 chars
-            itr->scl_pin,                           // 2-3 chars
-            itr->frequency,                         // 2 chars
-            itr->address,                           // 2-4 chars
-            major,                                  // 2-4 chars
-            minor,                                  // 2-4 chars
-            patch,                                  // 2-4 chars
-            BUILD_NUM,                              // 2-4 chars
-            pid,                                    // 17 chars
-            model);                                 // 2-17 chars
-                                                    // == 41-68 chars
-
-    // Send the data
-    tx(status_buffer, strlen(status_buffer));
 }
 
 
@@ -425,50 +373,44 @@ void tx(uint8_t* buffer, uint32_t byte_count) {
 
 
 /**
- * @brief Check that supplied SDA and SCL pins are valid for the
- *        board we're using
+ * @brief Return in the mode (I2C, SPI, etc.) integer ID from the
+ *        char ID sent to the host from the client.
  *
- * @param bus: The Pico SDK I2C bus ID, 0 or 1.
- * @param sda: The GPIO number of SDA pin.
- * @param scl: The GPIO number of SCL pin.
+ *        It also sets the device LED colour.
  *
- * @retval Whether the pins are good (`true`) or not (`false`).
+ * @param mode_key: The mode character: `i`, `s` etc.
+ *                  NOTE Should always follow a `#`.
+ *
+ * @retval The mode ID as an integer.
  */
-static bool check_pins(uint8_t bus, uint8_t sda, uint8_t scl) {
+static uint8_t get_mode(char mode_key) {
 
-    // Same pin? Bail
-    if (sda == scl) return false;
-
-    // Select the right pin-pair array
-    uint8_t* pin_pairs = bus == 0 ? &I2C_PIN_PAIRS_BUS_0[0] : &I2C_PIN_PAIRS_BUS_1[0];
-    if (!pin_check(pin_pairs, sda)) return false;
-
-    pin_pairs = bus == 0 ? &I2C_PIN_PAIRS_BUS_0[1] : &I2C_PIN_PAIRS_BUS_1[1];
-    if (!pin_check(pin_pairs, scl)) return false;
-    return true;
-}
-
-
-/**
- * @brief Check that a supplied pin are valid for the
- *        board we're using
- *
- * @param bus: The Pico SDK I2C bus ID, 0 or 1.
- * @param sda: The GPIO number of SDA pin.
- * @param scl: The GPIO number of SCL pin.
- *
- * @retval Whether the pins are good (`true`) or not (`false`).
- */
-static bool pin_check(uint8_t* pins, uint8_t pin) {
-
-    uint8_t a_pin = *pins;
-    while (a_pin != 255) {
-        if (a_pin == pin) return true;
-        pins += 2;
-        a_pin = *pins;
+    uint32_t mode = MODE_NONE;
+    switch(mode_key) {
+        case 'i':
+        case 'I':
+            led_set_colour(COLOUR_MODE_I2C);
+            mode = MODE_I2C;
+            break;
+        case 's':
+        case 'S':
+            led_set_colour(COLOUR_MODE_SPI);
+            mode = MODE_SPI;
+            break;
+        case 'u':
+        case 'U':
+            led_set_colour(COLOUR_MODE_UART);
+            mode = MODE_UART;
+            break;
+        case 'o':
+        case 'O':
+        case '1':
+            led_set_colour(COLOUR_MODE_ONE_WIRE);
+            mode = MODE_ONE_WIRE;
+            break;
     }
 
-    return false;
+    return mode;
 }
 
 

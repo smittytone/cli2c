@@ -1,4 +1,4 @@
-# cli2c 1.1.2
+# cli2c 1.1.3
 
 An I2C client for macOS and Linux. It is used as the basis for client apps to operate HT16K33-controlled matrix and segment LED displays.
 
@@ -303,22 +303,24 @@ Thanks are also due to Hermann Stamm-Wilbrandt ([@Hermann-SW](https://github.com
 
 ## Release Notes
 
-* 1.1.2 *11 February 2023*
-    * A big data transfer speed improvement.
-    * Document GPIO usage.
-    * Better error messages.
-    * Internal changes and bug fixes.
-* 1.1.1 *27 October 2022*
-    * Internal changes.
-* 1.1.0 *22 October 2022*
-    * Support I2C bus and pin selection.
-    * Support building and running client apps on Linux (RPiOS).
-    * Support firmware transfer to board on Linux (RPiOS).
-    * Add LED control to `cli2c`.
-* 1.0.1 *18 October 2022*
+- 1.1.3 *Unreleased*
+    - TBD
+- 1.1.2 *11 February 2023*
+    - A big data transfer speed improvement.
+    - Document GPIO usage.
+    - Better error messages.
+    - Internal changes and bug fixes.
+- 1.1.1 *27 October 2022*
+    - Internal changes.
+- 1.1.0 *22 October 2022*
+    - Support I2C bus and pin selection.
+    - Support building and running client apps on Linux (RPiOS).
+    - Support firmware transfer to board on Linux (RPiOS).
+    - Add LED control to `cli2c`.
+- 1.0.1 *18 October 2022*
     * Behind-the-scenes fixes for the client apps.
-* 1.0.0 *18 October 2022*
-    * Initial public release.
+- 1.0.0 *18 October 2022*
+    - Initial public release.
 
 ## Licences and Copyright
 

@@ -62,6 +62,21 @@
 #define UART_LOOP_DELAY_MS                      1
 #define RX_BUFFER_LENGTH_B                      128
 
+// FROM 1.1.3
+#define MODE_NONE                               0
+#define MODE_I2C                                1
+#define MODE_SPI                                2
+#define MODE_UART                               3
+#define MODE_ONE_WIRE                           4
+
+#define COLOUR_MODE_I2C                         0x001010
+#define COLOUR_MODE_SPI                         0x010000 //0x100010
+#define COLOUR_MODE_UART                        0x010000 //0x001000
+#define COLOUR_MODE_ONE_WIRE                    0x010000 //0x102000
+
+#define ERROR_BUFFER_LENGTH_B                   129
+#define I2C_RX_BUFFER_LENGTH_B                  65
+
 
 /*
  * PROTOTYPES
