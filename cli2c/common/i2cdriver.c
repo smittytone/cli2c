@@ -467,6 +467,20 @@ bool i2c_init(I2CDriver *sd) {
 
 
 /**
+ * @brief Tell the I2C host to de-initialise (Kill) the I2C bus.
+ *
+ * @param sd: Pointer to an I2CDriver structure.
+ *
+ * @retval Whether the command was ACK'd (`true`) or not (`false`).
+ */
+bool i2c_deinit(I2CDriver *sd) {
+
+    send_command(sd, 'k');
+    return i2c_ack(sd);
+};
+
+
+/**
  * @brief Tell the I2C host to set the bus speed.
  *
  * @param sd:    Pointer to an I2CDriver structure.
@@ -869,6 +883,12 @@ int process_commands(I2CDriver *sd, int argc, char *argv[], uint32_t delta) {
             case 'i':   // PRINT HOST STATUS INFO
                 i2c_get_info(sd, true);
                 break;
+                
+            // FROM 1.1.3
+            case 'K':
+            case 'k':   // DE-INIT BUS
+                i2c_deinit(sd);
+                break;                
 
             // FROM 1.1.0
             case 'L':

@@ -55,6 +55,7 @@ typedef struct {
  * PROTOTYPES
  */
 void    init_i2c(I2C_State* itr);
+void    deinit_i2c(I2C_State* its);
 void    reset_i2c(I2C_State* itr);
 void    set_i2c_frequency(I2C_State* its, uint32_t frequency_khz);
 bool    configure_i2c(I2C_State* its, uint8_t* data);

@@ -28,6 +28,7 @@
 #include "led.h"
 #include "gpio.h"
 #include "i2c.h"
+#include "errors.h"
 #ifdef DO_UART_DEBUG
 #include "segment.h"
 #include "debug.h"
@@ -69,7 +70,7 @@
 #define MODE_UART                               3
 #define MODE_ONE_WIRE                           4
 
-#define COLOUR_MODE_I2C                         0x001010
+#define COLOUR_MODE_I2C                         0x002010
 #define COLOUR_MODE_SPI                         0x010000 //0x100010
 #define COLOUR_MODE_UART                        0x010000 //0x001000
 #define COLOUR_MODE_ONE_WIRE                    0x010000 //0x102000

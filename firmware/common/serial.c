@@ -75,6 +75,9 @@ void rx_loop(void) {
     // NOTE Call the function so the LED colour is correctly set
     uint8_t current_mode = get_mode('i');
 
+    // FROM 1.1.3
+    uint last_error_code = GEN_NO_ERROR;
+
     // Heartbeat variables
     uint64_t last = time_us_64();
     bool is_on = false;
@@ -110,6 +113,7 @@ void rx_loop(void) {
 #endif
                     // Send an ACK to say we wrote the data -- or an ERR if we didn't
                     if (bytes_sent == PICO_ERROR_GENERIC || bytes_sent == PICO_ERROR_TIMEOUT) {
+                        last_error_code = I2C_COULD_NOT_WRITE;
                         send_err();
                     } else {
                         send_ack();
@@ -123,9 +127,9 @@ void rx_loop(void) {
                     // Return the read data
                     if (bytes_read != PICO_ERROR_GENERIC) {
                         tx(i2x_rx_buffer, i2c_state.read_byte_count);
+                    } else {
+                        last_error_code = I2C_COULD_NOT_WRITE;
                     }
-
-                    // TODO --  report read error?
                 }
             } else {
                 // Maybe we received a command
@@ -152,12 +156,87 @@ void rx_loop(void) {
 #ifdef SHOW_HEARTBEAT
                         send_ack();
 #else
+                        last_error_code = GEN_LED_NOT_ENABLED;
                         send_err();
 #endif
                         break;
 
                     case '?':   // GET STATUS
-                        send_i2c_status(&i2c_state);
+                        switch(current_mode) {
+                            case MODE_I2C:
+                                send_i2c_status(&i2c_state);
+                                break;
+                            default:
+                                last_error_code = GEN_UNKNOWN_MODE;
+                                send_err();
+                        }
+                        break;
+
+                    // FROM 1.1.3
+                    case '$':   // GET LAST ERROR
+                        uint8_t err_buffer[3] = {(uint8_t)last_error_code, '\r', '\n'};
+                        tx(err_buffer, 3);
+                        break;
+
+                    /*
+                     * MULTI-BUS COMMANDS
+                     */
+
+                    // FROM 1.1.0
+                    case 'c':   // CONFIGURE THE BUS AND PINS
+                        switch(current_mode) {
+                            case MODE_I2C:
+                                if (configure_i2c(&i2c_state, &rx_buffer[1])) {
+                                    send_ack();
+                                } else {
+                                    last_error_code = GEN_CANT_CONFIG_BUS;
+                                    send_err();
+                                }
+                            break;
+                        default:
+                            last_error_code = GEN_UNKNOWN_MODE;
+                            send_err();
+                        }
+                        break;
+
+                    case 'i':   // INITIALISE THE I2C BUS
+                        switch(current_mode) {
+                            case MODE_I2C:
+                                // No need it initialise if we already have
+                                if (!i2c_state.is_ready) init_i2c(&i2c_state);
+                                send_ack();
+                                break;
+                            default:
+                                last_error_code = GEN_UNKNOWN_MODE;
+                                send_err();
+                        }
+                        break;
+
+                    case 'x':   // RESET BUS
+                        switch(current_mode) {
+                            case MODE_I2C:
+                                i2c_state.is_started = false;
+                                reset_i2c(&i2c_state);
+                                send_ack();
+                                break;
+                            default:
+                                last_error_code = GEN_UNKNOWN_MODE;
+                                send_err();
+                        }
+                        break;
+
+                    // FROM 1.1.3
+                    case 'k':   // DEINIT BUS
+                        switch(current_mode) {
+                            case MODE_I2C:
+                                i2c_state.is_started = false;
+                                deinit_i2c(&i2c_state);
+                                send_ack();
+                                break;
+                            default:
+                                last_error_code = GEN_UNKNOWN_MODE;
+                                send_err();
+                        }
                         break;
 
                     /*
@@ -172,26 +251,10 @@ void rx_loop(void) {
                         set_i2c_frequency(&i2c_state, 400);
                         send_ack();
                         break;
-                        break;
-
-                    // FROM 1.1.0
-                    case 'c':   // CONFIGURE THE BUS AND PINS
-                        if (configure_i2c(&i2c_state, &rx_buffer[1])) {
-                            send_ack();
-                        } else {
-                            send_err();
-                        }
-                        break;
 
                     case 'd':   // SCAN THE I2C BUS FOR DEVICES
                         if (!i2c_state.is_ready) init_i2c(&i2c_state);
                         send_i2c_scan(&i2c_state);
-                        break;
-
-                    case 'i':   // INITIALISE THE I2C BUS
-                        // No need it initialise if we already have
-                        if (!i2c_state.is_ready) init_i2c(&i2c_state);
-                        send_ack();
                         break;
 
                     case 'p':   // SEND AN I2C STOP
@@ -205,6 +268,7 @@ void rx_loop(void) {
                             i2c_state.is_read_op = false;
                             send_ack();
                         } else {
+                            last_error_code = I2C_ALREADY_STOPPED;
                             send_err();
                         }
                         break;
@@ -215,19 +279,11 @@ void rx_loop(void) {
                             i2c_state.address = (rx_buffer[1] & 0xFE) >> 1;
                             i2c_state.is_read_op = ((rx_buffer[1] & 0x01) == 1);
                             i2c_state.is_started = true;
-
-                            // Acknowledge
                             send_ack();
                         } else {
-                            // Issue error
+                            last_error_code = I2C_NOT_READY;
                             send_err();
                         }
-                        break;
-
-                    case 'x':   // RESET BUS
-                        i2c_state.is_started = false;
-                        reset_i2c(&i2c_state);
-                        send_ack();
                         break;
 
                     /*
@@ -242,11 +298,13 @@ void rx_loop(void) {
 
                             // Make sure the pin's not in use for I2C
                             if (is_pin_in_use_by_i2c(&i2c_state, gpio_pin)) {
+                                last_error_code = GPIO_CANT_SET_PIN;
                                 send_err();
                                 break;
                             }
 
                             if (!set_gpio(&gpio_state, &read_value, rx_ptr)) {
+                                last_error_code = GPIO_CANT_SET_PIN;
                                 send_err();
                                 break;
                             }
@@ -257,6 +315,7 @@ void rx_loop(void) {
                         break;
 
                     default:    // UNKNOWN COMMAND -- FAIL
+                        last_error_code = GEN_UNKNOWN_COMMAND;
                         send_err();
                 }
             }

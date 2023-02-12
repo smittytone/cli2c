@@ -78,6 +78,8 @@ void            flush_and_close_port(int fd);
 // I2C Driver Functions
 void            i2c_connect(I2CDriver *sd, const char* portname);
 bool            i2c_init(I2CDriver *sd);
+// FROM 1.1.3
+bool            i2c_deinit(I2CDriver *sd);
 
 bool            i2c_start(I2CDriver *sd, uint8_t address, uint8_t op);
 bool            i2c_stop(I2CDriver *sd);

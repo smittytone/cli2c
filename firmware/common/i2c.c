@@ -29,7 +29,7 @@ extern uint8_t I2C_PIN_PAIRS_BUS_1[];
 /**
  * @brief Initialise the host's I2C bus.
  *
- * @param frequency_khz: The bus speed in kHz.
+ * @param its: The I2C state record.
  */
 void init_i2c(I2C_State* itr) {
 
@@ -50,15 +50,29 @@ void init_i2c(I2C_State* itr) {
 
 
 /**
+ * @brief Initialise the host's I2C bus.
+ *
+ * @param its: The I2C state record.
+ */
+void deinit_i2c(I2C_State* its) {
+
+    // De-initialise I2C via SDK
+    i2c_deinit(its->bus);
+    its->is_ready = false;
+    its->is_started = false;
+}
+
+
+/**
  * @brief Reset the host's I2C bus.
  *
- * @param frequency_khz: The bus speed in kHz.
+ * @param its: The I2C state record.
  */
-void reset_i2c(I2C_State* itr) {
+void reset_i2c(I2C_State* its) {
 
-    i2c_deinit(itr->bus);
+    i2c_deinit(its->bus);
     sleep_ms(10);
-    i2c_init(itr->bus, itr->frequency * 1000);
+    i2c_init(its->bus, its->frequency * 1000);
 }
 
 
@@ -87,12 +101,17 @@ void set_i2c_frequency(I2C_State* its, uint32_t frequency_khz) {
 /**
  * @brief Configure the I2C bus: its ID and pins.
  *
+ * @param its: The I2C state record.
  * @param data: The received data. Byte 1 is the bus ID,
  *              byte 2 the SDA pin, byte 3 the SCL pin
  *
  * @retval Whether the config was set successfully (`true`) or not (`false`).
  */
 bool configure_i2c(I2C_State* its, uint8_t* data) {
+
+#ifdef DO_UART_DEBUG
+    debug_log("Switching from pins %i, %i to %i, %i", its->sda_pin, its->scl_pin, data[1], data[2]);
+#endif
 
     // Make sure we have valid data
     if (its->is_ready || !check_i2c_pins(data)) {
@@ -110,8 +129,10 @@ bool configure_i2c(I2C_State* its, uint8_t* data) {
 
 /**
  * @brief Scan the host's I2C bus for devices, and send the results.
+ *
+ * @param its: The I2C state record.
  */
-void send_i2c_scan(I2C_State* itr) {
+void send_i2c_scan(I2C_State* its) {
 
     uint8_t rx_data;
     int reading;
@@ -121,7 +142,7 @@ void send_i2c_scan(I2C_State* itr) {
     // Generate a list if devices by their addresses.
     // List in the form "13.71.A0."
     for (uint32_t i = 0 ; i < 0x78 ; ++i) {
-        reading = i2c_read_timeout_us(itr->bus, i, &rx_data, 1, false, 1000);
+        reading = i2c_read_timeout_us(its->bus, i, &rx_data, 1, false, 1000);
         if (reading > 0) {
             sprintf(scan_buffer + (device_count * 3), "%02X.", i);
             device_count++;
@@ -144,9 +165,9 @@ void send_i2c_scan(I2C_State* itr) {
 /**
  * @brief Scan the host's I2C bus for devices, and send the results.
  *
- * @param t: A pointer to the current I2C transaction record.
+ * @param its: The I2C state record.
  */
-void send_i2c_status(I2C_State* itr) {
+void send_i2c_status(I2C_State* its) {
 
     // Get the RP2040 unique ID
     char pid[2 * PICO_UNIQUE_BOARD_ID_SIZE_BYTES + 1] = {0};
@@ -170,13 +191,13 @@ void send_i2c_status(I2C_State* itr) {
     char status_buffer[129] = {0};
 
     sprintf(status_buffer, "%s.%s.%s.%i.%i.%i.%i.%i.%i.%i.%i.%s.%s\r\n",
-            (itr->is_ready   ? "1" : "0"),          // 2 chars
-            (itr->is_started ? "1" : "0"),          // 2 chars
-            (itr->bus == i2c0 ? "0" : "1"),         // 2 chars
-            itr->sda_pin,                           // 2-3 chars
-            itr->scl_pin,                           // 2-3 chars
-            itr->frequency,                         // 2 chars
-            itr->address,                           // 2-4 chars
+            (its->is_ready   ? "1" : "0"),          // 2 chars
+            (its->is_started ? "1" : "0"),          // 2 chars
+            (its->bus == i2c0 ? "0" : "1"),         // 2 chars
+            its->sda_pin,                           // 2-3 chars
+            its->scl_pin,                           // 2-3 chars
+            its->frequency,                         // 2 chars
+            its->address,                           // 2-4 chars
             major,                                  // 2-4 chars
             minor,                                  // 2-4 chars
             patch,                                  // 2-4 chars
@@ -194,9 +215,7 @@ void send_i2c_status(I2C_State* itr) {
  * @brief Check that supplied SDA and SCL pins are valid for the
  *        board we're using
  *
- * @param bus: The Pico SDK I2C bus ID, 0 or 1.
- * @param sda: The GPIO number of SDA pin.
- * @param scl: The GPIO number of SCL pin.
+ * @param data: The transmitted pin data.
  *
  * @retval Whether the pins are good (`true`) or not (`false`).
  */
@@ -223,9 +242,8 @@ static bool check_i2c_pins(uint8_t* data) {
  * @brief Check that a supplied pin are valid for the
  *        board we're using
  *
- * @param bus: The Pico SDK I2C bus ID, 0 or 1.
- * @param sda: The GPIO number of SDA pin.
- * @param scl: The GPIO number of SCL pin.
+ * @param pins: An array of available pins in SDA, SCL pains.
+ * @param pin: The pin to check.
  *
  * @retval Whether the pins are good (`true`) or not (`false`).
  */
