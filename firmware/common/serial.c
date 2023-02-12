@@ -229,7 +229,6 @@ void rx_loop(void) {
                     case 'k':   // DEINIT BUS
                         switch(current_mode) {
                             case MODE_I2C:
-                                i2c_state.is_started = false;
                                 deinit_i2c(&i2c_state);
                                 send_ack();
                                 break;
