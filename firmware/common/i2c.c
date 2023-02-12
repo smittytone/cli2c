@@ -46,6 +46,10 @@ void init_i2c(I2C_State* itr) {
 
     // Mark bus as ready for use
     itr->is_ready = true;
+
+#ifdef DO_UART_DEBUG
+    debug_log("I2C activated");
+#endif
 }
 
 
@@ -60,6 +64,10 @@ void deinit_i2c(I2C_State* its) {
     i2c_deinit(its->bus);
     its->is_ready = false;
     its->is_started = false;
+
+#ifdef DO_UART_DEBUG
+    debug_log("I2C deactivated");
+#endif
 }
 
 
@@ -73,6 +81,10 @@ void reset_i2c(I2C_State* its) {
     i2c_deinit(its->bus);
     sleep_ms(10);
     i2c_init(its->bus, its->frequency * 1000);
+
+#ifdef DO_UART_DEBUG
+    debug_log("I2C reset");
+#endif
 }
 
 
@@ -89,6 +101,9 @@ void set_i2c_frequency(I2C_State* its, uint32_t frequency_khz) {
     if (its->frequency != frequency_khz) {
         its->frequency = frequency_khz;
 
+#ifdef DO_UART_DEBUG
+    debug_log("I2C frequency set: %ikHz", frequency_khz);
+#endif
         // If the bus is active, reset it
         if (its->is_ready) {
             reset_i2c(its);

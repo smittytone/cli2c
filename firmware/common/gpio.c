@@ -41,13 +41,28 @@ bool set_gpio(GPIO_State* gps, uint8_t* read_value, uint8_t* data) {
         // Pin is DIGITAL_IN, so get and return the state
         uint8_t pin_value = gpio_get(gpio_pin) ? 0x80 : 0x00;
         *read_value = (pin_value | gpio_pin);
+
+#ifdef DO_UART_DEBUG
+        debug_log("Pin %i read value: %i", gpio_pin, *read_value);
+#endif
+
         return true;
     } else if (is_dir_out) {
         // Pin is DIGITAL_OUT, so just set the state
         gpio_put(gpio_pin, pin_state);
+
+#ifdef DO_UART_DEBUG
+        debug_log("Pin %i state set: %i", gpio_pin, (pin_state ? 1 : 0));
+#endif
+
         return true;
     } else {
         // Pin is DIGITAL_IN, but we're just setting it
+
+#ifdef DO_UART_DEBUG
+        debug_log("Pin %i set to input", gpio_pin);
+#endif
+
         return true;
     }
 

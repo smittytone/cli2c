@@ -13,19 +13,12 @@
 /*
  * STATIC PROTOTYPES
  */
+// FROM 1.1.0
+static void         sig_handler(int signal);
 // FROM 1.1.2 -- make ack and err sends inline
 static inline void  send_ack(void);
 static inline void  send_err(void);
-//static void         send_scan(I2C_State* itr);
-//static void         send_status(I2C_State* itr);
-//static void         tx(uint8_t* buffer, uint32_t byte_count);
 static uint32_t     rx(uint8_t *buffer);
-
-// FROM 1.1.0
-//static bool         check_pins(uint8_t bus, uint8_t sda, uint8_t scl);
-//static bool         pin_check(uint8_t* pins, uint8_t pin);
-static void         sig_handler(int signal);
-
 // FROM 1.1.3
 static uint8_t      get_mode(char mode_key);
 
@@ -467,6 +460,10 @@ static uint8_t get_mode(char mode_key) {
             mode = MODE_ONE_WIRE;
             break;
     }
+
+#ifdef DO_UART_DEBUG
+    debug_log("Mode set: %i", mode);
+#endif
 
     return mode;
 }
