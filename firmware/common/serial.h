@@ -1,7 +1,7 @@
 /*
  * I2C Host Firmware - Primary serial and command functions
  *
- * @version     1.1.2
+ * @version     1.1.3
  * @author      Tony Smith (@smittytone)
  * @copyright   2023
  * @licence     MIT
@@ -67,6 +67,6 @@
  * PROTOTYPES
  */
 void        rx_loop(void);
-
+void        tx(uint8_t* buffer, uint32_t byte_count);
 
 #endif  // _MONITOR_HEADER_

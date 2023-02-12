@@ -1,7 +1,7 @@
 /*
- * I2C Host Firmware - I2C functios
+ * I2C Host Firmware - I2C functions
  *
- * @version     1.1.2
+ * @version     1.1.3
  * @author      Tony Smith (@smittytone)
  * @copyright   2023
  * @licence     MIT
@@ -17,10 +17,13 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 // Pico SDK Includes
 #include "pico/stdlib.h"
 #include "pico/binary_info.h"
 #include "hardware/i2c.h"
+// App Includes
+#include "serial.h"
 
 
 /*
@@ -53,6 +56,8 @@ typedef struct {
  */
 void    init_i2c(I2C_State* itr);
 void    reset_i2c(I2C_State* itr);
+void    set_i2c_frequency(I2C_State* its, uint32_t frequency_khz);
+void    send_i2c_scan(I2C_State* itr);
 
 
 #endif  // _HEADER_LED_

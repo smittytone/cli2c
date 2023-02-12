@@ -1,7 +1,7 @@
 /*
  * I2C Host Firmware -- Raspberry Pi Pico
  *
- * @version     1.1.2
+ * @version     1.1.3
  * @author      Tony Smith (@smittytone)
  * @copyright   2023
  * @licence     MIT

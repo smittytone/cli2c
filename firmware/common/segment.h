@@ -2,7 +2,7 @@
  * I2C Host Firmware - Debugging LED segment driver
  * DEPRECATED -- WILL BE REMOVED IN 1.2.0
  *
- * @version     1.1.2
+ * @version     1.1.3
  * @author      Tony Smith (@smittytone)
  * @copyright   2023
  * @licence     MIT

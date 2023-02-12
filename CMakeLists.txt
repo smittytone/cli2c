@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.18)
 
 # Set project data
 set(PROJECT_NAME "I2C Host Firmware")
-set(FW_BUILD_NUMBER "30")
-set(FW_VERSION_NUMBER "1.1.2")
+set(FW_BUILD_NUMBER "31")
+set(FW_VERSION_NUMBER "1.1.3")
 
 # Set app name(s) and version(s)
 set(FW_1_NAME "firmware_qtpy_rp2040")

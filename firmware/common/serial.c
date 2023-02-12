@@ -1,7 +1,7 @@
 /*
  * I2C Host Firmware - Primary serial and command functions
  *
- * @version     1.1.2
+ * @version     1.1.3
  * @author      Tony Smith (@smittytone)
  * @copyright   2023
  * @licence     MIT
@@ -16,10 +16,9 @@
 // FROM 1.1.2 -- make ack and err sends inline
 static inline void  send_ack(void);
 static inline void  send_err(void);
-static void         send_scan(I2C_State* itr);
+//static void         send_scan(I2C_State* itr);
 static void         send_status(I2C_State* itr);
-
-static void         tx(uint8_t* buffer, uint32_t byte_count);
+//static void         tx(uint8_t* buffer, uint32_t byte_count);
 static uint32_t     rx(uint8_t *buffer);
 
 // FROM 1.1.0
@@ -33,8 +32,8 @@ static void         sig_handler(int signal);
  */
 // FROM 1.1.0
 // Access individual boards' pin arrays
-extern uint8_t PIN_PAIRS_BUS_0[];
-extern uint8_t PIN_PAIRS_BUS_1[];
+extern uint8_t I2C_PIN_PAIRS_BUS_0[];
+extern uint8_t I2C_PIN_PAIRS_BUS_1[];
 
 
 /**
@@ -129,38 +128,12 @@ void rx_loop(void) {
 #endif
 
                 switch(cmd) {
-                    case '1':   // SET BUS TO 100kHz
-                        if (i2c_state.frequency != 100) {
-                            i2c_state.frequency = 100;
-
-                            // If the bus is active, reset it
-                            if (i2c_state.is_ready) {
-                                reset_i2c(&i2c_state);
-                                i2c_state.is_started = false;
-                            }
-                        }
-                        send_ack();
-                        break;
-
-                    case '4':   // SET BUS TO 400kHZ
-                        if (i2c_state.frequency != 400) {
-                            i2c_state.frequency = 400;
-
-                            // If the bus is active, reset it
-                            if (i2c_state.is_ready) {
-                                reset_i2c(&i2c_state);
-                                i2c_state.is_started = false;
-                            }
-                        }
-                        send_ack();
-                        break;
-
                     case '?':   // GET STATUS
                         send_status(&i2c_state);
                         break;
 
                     // FROM 1.1.1 -- change command from z to !
-                    case 'z':
+                    case 'z':   // REMOVE IN 1.2.0
                     case '!':   // RESPOND TO CONNECTION REQUEST
                         tx("OK\r\n", 4);
                         break;
@@ -197,11 +170,6 @@ void rx_loop(void) {
                         i2c_state.sda_pin = sda_pin;
                         i2c_state.scl_pin = scl_pin;
                         send_ack();
-                        break;
-
-                    case 'd':   // SCAN THE I2C BUS FOR DEVICES
-                        if (!i2c_state.is_ready) init_i2c(&i2c_state);
-                        send_scan(&i2c_state);
                         break;
 
                     case 'i':   // INITIALISE THE I2C BUS
@@ -244,6 +212,25 @@ void rx_loop(void) {
                         i2c_state.is_started = false;
                         reset_i2c(&i2c_state);
                         send_ack();
+                        break;
+
+                    /*
+                     * I2C-SPECIFIC COMMANDS
+                     */
+                    case '1':   // SET BUS TO 100kHz
+                        set_i2c_frequency(&i2c_state, 100);
+                        send_ack();
+                        break;
+
+                    case '4':   // SET BUS TO 400kHZ
+                        set_i2c_frequency(&i2c_state, 400);
+                        send_ack();
+                        break;
+                        break;
+
+                    case 'd':   // SCAN THE I2C BUS FOR DEVICES
+                        if (!i2c_state.is_ready) init_i2c(&i2c_state);
+                        send_i2c_scan(&i2c_state);
                         break;
 
                     /*
@@ -316,42 +303,6 @@ void rx_loop(void) {
     led_on();
 
     // Fall out of the firmware at this point...
-}
-
-
-
-
-
-/**
- * @brief Scan the host's I2C bus for devices, and send the results.
- */
-static void send_scan(I2C_State* itr) {
-
-    uint8_t rx_data;
-    int reading;
-    char scan_buffer[1024] = {0};
-    uint32_t device_count = 0;;
-
-    // Generate a list if devices by their addresses.
-    // List in the form "13.71.A0."
-    for (uint32_t i = 0 ; i < 0x78 ; ++i) {
-        reading = i2c_read_timeout_us(itr->bus, i, &rx_data, 1, false, 1000);
-        if (reading > 0) {
-            sprintf(scan_buffer + (device_count * 3), "%02X.", i);
-            device_count++;
-        }
-    }
-
-    // Write 'Z' if there are no devices,
-    // or send the device list string
-    if (strlen(scan_buffer) == 0) {
-        sprintf(scan_buffer, "Z\r\n");
-    } else {
-        sprintf(scan_buffer + (device_count * 3), "\r\n");
-    }
-
-    // Send the scan data back
-    tx(scan_buffer, strlen(scan_buffer));
 }
 
 
@@ -462,7 +413,7 @@ static uint32_t rx(uint8_t* buffer) {
  * @param buffer:     A pointer to the byte store buffer.
  * @param byte_count: The number of bytes to send.
  */
-static void tx(uint8_t* buffer, uint32_t byte_count) {
+void tx(uint8_t* buffer, uint32_t byte_count) {
 
     for (uint32_t i = 0 ; i < byte_count ; ++i) {
         putchar((buffer[i]));
@@ -489,10 +440,10 @@ static bool check_pins(uint8_t bus, uint8_t sda, uint8_t scl) {
     if (sda == scl) return false;
 
     // Select the right pin-pair array
-    uint8_t* pin_pairs = bus == 0 ? &PIN_PAIRS_BUS_0[0] : &PIN_PAIRS_BUS_1[0];
+    uint8_t* pin_pairs = bus == 0 ? &I2C_PIN_PAIRS_BUS_0[0] : &I2C_PIN_PAIRS_BUS_1[0];
     if (!pin_check(pin_pairs, sda)) return false;
 
-    pin_pairs = bus == 0 ? &PIN_PAIRS_BUS_0[1] : &PIN_PAIRS_BUS_1[1];
+    pin_pairs = bus == 0 ? &I2C_PIN_PAIRS_BUS_0[1] : &I2C_PIN_PAIRS_BUS_1[1];
     if (!pin_check(pin_pairs, scl)) return false;
     return true;
 }
