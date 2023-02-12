@@ -1,7 +1,7 @@
 /*
  * Generic macOS I2C driver
  *
- * Version 1.1.2
+ * Version 1.1.3
  * Copyright © 2023, Tony Smith (@smittytone)
  * Licence: MIT
  *
@@ -286,7 +286,7 @@ static bool i2c_ack(I2CDriver *sd) {
     bool ackd = ((read_buffer[0] & ACK) == ACK);
     
 #ifdef DEBUG
-    fprintf(stderr, "ACK\n");
+    fprintf(stderr, (ackd ? "ACK\n" : "ERR\n"));
 #endif
     
     return ackd;
