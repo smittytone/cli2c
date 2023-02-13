@@ -69,22 +69,21 @@ static int openSerialPort(const char *device_file) {
     serial_settings.c_cc[VMIN]  = 0;
     serial_settings.c_cc[VTIME] = 1;
 
-    if (tcsetattr(fd, TCSANOW, &serial_settings) != 0) {
-        print_error("Could not apply the port settings - %s (%d)", strerror(errno), errno);
-        goto error;
-    }
-
     // Set the port speed
-    speed_t speed = (speed_t)203400;
+    speed_t speed = (speed_t)256000;
 #ifndef BUILD_FOR_LINUX
     if (ioctl(fd, IOSSIOSPEED, &speed) == -1) {
         print_error("Could not set port speed to %i bps - %s (%d)", speed, strerror(errno), errno);
         goto error;
     }
 #else
-    cfsetispeed(&serial_settings, speed);
-    cfsetospeed(&serial_settings, speed);
+    cfsetspeed(&serial_settings, speed);
 #endif
+    
+    if (tcsetattr(fd, TCSANOW, &serial_settings) != 0) {
+        print_error("Could not apply the port settings - %s (%d)", strerror(errno), errno);
+        goto error;
+    }
     
     // Set the latency -- MAY REMOVE IF NOT NEEDED
 #ifndef BUILD_FOR_LINUX
@@ -237,23 +236,23 @@ void flush_and_close_port(int fd) {
  * @brief Connect to the target I2C host.
  *        Always check the I2CDriver record that the `connected` field is `true`.
  *
- * @param fd:       The port’s OS file descriptor.
- * @param portname: The device path as a string.
+ * @param sd:          Pointer to an I2CDriver structure.
+ * @param device_path: The device path as a string.
  */
-void i2c_connect(I2CDriver *sd, const char* portname) {
+void i2c_connect(I2CDriver *sd, const char* device_path) {
 
     // Mark that we're not connected
     sd->connected = false;
 
     // Open and get the serial port or bail
-    sd->port = openSerialPort(portname);
+    sd->port = openSerialPort(device_path);
     if (sd->port == -1) {
-        print_error("Could not connect to port %s", portname);
+        print_error("Could not open port to device %s", device_path);
         return;
     }
     
 #ifdef DEBUG
-    fprintf(stderr, "Port %s FD: %i\n", portname, sd->port);
+    fprintf(stderr, "Device %s FD: %i\n", device_path, sd->port);
 #endif
     
     // Perform a basic communications check
@@ -261,7 +260,7 @@ void i2c_connect(I2CDriver *sd, const char* portname) {
     uint8_t rx[4] = {0};
     size_t result = readFromSerialPort(sd->port, rx, 4);
     if (result == -1 || ((rx[0] != 'O') && (rx[1] != 'K'))) {
-        print_error("Could not connect to device %s", portname);
+        print_error("No response from device %s", device_path);
         return;
     }
 
