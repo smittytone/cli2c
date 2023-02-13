@@ -47,10 +47,9 @@ int main(int argc, char* argv[]) {
         }
 
         // Connect... with the device path
-        i2c.port = -1;
         int i2c_address = HT16K33_I2C_ADDR;
+        i2c.port = -1;
         i2c_connect(&i2c, argv[1]);
-
         if (i2c.connected) {
             // Initialize the I2C host's I2C bus
             if (!(i2c_init(&i2c))) {
@@ -61,7 +60,7 @@ int main(int argc, char* argv[]) {
 
             // Process the remaining commands in sequence
             int delta = 2;
-            if (argc > 2) {
+            if (argc > delta) {
                 char* token = argv[2];
                 if (token[0] >= '0' && token[0] <= '9') {
                     // Not a command, so an address?
@@ -85,7 +84,13 @@ int main(int argc, char* argv[]) {
                 int result =  matrix_commands(&i2c, argc, argv, delta);
                 flush_and_close_port(i2c.port);
                 return result;
+            } else {
+                fprintf(stderr, "No commands supplied... exiting\n");
+                flush_and_close_port(i2c.port);
+                return EXIT_OK;
             }
+        } else {
+            if (i2c.port != -1) flush_and_close_port(i2c.port);
         }
     }
     

@@ -53,24 +53,25 @@ int main(int argc, char *argv[]) {
                 return EXIT_OK;
             }
         }
-
-        // Connect... with the device path
-        i2c.port = -1;
-        i2c_connect(&i2c, argv[1]);
-
-        if (i2c.connected) {
-            // Check we have commands to process
-            int delta = 2;
-            if (delta >= argc) {
-                fprintf(stderr, "No commands supplied... exiting\n");
+        
+        // Check we have commands to process
+        int delta = 2;
+        if (argc > delta) {
+            // Connect... with the device path
+            i2c.port = -1;
+            i2c_connect(&i2c, argv[1]);
+            
+            if (i2c.connected) {
+                // Process the remaining commands in sequence
+                int result = process_commands(&i2c, argc, argv, delta);
                 flush_and_close_port(i2c.port);
-                return EXIT_OK;
+                return result;
+            } else if (i2c.port != -1) {
+                flush_and_close_port(i2c.port);
             }
-
-            // Process the remaining commands in sequence
-            int result = process_commands(&i2c, argc, argv, delta);
-            flush_and_close_port(i2c.port);
-            return result;
+        } else {
+            fprintf(stderr, "No commands supplied... exiting\n");
+            return EXIT_OK;
         }
     }
 
