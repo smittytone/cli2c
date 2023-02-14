@@ -89,8 +89,8 @@ int main(int argc, char* argv[]) {
                 flush_and_close_port(i2c.port);
                 return EXIT_OK;
             }
-        } else {
-            if (i2c.port != -1) flush_and_close_port(i2c.port);
+        } else if (i2c.port != -1) {
+            flush_and_close_port(i2c.port);
         }
     }
     
