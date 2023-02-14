@@ -53,6 +53,12 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DTSDEBUG")
 # Include the Pico SDK
 include(pico_sdk_import.cmake)
 
+# FROM 1.1.3
+# Recommend usage of SDK 1.5.0+
+if(PICO_SDK_VERSION_MINOR LESS "5")
+message(ERROR " WE STRONGLY RECOMMEND YOU BUILD THE FIRMWARE WITH PICO SDK 1.5.0 OR ABOVE")
+endif()
+
 # Name the project
 project(${PROJECT_NAME}
         LANGUAGES C CXX ASM
