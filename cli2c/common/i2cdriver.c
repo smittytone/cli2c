@@ -25,6 +25,8 @@ static bool         i2c_reset(I2CDriver *sd);
 static void         i2c_get_info(I2CDriver *sd, bool do_print);
 static bool         gpio_set_pin(I2CDriver *sd, uint8_t pin);
 static uint8_t      gpio_get_pin(I2CDriver *sd, uint8_t pin);
+// FROM 1.1.3
+static bool         board_get_last_error(I2CDriver *sd);
 
 
 #pragma mark - Globals
@@ -36,26 +38,26 @@ static struct termios original_settings;
 #pragma mark - Serial Port Control Functions
 
 /**
- * @brief Open a Mac serial port.
+ * @brief Open a serial port.
  *`
- * @param device_file: The target port file, eg. `/dev/cu.usb-modem-10100`
+ * @param device_path: The target port file, eg. `/dev/cu.usb-modem-10100`
  *
  * @retval The OS file descriptor, or -1 on error.
  */
-static int openSerialPort(const char *device_file) {
+static int openSerialPort(const char *device_path) {
 
     struct termios serial_settings;
 
     // Open the device
-    int fd = open(device_file, O_RDWR | O_NOCTTY);
+    int fd = open(device_path, O_RDWR | O_NOCTTY);
     if (fd == -1) {
-        print_error("Could not open the device at %s - %s (%d)", device_file, strerror(errno), errno);
+        print_error("Could not open the device at %s - %s (%d)", device_path, strerror(errno), errno);
         return fd;
     }
 
     // Prevent additional opens except by root-owned processes
     if (ioctl(fd, TIOCEXCL) == -1) {
-        print_error("Could not set TIOCEXCL on %s - %s (%d)", device_file, strerror(errno), errno);
+        print_error("Could not set TIOCEXCL on %s - %s (%d)", device_path, strerror(errno), errno);
         goto error;;
     }
 
@@ -70,6 +72,8 @@ static int openSerialPort(const char *device_file) {
     serial_settings.c_cc[VTIME] = 1;
 
     // Set the port speed
+    // NOTE Needs to go before `tcsetattr()` is called.
+    //      And from 1.1.3 it does!
     speed_t speed = (speed_t)256000;
 #ifndef BUILD_FOR_LINUX
     if (ioctl(fd, IOSSIOSPEED, &speed) == -1) {
@@ -185,8 +189,8 @@ static bool writeToSerialPort(int fd, const uint8_t* buffer, size_t byte_count) 
 #ifdef DEBUG
     // Output the read data for debugging
     if (written < 0) {
-        fprintf(stderr, "write() returned an error: %li\n", written);
-        fprintf(stderr, "Data written: %s\n", buffer);
+        print_log("write() returned an error: %li", written);
+        print_log("Data written: %s", buffer);
     } else {
         fprintf(stderr, "WRITE %u: ", (int)byte_count);
         for (int i = 0 ; i < byte_count ; ++i) {
@@ -195,7 +199,7 @@ static bool writeToSerialPort(int fd, const uint8_t* buffer, size_t byte_count) 
         
         fprintf(stderr, "\n");
         
-        if (written != byte_count) fprintf(stderr, "write() returned %li\n", written);
+        if (written != byte_count) print_log("write() returned %li", written);
     }
 #endif
     
@@ -223,7 +227,7 @@ void flush_and_close_port(int fd) {
         close(fd);
         
 #ifdef DEBUG
-        fprintf(stderr, "Port closed\n");
+        print_log("Port closed");
 #endif
     }
 }
@@ -234,7 +238,8 @@ void flush_and_close_port(int fd) {
 
 /**
  * @brief Connect to the target I2C host.
- *        Always check the I2CDriver record that the `connected` field is `true`.
+ *        Always check the I2CDriver record that
+ *        the `connected` field is `true`.
  *
  * @param sd:          Pointer to an I2CDriver structure.
  * @param device_path: The device path as a string.
@@ -252,11 +257,11 @@ void i2c_connect(I2CDriver *sd, const char* device_path) {
     }
     
 #ifdef DEBUG
-    fprintf(stderr, "Device %s FD: %i\n", device_path, sd->port);
+    print_log("Device %s FD: %i", device_path, sd->port);
 #endif
     
     // Perform a basic communications check
-    send_command(sd, 'z');
+    send_command(sd, '!');
     uint8_t rx[4] = {0};
     size_t result = readFromSerialPort(sd->port, rx, 4);
     if (result == -1 || ((rx[0] != 'O') && (rx[1] != 'K'))) {
@@ -285,7 +290,7 @@ static bool i2c_ack(I2CDriver *sd) {
     bool ackd = ((read_buffer[0] & ACK) == ACK);
     
 #ifdef DEBUG
-    fprintf(stderr, (ackd ? "ACK\n" : "ERR\n"));
+    print_log((ackd ? "ACK" : "ERR"));
 #endif
     
     return ackd;
@@ -296,7 +301,7 @@ static bool i2c_ack(I2CDriver *sd) {
  * @brief Get status info from the USB host.
  *
  * @param sd:       Pointer to an I2CDriver structure.
- * @param do_print: Should we output the results?
+ * @param do_print: Should we output the results to stderr?
  */
 static void i2c_get_info(I2CDriver *sd, bool do_print) {
 
@@ -309,7 +314,7 @@ static void i2c_get_info(I2CDriver *sd, bool do_print) {
     }
 
 #ifdef DEBUG
-    fprintf(stderr, "Received raw info string: %s\n", read_buffer);
+    print_log("Received raw info string: %s", read_buffer);
 #endif
 
     // Data string is, for example,
@@ -354,20 +359,20 @@ static void i2c_get_info(I2CDriver *sd, bool do_print) {
     sd->speed = frequency;
 
     if (do_print) {
-        fprintf(stderr, "   I2C host device: %s\n", model);
-        fprintf(stderr, "  I2C host version: %i.%i.%i (%i)\n", major, minor, patch, build);
-        fprintf(stderr, "       I2C host ID: %s\n", pid);
-        fprintf(stderr, "     Using I2C bus: %s\n", bus == 0 ? "i2c0" : "i2c1");
-        fprintf(stderr, " I2C bus frequency: %ikHz\n", frequency);
-        fprintf(stderr, " Pins used for I2C: GP%i (SDA), GP%i (SCL)\n", sda_pin, scl_pin);
-        fprintf(stderr, "    I2C is enabled: %s\n", is_ready == 1 ? "YES" : "NO");
-        fprintf(stderr, "     I2C is active: %s\n", has_started == 1 ? "YES" : "NO");
+        print_log("   I2C host device: %s", model);
+        print_log( "  I2C host version: %i.%i.%i (%i)", major, minor, patch, build);
+        print_log("       I2C host ID: %s", pid);
+        print_log("     Using I2C bus: %s", bus == 0 ? "i2c0" : "i2c1");
+        print_log(" I2C bus frequency: %ikHz", frequency);
+        print_log(" Pins used for I2C: GP%i (SDA), GP%i (SCL)", sda_pin, scl_pin);
+        print_log("    I2C is enabled: %s", is_ready == 1 ? "YES" : "NO");
+        print_log("     I2C is active: %s", has_started == 1 ? "YES" : "NO");
 
         // Check for a 'no device' I2C address
         if (address == 0xFF) {
-            fprintf(stderr, "Target I2C address: NONE\n");
+            print_log("Target I2C address: NONE");
         } else {
-            fprintf(stderr, "Target I2C address: 0x%02X\n", address);
+            print_log("Target I2C address: 0x%02X", address);
         }
 
     }
@@ -401,7 +406,7 @@ void i2c_scan(I2CDriver *sd) {
         // dest   = [18, 113, 160]
 
 #ifdef DEBUG
-        fprintf(stderr, "Buffer: %lu bytes, %lu items\n", strlen(scan_buffer), strlen(scan_buffer) / 3);
+        print_log("Buffer: %lu bytes, %lu items", strlen(scan_buffer), strlen(scan_buffer) / 3);
 #endif
 
         for (uint32_t i = 0 ; i < strlen(scan_buffer) ; i += 3) {
@@ -467,6 +472,7 @@ bool i2c_init(I2CDriver *sd) {
 
 /**
  * @brief Tell the I2C host to de-initialise (Kill) the I2C bus.
+ *        FROM 1.1.3
  *
  * @param sd: Pointer to an I2CDriver structure.
  *
@@ -502,7 +508,9 @@ static bool i2c_set_speed(I2CDriver *sd, long speed) {
 
 
 /**
- * @brief Choose the I2C host's target bus: 0 (i2c0) or 1 (i2c1).
+ * @brief Choose the I2C host's target bus: 0 (i2c0) or 1 (i2c1),
+ *        and SDA and SCL pins. Firmware will return `ERR` on a
+ *        mis-setting.
  *
  * @param sd:      Pointer to an I2CDriver structure.
  * @param bus_id:  The Pico SDK I2C bus ID: 0 or 1.
@@ -647,7 +655,7 @@ static bool gpio_set_pin(I2CDriver *sd, uint8_t pin) {
 
 
 /**
- * @brief Read a GPIO pin
+ * @brief Read a GPIO pin.
  *
  * @param sd:  Pointer to an I2CDriver structure.
  * @param pin: The state, direction and number of the target GPIO.
@@ -666,11 +674,49 @@ static uint8_t gpio_get_pin(I2CDriver *sd, uint8_t pin) {
 
 #pragma mark - Board Control Functions
 
+/**
+ * @brief Control the board's LED heartbeat.
+ *
+ * @param sd:    Pointer to an I2CDriver structure.
+ * @param is_on: Whether the LED should by on (`true`) or off (`false`).
+ *
+ * @retval Was the command ACK'd (`true`) or not (`false`).
+ */
 static bool board_set_led(I2CDriver *sd, bool is_on) {
     
     uint8_t set_led_data[2] = {'*', (is_on ? 1 : 0)};
     writeToSerialPort(sd->port, set_led_data, sizeof(set_led_data));
     return i2c_ack(sd);
+}
+
+
+/**
+ * @brief Control the board's LED heartbeat.
+ *
+ * @param sd:    Pointer to an I2CDriver structure.
+ *
+ * @retval Was the command ACK'd (`true`) or not (`false`).
+ */
+static bool board_get_last_error(I2CDriver *sd) {
+    
+    uint8_t last_error;
+    
+    send_command(sd, '$');
+    size_t result = readFromSerialPort(sd->port, &last_error, 1);
+    if (result == -1) {
+        print_error("Could not read last error from device");
+        return false;
+    }
+    
+    // Check for old firmware versions: they'll ERR
+    if (last_error == ERR) {
+        print_warning("Board is on firmware pre-1.1.3 and doesn't support this feature");
+    } else {
+        print_log("Last error code recorded by board: 0x%02X", last_error);
+        
+    }
+    
+    return true;
 }
 
 
@@ -705,9 +751,10 @@ static inline void print_bad_command_help(char* command) {
 /**
  * @brief Parse driver commands.
  *
- * @param sd:   Pointer to an I2CDriver structure.
- * @param argc: The max number of args to process.
- * @param argv: The args.
+ * @param sd:    Pointer to an I2CDriver structure.
+ * @param argc:  The max number of args to process.
+ * @param argv:  The args.
+ * @param delta: An offset to the first board command arg.
  *
  * @retval The driver exit code, 0 on success, 1 on failure.
  */
@@ -723,7 +770,7 @@ int process_commands(I2CDriver *sd, int argc, char *argv[], uint32_t delta) {
         char* command = argv[i];
 
 #ifdef DEBUG
-        fprintf(stderr, "Command: %s\n", command);
+        print_log("Command: %s", command);
 #endif
 
         // Commands should be single characters
@@ -780,6 +827,12 @@ int process_commands(I2CDriver *sd, int argc, char *argv[], uint32_t delta) {
                     print_error("Incomplete I2C setup data given");
                     return EXIT_ERR;
                 }
+            
+            // FROM 1.1.4
+            case 'E':
+            case 'e':   // PRINT LAST BOARD ERROR
+                board_get_last_error(sd);
+                break;
                 
             case 'F':
             case 'f':   // SET THE BUS FREQUENCY
