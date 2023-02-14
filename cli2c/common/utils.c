@@ -16,13 +16,13 @@ extern I2CDriver i2c;
 /**
  * @brief Issue an error message.
  *
- * @param format_string: Message string with optional formatting
- * @param ...:           Optional injectable values
+ * @param format_string: Message string with optional formatting.
+ * @param ...:           Optional injectable values.
  */
 void print_error(char* format_string, ...) {
     va_list args;
     va_start(args, format_string);
-    print_output(true, format_string, args);
+    print_output(LOG_TYPE_ERROR, format_string, args);
     va_end(args);
 }
 
@@ -30,13 +30,27 @@ void print_error(char* format_string, ...) {
 /**
  * @brief Issue a warning message.
  *
- * @param format_string: Message string with optional formatting
- * @param ...:           Optional injectable values
+ * @param format_string: Message string with optional formatting.
+ * @param ...:           Optional injectable values.
  */
 void print_warning(char* format_string, ...) {
     va_list args;
     va_start(args, format_string);
-    print_output(false, format_string, args);
+    print_output(LOG_TYPE_WARNING, format_string, args);
+    va_end(args);
+}
+
+
+/**
+ * @brief Issue a message.
+ *
+ * @param format_string: Message string with optional formatting.
+ * @param ...:           Optional injectable values.
+ */
+void print_log(char* format_string, ...) {
+    va_list args;
+    va_start(args, format_string);
+    print_output(LOG_TYPE_MSG, format_string, args);
     va_end(args);
 }
 
@@ -44,18 +58,31 @@ void print_warning(char* format_string, ...) {
 /**
  * @brief Issue any message.
  *
- * @param is_err:        Is the message an error?
- * @param format_string: Message string with optional formatting
- * @param args:          va_list of args from previous call
+ * @param type:          The message type.
+ * @param format_string: Message string with optional formatting.
+ * @param args:          va_list of args from previous call.
  */
-void print_output(bool is_err, char* format_string, va_list args) {
+void print_output(uint32_t type, char* format_string, va_list args) {
 
     // Write the message type to the message
     char buffer[1024] = {0};
-    sprintf(buffer, is_err ? "[ERROR] " : "[WARNING] ");
+    uint32_t delta = 0;
+    
+    switch(type) {
+        case LOG_TYPE_ERROR:
+            sprintf(buffer, "[ERROR] ");
+            delta = 8;
+            break;
+        case LOG_TYPE_WARNING:
+            sprintf(buffer, "[WARNING] ");
+            delta = 10;
+            break;
+        default:
+            break;
+    }
 
     // Write the formatted text to the message
-    vsnprintf(&buffer[is_err ? 8 : 10], sizeof(buffer) - (is_err ? 9 : 11), format_string, args);
+    vsnprintf(&buffer[delta], sizeof(buffer) - delta + 1, format_string, args);
 
     // Print it all out
     fprintf(stderr, "%s\n", buffer);
