@@ -26,6 +26,8 @@ You can build the code from the accompanying Xcode project.
 
 ## Build and Deploy the I2C Host Firmware
 
+**Important** WE STRONGLY RECOMMEND YOU BUILD THE FIRMWARE WITH PICO SDK 1.5.0 OR ABOVE.
+
 1. Navigate to the repo directory.
 1. `cmake -S . -B firmwarebuild`
 1. `cmake --build firmwarebuild`
