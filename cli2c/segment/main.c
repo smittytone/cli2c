@@ -49,7 +49,6 @@ int main(int argc, char* argv[]) {
 
         // Connect... with the device path
         int i2c_address = HT16K33_I2C_ADDR;
-        i2c.port = -1;
         i2c_connect(&i2c, argv[1]);
         if (i2c.connected) {
             // Initialize the I2C host's I2C bus

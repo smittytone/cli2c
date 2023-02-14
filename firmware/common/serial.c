@@ -433,7 +433,6 @@ void tx(uint8_t* buffer, uint32_t byte_count) {
  *        It also sets the device LED colour.
  *
  * @param mode_key: The mode character: `i`, `s` etc.
- *                  NOTE Should always follow a `#`.
  *
  * @retval The mode ID as an integer.
  */
