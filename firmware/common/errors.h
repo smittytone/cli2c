@@ -17,8 +17,10 @@ enum HOST_ERRORS {
     GEN_UNKNOWN_MODE            = 2,
     GEN_UNKNOWN_COMMAND         = 3,
     GEN_LED_NOT_ENABLED         = 4,
-    GEN_CANT_CONFIG_BUS         = 10,
-    GEN_CANT_GET_BUS_INFO       = 11,
+    GEN_CANT_CONFIG_BUS         = 5,
+    GEN_CANT_GET_BUS_INFO       = 5,
+
+    // DO NOT USE VALUE 15/0x0F
 
     I2C_NOT_READY               = 20,
     I2C_NOT_STARTED             = 21,
@@ -32,6 +34,8 @@ enum HOST_ERRORS {
     SPI_UNAVAILABLE_ON_BOARD    = 43,
 
     GPIO_CANT_SET_PIN           = 60,
+
+    // DO NOT USE VALUE 240/0xF0
 };
 
 

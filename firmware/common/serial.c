@@ -169,6 +169,9 @@ void rx_loop(void) {
                     case '$':   // GET LAST ERROR
                         uint8_t err_buffer[3] = {(uint8_t)last_error_code, '\r', '\n'};
                         tx(err_buffer, 3);
+#ifdef DO_UART_DEBUG
+                        debug_log("Error code: %02X", last_error_code);
+#endif
                         break;
 
                     /*

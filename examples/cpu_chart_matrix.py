@@ -6,7 +6,7 @@ from psutil import cpu_percent
 from sys import exit, argv
 from time import sleep
 
-app = "/Users/smitty/Library/Developer/Xcode/DerivedData/cli2c-dwftsezvbxnzhwcqphbablmhweao/Build/Products/Debug/matrix"
+app = "matrix"
 device = None
 i2c_address = "0x70"
 col = 0
