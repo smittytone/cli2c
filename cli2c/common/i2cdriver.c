@@ -74,7 +74,7 @@ static int openSerialPort(const char *device_path) {
     // Set the port speed
     // NOTE Needs to go before `tcsetattr()` is called.
     //      And from 1.1.3 it does!
-    speed_t speed = (speed_t)256000;
+    speed_t speed = (speed_t)128000;
 #ifndef BUILD_FOR_LINUX
     if (ioctl(fd, IOSSIOSPEED, &speed) == -1) {
         print_error("Could not set port speed to %i bps - %s (%d)", speed, strerror(errno), errno);

@@ -16,7 +16,7 @@ set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -DTSDEBUG")
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DTSDEBUG")
 
 add_compile_definitions(BUILD_FOR_LINUX=1)
-#add_compile_definitions(DEBUG=1)
+add_compile_definitions(DEBUG=1)
 
 include_directories(
     ${COMMON_CODE_DIRECTORY}

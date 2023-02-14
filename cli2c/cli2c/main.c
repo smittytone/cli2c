@@ -36,6 +36,7 @@ int main(int argc, char *argv[]) {
     if (argc < 2) {
         // Insufficient arguments -- issue usage info and bail
         fprintf(stderr, "Usage: cli2c {DEVICE_PATH} [command] ... [command]\n");
+        return EXIT_OK;
     } else {
         // Check for a help and/or version request
         for (int i = 0 ; i < argc ; ++i) {
@@ -66,8 +67,6 @@ int main(int argc, char *argv[]) {
                 int result = process_commands(&i2c, argc, argv, delta);
                 flush_and_close_port(i2c.port);
                 return result;
-            } else if (i2c.port != -1) {
-                flush_and_close_port(i2c.port);
             }
         } else {
             fprintf(stderr, "No commands supplied... exiting\n");
@@ -75,6 +74,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    if (i2c.port != -1) flush_and_close_port(i2c.port);
     return EXIT_ERR;
 }
 

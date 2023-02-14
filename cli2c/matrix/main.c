@@ -35,6 +35,7 @@ int main(int argc, char* argv[]) {
     if (argc < 2) {
         // Insufficient arguments -- issue usage info and bail
         fprintf(stderr, "Usage: matrix {DEVICE_PATH} [I2C Address] [command] ... [command]\n");
+        return EXIT_OK;
     } else {
         // Check for a help request
         for (int i = 0 ; i < argc ; ++i) {
@@ -89,13 +90,10 @@ int main(int argc, char* argv[]) {
                 flush_and_close_port(i2c.port);
                 return EXIT_OK;
             }
-        } else if (i2c.port != -1) {
-            flush_and_close_port(i2c.port);
         }
     }
     
-    // Bail
-    flush_and_close_port(i2c.port);
+    if (i2c.port != -1) flush_and_close_port(i2c.port);
     return EXIT_ERR;
 }
 
