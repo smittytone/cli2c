@@ -47,7 +47,7 @@ endif()
 # Set the stack size
 target_compile_definitions(${FW_5_NAME} PRIVATE
     PICO_HEAP_SIZE=8192
-    PICO_STACK_SIZE=4096)
+    PICO_STACK_SIZE=8192)
 
 # Link to built libraries
 target_link_libraries(${FW_5_NAME} LINK_PUBLIC
