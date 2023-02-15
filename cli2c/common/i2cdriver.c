@@ -72,11 +72,16 @@ static int openSerialPort(const char *device_path) {
     serial_settings.c_cc[VTIME] = 1;
 
     // Set the port speed
-    // NOTE Needs to go before `tcsetattr()` is called.
-    //      And from 1.1.3 it does!
+    // NOTE Needs to go before `tcsetattr()` is called
+    //      for Linux, but after on macOS?!?!
     // NOTE For Linux, make sure the speed is standard,
     //      not custom.
 #ifndef BUILD_FOR_LINUX
+    if (tcsetattr(fd, TCSANOW, &serial_settings) != 0) {
+        print_error("Could not apply the port settings - %s (%d)", strerror(errno), errno);
+        goto error;
+    }
+    
     speed_t speed = (speed_t)256000;
     if (ioctl(fd, IOSSIOSPEED, &speed) == -1) {
         print_error("Could not set port speed to %i bps - %s (%d)", speed, strerror(errno), errno);
@@ -85,12 +90,12 @@ static int openSerialPort(const char *device_path) {
 #else
     speed_t speed = (speed_t)230400;
     cfsetspeed(&serial_settings, speed);
-#endif
     
     if (tcsetattr(fd, TCSANOW, &serial_settings) != 0) {
         print_error("Could not apply the port settings - %s (%d)", strerror(errno), errno);
         goto error;
     }
+#endif
     
     // Set the latency -- MAY REMOVE IF NOT NEEDED
 #ifndef BUILD_FOR_LINUX
