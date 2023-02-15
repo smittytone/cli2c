@@ -20,7 +20,7 @@ def handler(signum, frame):
 signal.signal(signal.SIGINT, handler)
 
 if len(argv) > 1:
-    i2c_device = argv[1]
+    device = argv[1]
 
 if len(argv) > 2:
     i2c_address = argv[2]
