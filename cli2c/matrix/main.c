@@ -46,6 +46,13 @@ int main(int argc, char* argv[]) {
                 show_help();
                 return EXIT_OK;
             }
+            
+            if (strcasecmp(argv[i], "v") == 0 ||
+                strcasecmp(argv[i], "--version") == 0 ||
+                strcasecmp(argv[i], "-v") == 0) {
+                show_version();
+                return EXIT_OK;
+            }
         }
 
         // Connect... with the device path
