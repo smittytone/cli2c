@@ -283,15 +283,18 @@ void HT16K33_set_glyph(uint8_t* bytes) {
  */
 void HT16K33_print(const char *text, uint32_t delay_ms) {
 
+    if (strlen(text) == 0) return;
+    
     // Get the length of the text: the number of columns it encompasses
     uint64_t length = 0;
     for (size_t i = 0 ; i < strlen(text) ; ++i) {
         uint8_t asc_val = text[i] - 32;
-        length += (asc_val == 0 ? 2: strlen(CHARSET[asc_val]));
+        length += (asc_val == 0 ? 2 : strlen(CHARSET[asc_val]));
         if (asc_val > 0) length++;
     }
 
     // Make the output buffer to match the required number of columns
+    if (length == 0) return;
     uint8_t src_buffer[length];
 
     // Write each character's glyph columns into the output buffer
@@ -400,9 +403,8 @@ static void HT16K33_sleep_ms(int ms) {
 static void HT16K33_write_cmd(uint8_t cmd, bool do_stop) {
 
     // NOTE Already connected at this stage
-    bool ackd = i2c_start(host_i2c, i2c_address, 0);
-    if (ackd) {
-        ackd = i2c_write(host_i2c, &cmd, 1);
-        if (do_stop) ackd = i2c_stop(host_i2c);
+    if (i2c_start(host_i2c, i2c_address, 0)) {
+        i2c_write(host_i2c, &cmd, 1);
+        if (do_stop) i2c_stop(host_i2c);
     }
 }

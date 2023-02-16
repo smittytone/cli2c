@@ -303,9 +303,8 @@ static void HT16K33_sleep_ms(int ms) {
 static void HT16K33_write_cmd(uint8_t cmd, bool do_stop) {
 
     // NOTE Already connected at this stage
-    bool ackd = i2c_start(host_i2c, i2c_address, 0);
-    if (ackd) {
-        ackd = i2c_write(host_i2c, &cmd, 1);
-        if (do_stop) ackd = i2c_stop(host_i2c);
+    if (i2c_start(host_i2c, i2c_address, 0)) {
+        i2c_write(host_i2c, &cmd, 1);
+        if (do_stop) i2c_stop(host_i2c);
     }
 }
