@@ -47,6 +47,7 @@ static struct termios original_settings;
 static int openSerialPort(const char *device_path) {
 
     struct termios serial_settings;
+    speed_t speed = (speed_t)203400;
 
     // Open the device
     int fd = open(device_path, O_RDWR | O_NOCTTY);
@@ -58,12 +59,16 @@ static int openSerialPort(const char *device_path) {
     // Prevent additional opens except by root-owned processes
     if (ioctl(fd, TIOCEXCL) == -1) {
         print_error("Could not set TIOCEXCL on %s - %s (%d)", device_path, strerror(errno), errno);
-        goto error;;
+        goto error;
     }
 
     // Get the port settings
-    tcgetattr(fd, &original_settings);
-    //serial_settings = original_settings;
+    if (tcgetattr(fd, &original_settings) != 0) {
+        print_error("Could not get the port settings - %s (%d)", strerror(errno), errno);
+        goto error;
+    }
+
+    serial_settings = original_settings;
 
     // Calls to read() will return as soon as there is
     // at least one byte available or after 100ms.
@@ -71,28 +76,23 @@ static int openSerialPort(const char *device_path) {
     serial_settings.c_cc[VMIN]  = 0;
     serial_settings.c_cc[VTIME] = 1;
 
+#ifdef BUILD_FOR_LINUX
+    cfsetispeed(&serial_settings, speed);
+    cfsetospeed(&serial_settings, speed);
+#endif
+    
+    if (tcsetattr(fd, TCSANOW, &serial_settings) != 0) {
+        print_error("Could not apply the port settings - %s (%d)", strerror(errno), errno);
+        goto error;
+    }
+
     // Set the port speed
-    // NOTE Needs to go before `tcsetattr()` is called
-    //      for Linux, but after on macOS?!?!
+    // NOTE Needs to go before `tcsetattr()` is called.
     // NOTE For Linux, make sure the speed is standard,
     //      not custom.
 #ifndef BUILD_FOR_LINUX
-    if (tcsetattr(fd, TCSANOW, &serial_settings) != 0) {
-        print_error("Could not apply the port settings - %s (%d)", strerror(errno), errno);
-        goto error;
-    }
-    
-    speed_t speed = (speed_t)256000;
     if (ioctl(fd, IOSSIOSPEED, &speed) == -1) {
         print_error("Could not set port speed to %i bps - %s (%d)", speed, strerror(errno), errno);
-        goto error;
-    }
-#else
-    speed_t speed = (speed_t)230400;
-    cfsetspeed(&serial_settings, speed);
-    
-    if (tcsetattr(fd, TCSANOW, &serial_settings) != 0) {
-        print_error("Could not apply the port settings - %s (%d)", strerror(errno), errno);
         goto error;
     }
 #endif
