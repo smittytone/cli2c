@@ -307,6 +307,7 @@ Thanks are also due to Hermann Stamm-Wilbrandt ([@Hermann-SW](https://github.com
 
 - 1.1.3 *Unreleased*
     - Fix connectivity issues with Linux clients.
+    - Fix `matrix` character parsing.
     - Internal firmware code reorganisation.
 - 1.1.2 *11 February 2023*
     - A big data transfer speed improvement.
