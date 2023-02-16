@@ -172,9 +172,9 @@ static int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
                     // Get the required argument
                     if (i < argc - 1) {
                         command = argv[++i];
-                        if (strlen(command) == 1) {
-                            char achar = command[0];
-                            
+                        if (command[0] >= '0' && command[0] <= '9') {
+                            uint8_t achar = (uint8_t)strtol(command, NULL, 0);
+                        
                             if (achar < 32 || achar > 127) {
                                 print_error("Character out of range (Ascii 32-127)");
                                 return EXIT_ERR;
