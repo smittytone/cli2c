@@ -12,8 +12,9 @@
 /*
  * STATIC PROTOTYPES
  */
-static int  matrix_commands(I2CDriver* sd, int argc, char* argv[], int delta);
-static void show_help(void);
+static int          matrix_commands(I2CDriver* sd, int argc, char* argv[], int delta);
+static void         show_help(void);
+static inline void  show_version(void);
 
 
 /*
@@ -361,7 +362,8 @@ static int matrix_commands(I2CDriver* i2c, int argc, char* argv[], int delta) {
 /**
  * @brief Show help.
  */
-static void show_help() {
+static void show_help(void) {
+    
     fprintf(stderr, "matrix {device} [address] [commands]\n\n");
     fprintf(stderr, "Usage:\n");
     fprintf(stderr, "  {device} is a mandatory device path, eg. /dev/cu.usbmodem-010101.\n");
@@ -382,4 +384,14 @@ static void show_help() {
     fprintf(stderr, "                         delay be between column shifts in milliseconds. Default: 250ms.\n");
     fprintf(stderr, "  w                      Wipe (clear) the display.\n");
     fprintf(stderr, "  h                      Help information.\n\n");
+}
+
+
+/**
+ * @brief Show app version.
+ */
+static inline void show_version(void) {
+    
+    fprintf(stderr, "matrix %s\n", APP_VERSION);
+    fprintf(stderr, "Copyright © 2023, Tony Smith.\n");
 }

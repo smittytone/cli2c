@@ -82,7 +82,7 @@ int main(int argc, char *argv[]) {
 /**
  * @brief Show help.
  */
-static inline void show_help() {
+static inline void show_help(void) {
     
     fprintf(stderr, "cli2c {device} [commands]\n\n");
     fprintf(stderr, "Usage:\n");
@@ -95,7 +95,7 @@ static inline void show_help() {
 /**
  * @brief Show app version.
  */
-static inline void show_version() {
+static inline void show_version(void) {
     
     fprintf(stderr, "cli2c %s\n", APP_VERSION);
     fprintf(stderr, "Copyright © 2023, Tony Smith.\n");
@@ -106,6 +106,7 @@ static inline void show_version() {
  * @brief Output help info.
  */
 static inline void show_commands(void) {
+    
     fprintf(stderr, "Commands:\n");
     fprintf(stderr, "  z                                Initialise the I2C bus.\n");
     fprintf(stderr, "  c {bus ID} {SDA pin} {SCL pin}   Configure the I2C bus.\n");
