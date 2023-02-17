@@ -3,39 +3,54 @@
  *
  * @version     1.1.3
  * @author      Tony Smith (@smittytone)
- * @copyright   2022
+ * @copyright   2023
  * @licence     MIT
  *
  */
 #ifndef _ERRORS_HEADER_
 #define _ERRORS_HEADER_
 
+/*
+    Error format:
+
+    Bits 8-6: Mode
+    Bits 5-1: Code
+
+    General: 000-xxxxx
+    I2C:     001-xxxxx
+    SPI:     010-xxxxx
+    UART:    011-xxxxx
+    1-Wire:  100-xxxxx
+    GPIO:    101-xxxxx
+*/
 
 enum HOST_ERRORS {
-    GEN_NO_ERROR                = 0,
-    GEN_TOO_FEW_KEY_BYTES       = 1,
-    GEN_UNKNOWN_MODE            = 2,
-    GEN_UNKNOWN_COMMAND         = 3,
-    GEN_LED_NOT_ENABLED         = 4,
-    GEN_CANT_CONFIG_BUS         = 5,
-    GEN_CANT_GET_BUS_INFO       = 5,
+    GEN_NO_ERROR                = 0x00,
+    GEN_UNKNOWN_MODE            = 0x01,
+    GEN_UNKNOWN_COMMAND         = 0x02,
+    GEN_LED_NOT_ENABLED         = 0x03,
+    GEN_CANT_CONFIG_BUS         = 0x04,
+    GEN_CANT_GET_BUS_INFO       = 0x05,
 
-    // DO NOT USE VALUE 15/0x0F
+    // DO NOT USE VALUE 0x0F
+    GEN_DO_NOT_USE_ACK          = 0x0F,
 
-    I2C_NOT_READY               = 20,
-    I2C_NOT_STARTED             = 21,
-    I2C_COULD_NOT_WRITE         = 22,
-    I2C_COULD_NOT_READ          = 23,
-    I2C_ALREADY_STOPPED         = 24,
+    // I2C
+    I2C_NOT_READY               = 0x20,
+    I2C_NOT_STARTED             = 0x21,
+    I2C_COULD_NOT_WRITE         = 0x22,
+    I2C_COULD_NOT_READ          = 0x23,
+    I2C_ALREADY_STOPPED         = 0x24,
 
-    SPI_NOT_STARTED             = 40,
-    SPI_COULD_NOT_WRITE         = 41,
-    SPI_COULD_NOT_READ          = 42,
-    SPI_UNAVAILABLE_ON_BOARD    = 43,
+    SPI_NOT_STARTED             = 0x40,
+    SPI_COULD_NOT_WRITE         = 0x41,
+    SPI_COULD_NOT_READ          = 0x42,
+    SPI_UNAVAILABLE_ON_BOARD    = 0x43,
 
-    GPIO_CANT_SET_PIN           = 60,
+    GPIO_CANT_SET_PIN           = 0xA0,
 
-    // DO NOT USE VALUE 240/0xF0
+    // DO NOT USE VALUE 0xF0
+    GEN_DO_NOT_USE_ERR          = 0xF0,
 };
 
 

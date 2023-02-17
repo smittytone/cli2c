@@ -305,10 +305,13 @@ Thanks are also due to Hermann Stamm-Wilbrandt ([@Hermann-SW](https://github.com
 
 ## Release Notes
 
-- 1.1.3 *Unreleased*
+- 1.1.3 *17 February 2023*
+    - A major stability improvement thanks to [Pico SDK 1.5.0](https://github.com/raspberrypi/pico-sdk/releases/tag/1.5.0).
     - Fix connectivity issues with Linux clients.
     - Fix `matrix` character parsing.
-    - Internal firmware code reorganisation.
+    - Add `v` for version command to `matrix` and `segment`.
+    - Reorganise firmware code.
+    - Add to firmware the ability to report the most recent error.
 - 1.1.2 *11 February 2023*
     - A big data transfer speed improvement.
     - Document GPIO usage.
@@ -328,6 +331,6 @@ Thanks are also due to Hermann Stamm-Wilbrandt ([@Hermann-SW](https://github.com
 
 ## Licences and Copyright
 
-`cli2c`, `matrix` and `segment` contain small code portions © 2019, James Bowman. All other code © 2022, Tony Smith (@smittytone). They are licensed under the terms of the BSD 3-Clause Licence.
+`cli2c`, `matrix` and `segment` contain small code portions © 2019, James Bowman. All other code © 2023, Tony Smith (@smittytone). They are licensed under the terms of the BSD 3-Clause Licence.
 
 The RP2040 firmware is © 2023, Tony Smith (@smittytone). It is licensed under the terms of the MIT Licence.
