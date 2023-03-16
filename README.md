@@ -1,5 +1,9 @@
 # cli2c 1.1.3
 
+## IMPORTANT
+
+**This repo has been superseded by [Depot](https://github.com/smittytone/Depot) and will no longer be updated. Depot contains all the functionality offered by the code in this repo and more. This repo with shortly be archived.**
+
 An I2C client for macOS and Linux. It is used as the basis for client apps to operate HT16K33-controlled matrix and segment LED displays.
 
 It requires a [Raspberry Pi Pico](https://www.raspberrypi.com/documentation/microcontrollers/raspberry-pi-pico.html), [Adafruit QTPy RP2040](https://www.adafruit.com/product/4900), [Adafruit QT2040 Trinkey](https://www.adafruit.com/product/5056), [SparkFun ProMicro RP2040](https://www.sparkfun.com/products/18288) or [Pimoroni Tiny 2040](https://shop.pimoroni.com/products/tiny-2040?variant=39560012234835) connected via USB and running the included firmware. This is the I2C Host.
